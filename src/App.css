@@ -13,3 +13,10 @@
 .dashboard-content { min-height:calc(100vh - 78px); display:grid; place-items:center; padding:40px 7%; }
 .dashboard-content h1 { margin:0; color:var(--ink); text-align:center; font:600 clamp(42px,7vw,84px) 'Space Grotesk'; letter-spacing:-.07em; }
 @media (max-width:850px) { .dashboard-content { min-height:calc(100vh - 78px); padding:40px 24px; } }
+
+@media (max-width:850px) {
+  .auth-visual { display:flex; min-height:220px; padding:24px; }
+  .auth-visual .visual-copy { margin:auto; }
+  .auth-visual .visual-copy h1 { margin:0; font-size:42px; }
+  .auth-panel { min-height:calc(100vh - 220px); }
+}
