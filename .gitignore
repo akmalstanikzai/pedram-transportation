@@ -12,6 +12,22 @@ dist
 dist-ssr
 *.local
 
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+
+# Vite and tooling caches
+.vite/
+*.tsbuildinfo
+coverage/
+.nyc_output/
+
+# Supabase local development output
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,3 +38,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# OS files
+Thumbs.db
+Desktop.ini
