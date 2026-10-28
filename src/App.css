@@ -403,3 +403,7 @@ html[dir='rtl'] .role-title { font-family: Tahoma, 'DM Sans', sans-serif; letter
   .module-heading h1 { font-size: 28px; }
   .empty-state { min-height: 280px; }
 }
+
+/* Keep the boxed fields without a focus shadow. */
+.auth-card .input-wrap { padding: 0 13px; border: 1px solid #dae2e8; border-radius: 9px; background: #fbfcfd; }
+.auth-card .input-wrap:focus-within { border-color: #4f9876; box-shadow: none; background: #fff; }
