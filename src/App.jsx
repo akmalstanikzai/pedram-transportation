@@ -3,12 +3,21 @@ import Brand from './components/Brand'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import { supabase } from './lib/supabase'
+import { getTranslation } from './lib/i18n'
 import './App.css'
 
 export default function App() {
+  const [language, setLanguage] = useState(() => localStorage.getItem('pedram-language') || 'en')
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
   const [checking, setChecking] = useState(Boolean(supabase))
+
+  useEffect(() => {
+    localStorage.setItem('pedram-language', language)
+    document.documentElement.lang = language === 'fa' ? 'fa' : 'en'
+    document.documentElement.dir = language === 'fa' ? 'rtl' : 'ltr'
+    document.title = language === 'fa' ? 'پدرام | سیستم مدیریت' : 'Pedram | Management System'
+  }, [language])
 
   useEffect(() => {
     if (!supabase) return undefined
@@ -29,8 +38,9 @@ export default function App() {
   }, [session])
 
   return useMemo(() => {
-    if (checking) return <div className="loading-screen"><Brand /><span className="spinner dark" /></div>
-    if (!session) return <LoginPage onSignedIn={setSession} />
-    return <DashboardPage session={session} profile={profile} onSignOut={() => supabase?.auth.signOut()} />
-  }, [checking, session, profile])
+    const text = getTranslation(language)
+    if (checking) return <div className="loading-screen"><Brand text={text} /><span className="spinner dark" /></div>
+    if (!session) return <LoginPage language={language} onLanguageChange={setLanguage} onSignedIn={setSession} />
+    return <DashboardPage language={language} onLanguageChange={setLanguage} session={session} profile={profile} onSignOut={() => supabase?.auth.signOut()} />
+  }, [checking, session, profile, language])
 }
