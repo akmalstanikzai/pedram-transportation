@@ -44,14 +44,13 @@ const copy = {
 
 const emptyOwner = { full_name: '', father_name: '', phone: '', national_id: '', address: '', notes: '', owner_is_driver: false, license_number: '', license_expiry: '' }
 const emptyDriver = { owner_id: '', full_name: '', father_name: '', phone: '', national_id: '', license_number: '', license_expiry: '', address: '' }
-const emptyVehicle = { owner_id: '', driver_id: '', add_driver: false, driver_name: '', driver_phone: '', driver_license: '', plate_number: '', vehicle_type: '', capacity_tons: '', model_year: '', color: '', status: 'available', permit_number: '', permit_expiry: '', registration_expiry: '', notes: '' }
+const emptyVehicle = { owner_id: '', driver_id: '', add_driver: false, driver_name: '', driver_phone: '', driver_license: '', plate_number: '', vehicle_type: '', capacity_tons: '', model_year: '', color: '', status: 'available', permit_number: '', permit_expiry: '', notes: '' }
 
 export default function VehiclesPage({ language }) {
   const text = copy[language] || copy.en
   const [vehicles, setVehicles] = useState([])
   const [owners, setOwners] = useState([])
   const [drivers, setDrivers] = useState([])
-  const [filter, setFilter] = useState('all')
   const [query, setQuery] = useState('')
   const [dialog, setDialog] = useState(null)
   const [ownerForm, setOwnerForm] = useState(emptyOwner)
@@ -101,10 +100,9 @@ export default function VehiclesPage({ language }) {
   useEffect(() => { void loadRegistry() }, [loadRegistry])
 
   const displayedVehicles = useMemo(() => vehicles.filter(vehicle => {
-    const matchesStatus = filter === 'all' || vehicle.status === filter
     const haystack = `${vehicle.plate_number} ${vehicle.vehicle_type} ${vehicle.vehicle_owners?.full_name || ''}`.toLowerCase()
-    return matchesStatus && haystack.includes(query.trim().toLowerCase())
-  }), [vehicles, filter, query])
+    return haystack.includes(query.trim().toLowerCase())
+  }), [vehicles, query])
 
   async function submitOwner(event) {
     event.preventDefault()
@@ -129,7 +127,6 @@ export default function VehiclesPage({ language }) {
       capacity_tons: vehicleForm.capacity_tons || null,
       model_year: vehicleForm.model_year || null,
       permit_expiry: vehicleForm.permit_expiry || null,
-      registration_expiry: vehicleForm.registration_expiry || null,
     }
     const { data: vehicle, error } = await supabase.from('vehicles').insert(payload).select('id').single()
     if (error) return setMessage({ type: 'error', text: error.message })
@@ -175,10 +172,10 @@ export default function VehiclesPage({ language }) {
     </div>
 
     <div className="registry-toolbar">
-      <div className="registry-filters">{filters.map(([id, label, FilterIcon]) => <button key={id} className={filter === id ? 'active' : ''} onClick={() => setFilter(id)}><FilterIcon size={16} />{label}<small>{id === 'all' ? vehicles.length : vehicles.filter(v => v.status === id).length}</small></button>)}</div>
       <label className="registry-search"><Search size={17} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder={text.search} /></label>
     </div>
 
+    <h3 className="fleet-section-title"><Truck size={18} />{text.total}</h3>
     <div className="vehicle-list">
       {loading ? <span className="spinner dark" /> : displayedVehicles.length ? displayedVehicles.map(vehicle => <article className="vehicle-row" key={vehicle.id}>
         <span className={`vehicle-mark ${vehicle.status}`}><Truck size={25} /></span>
@@ -227,7 +224,6 @@ export default function VehiclesPage({ language }) {
         <label><span>{text.status}</span><select value={vehicleForm.status} onChange={event => setVehicleForm({ ...vehicleForm, status: event.target.value })}>{filters.slice(1).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
         <Input label={text.permit} value={vehicleForm.permit_number} onChange={value => setVehicleForm({ ...vehicleForm, permit_number: value })} />
         <Input label={text.permitExpiry} type="date" value={vehicleForm.permit_expiry} onChange={value => setVehicleForm({ ...vehicleForm, permit_expiry: value })} />
-        <Input label={text.registrationExpiry} type="date" value={vehicleForm.registration_expiry} onChange={value => setVehicleForm({ ...vehicleForm, registration_expiry: value })} />
         <Input label={text.notes} value={vehicleForm.notes} onChange={value => setVehicleForm({ ...vehicleForm, notes: value })} wide />
         <label className="wide"><span>{text.selectDriver}</span><select value={vehicleForm.driver_id} onChange={event => setVehicleForm({ ...vehicleForm, driver_id: event.target.value, add_driver: false })}><option value="">—</option>{drivers.filter(driver => !driver.vehicle_id).map(driver => <option key={driver.id} value={driver.id}>{driver.full_name} · {driver.phone}</option>)}</select></label>
         <label className="wide registry-check"><input type="checkbox" checked={vehicleForm.add_driver} onChange={event => setVehicleForm({ ...vehicleForm, add_driver: event.target.checked, driver_id: '' })} /><span>{text.addDriverNow}</span></label>

@@ -418,7 +418,11 @@ html[dir='rtl'] .brand strong { font-family: 'DM Sans', sans-serif; letter-spaci
 .registry-check input { width: 17px; height: 17px; margin: 0; }
 .registry-check span { margin: 0 !important; }
 .fleet-drivers { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
-.fleet-drivers h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 13px; }
+.fleet-drivers h3, .fleet-section-title { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 16px; font-weight: 800; }
+.fleet-page-title { margin: 12px 0 24px; font-size: 28px; font-weight: 800; }
+.module-shell.fleet-shell { background: transparent; border: 0; box-shadow: none; overflow: visible; }
+.fleet-shell .registry-page { padding: 0; background: transparent; }
+.fleet-shell .registry-toolbar { justify-content: flex-end; }
 .driver-row { min-height: 58px; display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 10px; padding: 9px 12px; margin-bottom: 7px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: #657581; font-size: 10px; }
 .driver-avatar { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 9px; color: #6c54a3; background: #f0ebf8; }
 .driver-row strong, .driver-row small { display: block; }

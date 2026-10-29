@@ -75,8 +75,9 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
       {activeModule && role === 'president' ? (
         <section className="module-page">
           <button className="module-back" onClick={closeModule}><Icon name="back" size={17} /> {text.presidentDashboard}</button>
-          <div className={`module-shell ${activeModule.id === 'branches' ? 'branch-shell' : ''}`}>
-            {activeModule.id !== 'branches' && <div className="module-heading">
+          {activeModule.id === 'vehicles' && <h1 className="fleet-page-title">{text[activeModule.titleKey]}</h1>}
+          <div className={`module-shell ${activeModule.id === 'branches' ? 'branch-shell' : activeModule.id === 'vehicles' ? 'fleet-shell' : ''}`}>
+            {!['branches', 'vehicles'].includes(activeModule.id) && <div className="module-heading">
               <div className={`module-icon ${activeModule.color}`}><ActiveModuleIcon size={38} strokeWidth={1.8} /></div>
               <div><span className="section-label">{text.managementModule}</span><h1>{text[activeModule.titleKey]}</h1><p>{text[activeModule.pageKey]}</p></div>
             </div>}
