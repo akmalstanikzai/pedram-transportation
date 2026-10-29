@@ -314,7 +314,7 @@ html[dir='rtl'] .brand strong { font-family: 'DM Sans', sans-serif; letter-spaci
 .logout-button:hover { border-color: #e5b5bc; color: var(--red); }
 
 .dashboard-content, .module-page { width: min(1080px, calc(100% - 44px)); margin: 0 auto; padding: 38px 0 80px; }
-.module-grid { display: grid; grid-template-columns: repeat(3, 190px); gap: 18px; justify-content: start; }
+.module-grid { display: grid; grid-template-columns: repeat(5, minmax(160px, 1fr)); gap: 18px; justify-content: start; }
 
 .module-card {
   min-height: 175px;
@@ -339,6 +339,11 @@ html[dir='rtl'] .brand strong { font-family: 'DM Sans', sans-serif; letter-spaci
 .module-card-icon.blue, .module-icon.blue { color: #236d9a; background: #e7f3f9; }
 .module-card-icon.gold, .module-icon.gold { color: #98701f; background: #fbf2dc; }
 .module-card-icon.red, .module-icon.red { color: #b8283d; background: #fae8eb; }
+.module-card-icon.green, .module-icon.green { color: #277658; background: #e6f4ed; }
+.module-card-icon.violet, .module-icon.violet { color: #6c54a3; background: #f0ebf8; }
+.module-card-icon.cyan, .module-icon.cyan { color: #167b83; background: #e4f5f5; }
+.module-card-icon.indigo, .module-icon.indigo { color: #415c9b; background: #e9eef9; }
+.module-card-icon.orange, .module-icon.orange { color: #a85e24; background: #faede3; }
 .role-title { margin: 0; font: 700 30px 'Space Grotesk', sans-serif; }
 
 /* Module pages */
@@ -374,6 +379,7 @@ html[dir='rtl'] .role-title { font-family: Tahoma, 'DM Sans', sans-serif; letter
   .login-visual { min-height: 300px; padding: 30px 34px; }
   .login-panel { min-height: calc(100vh - 300px); padding: 62px 24px 42px; }
   .login-visual::before { width: 390px; height: 390px; inset-inline-end: -190px; border-width: 44px; }
+  .module-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .visual-copy { margin: auto 0 0; }
   .visual-copy h2 { margin: 12px 0 0; font-size: 46px; }
   .visual-copy p, .visual-features, .visual-footer { display: none; }
@@ -394,7 +400,7 @@ html[dir='rtl'] .role-title { font-family: Tahoma, 'DM Sans', sans-serif; letter
   .header-actions { gap: 8px; }
   .language-switch button { min-width: 38px; }
   .dashboard-content, .module-page { width: min(100% - 28px, 1080px); padding-top: 24px; }
-  .module-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+  .module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .module-card { min-height: 132px; gap: 12px; padding: 13px 7px; }
   .module-card-icon { width: 54px; height: 54px; }
   .module-card-icon svg { width: 28px; height: 28px; }

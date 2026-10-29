@@ -1,13 +1,32 @@
 import { useEffect, useState } from 'react'
+import {
+  Building2,
+  ClipboardList,
+  FileBarChart,
+  HandCoins,
+  MapPinned,
+  Route,
+  ShieldCheck,
+  Truck,
+  UserRound,
+  WalletCards,
+} from 'lucide-react'
 import Brand from '../components/Brand'
 import Icon from '../components/Icon'
 import { getTranslation } from '../lib/i18n'
 import { LanguageSwitch } from './LoginPage'
 
 const moduleDefinitions = [
-  { id: 'branches', icon: 'building', titleKey: 'branches', pageKey: 'branchesPage', color: 'blue' },
-  { id: 'custom-duty', icon: 'customs', titleKey: 'customDuty', pageKey: 'customDutyPage', color: 'gold' },
-  { id: 'transports', icon: 'transport', titleKey: 'transports', pageKey: 'transportsPage', color: 'red' },
+  { id: 'branches', icon: Building2, titleKey: 'branches', pageKey: 'branchesPage', color: 'blue' },
+  { id: 'vehicles', icon: Truck, titleKey: 'vehicles', pageKey: 'vehiclesPage', color: 'green' },
+  { id: 'drivers', icon: UserRound, titleKey: 'drivers', pageKey: 'driversPage', color: 'violet' },
+  { id: 'bookings', icon: ClipboardList, titleKey: 'bookings', pageKey: 'bookingsPage', color: 'red' },
+  { id: 'trip-plans', icon: MapPinned, titleKey: 'tripPlans', pageKey: 'tripPlansPage', color: 'gold' },
+  { id: 'trips', icon: Route, titleKey: 'trips', pageKey: 'tripsPage', color: 'green' },
+  { id: 'trader-accounts', icon: HandCoins, titleKey: 'traderAccounts', pageKey: 'traderAccountsPage', color: 'cyan' },
+  { id: 'customs', icon: ShieldCheck, titleKey: 'customDuty', pageKey: 'customDutyPage', color: 'gold' },
+  { id: 'finance', icon: WalletCards, titleKey: 'finance', pageKey: 'financePage', color: 'indigo' },
+  { id: 'reports', icon: FileBarChart, titleKey: 'reports', pageKey: 'reportsPage', color: 'orange' },
 ]
 
 function getModuleFromHash() {
@@ -20,6 +39,7 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
   const role = profile?.role || 'driver'
   const displayName = profile?.full_name || session?.user?.email?.split('@')[0] || 'User'
   const [activeModule, setActiveModule] = useState(getModuleFromHash)
+  const ActiveModuleIcon = activeModule?.icon
 
   useEffect(() => {
     const updatePage = () => setActiveModule(getModuleFromHash())
@@ -57,7 +77,7 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
           <button className="module-back" onClick={closeModule}><Icon name="back" size={17} /> {text.presidentDashboard}</button>
           <div className="module-shell">
             <div className="module-heading">
-              <div className={`module-icon ${activeModule.color}`}><Icon name={activeModule.icon} size={38} /></div>
+              <div className={`module-icon ${activeModule.color}`}><ActiveModuleIcon size={38} strokeWidth={1.8} /></div>
               <div><span className="section-label">{text.managementModule}</span><h1>{text[activeModule.titleKey]}</h1><p>{text[activeModule.pageKey]}</p></div>
             </div>
             <div className="empty-state">
@@ -71,12 +91,15 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
         <section className="dashboard-content">
           {role === 'president' ? (
             <div className="module-grid">
-              {moduleDefinitions.map(module => (
-                <button className="module-card" key={module.id} onClick={() => openModule(module)}>
-                  <span className={`module-card-icon ${module.color}`}><Icon name={module.icon} size={34} /></span>
-                  <strong>{text[module.titleKey]}</strong>
-                </button>
-              ))}
+              {moduleDefinitions.map(module => {
+                const ModuleIcon = module.icon
+                return (
+                  <button className="module-card" key={module.id} onClick={() => openModule(module)}>
+                    <span className={`module-card-icon ${module.color}`}><ModuleIcon size={34} strokeWidth={1.8} /></span>
+                    <strong>{text[module.titleKey]}</strong>
+                  </button>
+                )
+              })}
             </div>
           ) : (
             <h1 className="role-title">{text.roles[role] || text.roles.driver}</h1>
