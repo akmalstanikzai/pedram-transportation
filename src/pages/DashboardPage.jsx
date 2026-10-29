@@ -15,6 +15,7 @@ import Brand from '../components/Brand'
 import Icon from '../components/Icon'
 import { getTranslation } from '../lib/i18n'
 import { LanguageSwitch } from './LoginPage'
+import VehiclesPage from './VehiclesPage'
 
 const moduleDefinitions = [
   { id: 'branches', icon: Building2, titleKey: 'branches', pageKey: 'branchesPage', color: 'blue' },
@@ -80,11 +81,11 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
               <div className={`module-icon ${activeModule.color}`}><ActiveModuleIcon size={38} strokeWidth={1.8} /></div>
               <div><span className="section-label">{text.managementModule}</span><h1>{text[activeModule.titleKey]}</h1><p>{text[activeModule.pageKey]}</p></div>
             </div>
-            <div className="empty-state">
+            {activeModule.id === 'vehicles' ? <VehiclesPage language={language} /> : <div className="empty-state">
               <div className="empty-state-mark"><Icon name="layers" size={27} /></div>
               <h2>{text.readyTitle}</h2>
               <p>{text.readyText}</p>
-            </div>
+            </div>}
           </div>
         </section>
       ) : (
