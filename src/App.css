@@ -414,6 +414,43 @@ html[dir='rtl'] .brand strong { font-family: 'DM Sans', sans-serif; letter-spaci
 .registry-form .wide, .registry-form-actions { grid-column: 1 / -1; }
 .registry-form-actions { display: flex; justify-content: flex-end; gap: 9px; padding-top: 8px; }
 .registry-form-actions > button:first-child { min-height: 42px; padding: 0 16px; border: 1px solid var(--line); border-radius: 9px; color: #667581; background: #fff; font-size: 12px; font-weight: 750; }
+.registry-check { min-height: 42px; display: flex; align-items: center; gap: 9px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: #f8fafb; }
+.registry-check input { width: 17px; height: 17px; margin: 0; }
+.registry-check span { margin: 0 !important; }
+.fleet-drivers { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+.fleet-drivers h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 13px; }
+.driver-row { min-height: 58px; display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 10px; padding: 9px 12px; margin-bottom: 7px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: #657581; font-size: 10px; }
+.driver-avatar { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 9px; color: #6c54a3; background: #f0ebf8; }
+.driver-row strong, .driver-row small { display: block; }
+.driver-row strong { color: var(--ink); font-size: 11px; }
+.driver-row small { margin-top: 3px; }
+
+/* Branch registry */
+.branch-shell { margin-top: 14px; }
+.branch-registry { padding: 18px 20px 24px; }
+.branch-registry .registry-actions { margin-bottom: 13px; }
+.branch-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.branch-table { width: 100%; border-collapse: collapse; text-align: start; }
+.branch-table th { padding: 11px 14px; border-bottom: 1px solid var(--line); color: #6f7e89; background: #f7f9fa; font-size: 9px; font-weight: 800; text-align: start; white-space: nowrap; }
+.branch-table td { padding: 12px 14px; border-bottom: 1px solid #edf1f3; color: #536572; font-size: 11px; white-space: nowrap; }
+.branch-table tbody tr:last-child td { border-bottom: 0; }
+.branch-name-cell { display: flex; align-items: center; gap: 9px; color: var(--ink); }
+.branch-table-icon { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 8px; color: #236d9a; background: #e7f3f9; }
+.branch-table-empty { height: 130px; text-align: center; }
+.branch-table-empty > svg, .branch-table-empty > strong { display: block; margin: 0 auto 8px; color: #87949e; }
+.branch-table-empty .spinner { margin: auto; }
+.branch-form-card { width: min(780px, 100%); }
+.branch-form { padding: 0 25px 26px; }
+.branch-form-section { padding: 22px 0; border-bottom: 1px solid var(--line); }
+.branch-form-section h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 17px; color: var(--navy); font-size: 12px; }
+.branch-form-fields { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.branch-form-fields label span { display: block; margin-bottom: 7px; color: #455460; font-size: 10px; font-weight: 800; }
+.branch-form-fields input, .branch-form-fields select { width: 100%; height: 43px; padding: 0 11px; border: 1px solid #d9e1e6; border-radius: 8px; outline: 0; color: var(--ink); background: #fbfcfd; font-size: 12px; }
+.branch-form-fields input:focus, .branch-form-fields select:focus { border-color: #6ca88e; background: #fff; }
+.branch-form-fields .wide { grid-column: 1 / -1; }
+.branch-form-message { margin: 18px 0 0; }
+.branch-actions { padding-top: 22px; }
+.branch-actions .spinner { width: 17px; height: 17px; }
 
 html[dir='rtl'] body { font-family: Tahoma, 'DM Sans', sans-serif; }
 html[dir='rtl'] .primary-button svg,
@@ -475,6 +512,12 @@ html[dir='rtl'] .role-title { font-family: Tahoma, 'DM Sans', sans-serif; letter
   .vehicle-owner { grid-column: 2 / -1; }
   .registry-form { grid-template-columns: 1fr; padding: 20px; }
   .registry-form .wide, .registry-form-actions { grid-column: auto; }
+  .branch-registry { padding: 14px 12px 18px; }
+  .branch-form { padding: 0 20px 22px; }
+  .branch-form-fields { grid-template-columns: 1fr; }
+  .branch-form-fields .wide { grid-column: auto; }
+  .branch-actions { flex-direction: column-reverse; }
+  .branch-actions button { width: 100%; }
 }
 
 /* Keep the boxed fields without a focus shadow. */

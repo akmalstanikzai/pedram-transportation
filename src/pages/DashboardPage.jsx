@@ -8,7 +8,6 @@ import {
   Route,
   ShieldCheck,
   Truck,
-  UserRound,
   WalletCards,
 } from 'lucide-react'
 import Brand from '../components/Brand'
@@ -16,11 +15,11 @@ import Icon from '../components/Icon'
 import { getTranslation } from '../lib/i18n'
 import { LanguageSwitch } from './LoginPage'
 import VehiclesPage from './VehiclesPage'
+import BranchesPage from './BranchesPage'
 
 const moduleDefinitions = [
   { id: 'branches', icon: Building2, titleKey: 'branches', pageKey: 'branchesPage', color: 'blue' },
   { id: 'vehicles', icon: Truck, titleKey: 'vehicles', pageKey: 'vehiclesPage', color: 'green' },
-  { id: 'drivers', icon: UserRound, titleKey: 'drivers', pageKey: 'driversPage', color: 'violet' },
   { id: 'bookings', icon: ClipboardList, titleKey: 'bookings', pageKey: 'bookingsPage', color: 'red' },
   { id: 'trip-plans', icon: MapPinned, titleKey: 'tripPlans', pageKey: 'tripPlansPage', color: 'gold' },
   { id: 'trips', icon: Route, titleKey: 'trips', pageKey: 'tripsPage', color: 'green' },
@@ -76,12 +75,12 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
       {activeModule && role === 'president' ? (
         <section className="module-page">
           <button className="module-back" onClick={closeModule}><Icon name="back" size={17} /> {text.presidentDashboard}</button>
-          <div className="module-shell">
-            <div className="module-heading">
+          <div className={`module-shell ${activeModule.id === 'branches' ? 'branch-shell' : ''}`}>
+            {activeModule.id !== 'branches' && <div className="module-heading">
               <div className={`module-icon ${activeModule.color}`}><ActiveModuleIcon size={38} strokeWidth={1.8} /></div>
               <div><span className="section-label">{text.managementModule}</span><h1>{text[activeModule.titleKey]}</h1><p>{text[activeModule.pageKey]}</p></div>
-            </div>
-            {activeModule.id === 'vehicles' ? <VehiclesPage language={language} /> : <div className="empty-state">
+            </div>}
+            {activeModule.id === 'branches' ? <BranchesPage language={language} /> : activeModule.id === 'vehicles' ? <VehiclesPage language={language} /> : <div className="empty-state">
               <div className="empty-state-mark"><Icon name="layers" size={27} /></div>
               <h2>{text.readyTitle}</h2>
               <p>{text.readyText}</p>
