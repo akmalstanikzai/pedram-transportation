@@ -422,6 +422,21 @@ html[dir='rtl'] .brand strong { font-family: 'DM Sans', sans-serif; letter-spaci
 .booking-page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin: 12px 0 24px; }
 .booking-page-header h1 { margin: 0; font-size: 28px; font-weight: 800; }
 .booking-list { display: grid; gap: 14px; margin-top: 20px; }
+.booking-form-card { width: min(880px, 100%); }
+.booking-form-card .registry-form-head { justify-content: space-between; }
+.booking-form { display: block; }
+.booking-fields { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.booking-section-heading { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; padding: 18px 0 10px; margin: 8px 0 0; border-bottom: 1px solid var(--line); font-size: 17px; font-weight: 800; }
+.booking-section-heading:first-child { margin-top: 0; padding-top: 0; }
+.booking-section-heading svg { color: #277658; }
+.booking-help { color: #657581; font-size: 12px; line-height: 1.8; margin: 0; }
+.booking-preview { margin: 0; padding: 16px; border-radius: 10px; background: #f4f8f7; min-width: 0; }
+.booking-preview dt { color: #657581; font-size: 11px; margin-top: 10px; }
+.booking-preview dt:first-child { margin-top: 0; }
+.booking-preview dd { margin: 4px 0 0; font-size: 13px; font-weight: 650; overflow-wrap: anywhere; }
+.booking-contact-details summary { cursor: pointer; font-size: 13px; font-weight: 700; padding: 8px 0; color: #277658; }
+.booking-fields input:disabled { opacity: 1; color: #536572; background: #eef3f2; }
+@media (max-width: 600px) { .booking-fields { grid-template-columns: minmax(0,1fr); } }
 .booking-record { padding: 20px; border: 1px solid var(--line); border-radius: 14px; background: white; }
 .booking-record h3 { display: flex; align-items: center; gap: 8px; margin: 0; }
 .booking-record p { font-size: 14px; }

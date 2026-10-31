@@ -43,8 +43,8 @@ const copy = {
 }
 
 const emptyOwner = { full_name: '', father_name: '', phone: '', national_id: '', address: '', notes: '', owner_is_driver: false, license_number: '', license_expiry: '' }
-const emptyDriver = { owner_id: '', full_name: '', father_name: '', phone: '', national_id: '', license_number: '', license_expiry: '', address: '' }
-const emptyVehicle = { owner_id: '', driver_id: '', add_driver: false, driver_name: '', driver_phone: '', driver_license: '', plate_number: '', vehicle_type: '', capacity_tons: '', model_year: '', color: '', status: 'available', permit_number: '', permit_expiry: '', notes: '' }
+const emptyDriver = { full_name: '', father_name: '', phone: '', national_id: '', license_number: '', license_expiry: '', address: '' }
+const emptyVehicle = { owner_id: '', plate_number: '', vehicle_type: '', capacity_tons: '', model_year: '', color: '', status: 'available', permit_number: '', permit_expiry: '', notes: '' }
 
 export default function VehiclesPage({ language }) {
   const text = copy[language] || copy.en
@@ -84,9 +84,9 @@ export default function VehiclesPage({ language }) {
   const loadRegistry = useCallback(async () => {
     if (!supabase) return setLoading(false)
     const [vehicleResult, ownerResult, driverResult] = await Promise.all([
-      supabase.from('vehicles').select('*, vehicle_owners(id, full_name, phone), drivers(id, full_name, phone)').order('created_at', { ascending: false }),
+      supabase.from('vehicles').select('*, vehicle_owners(id, full_name, phone)').order('created_at', { ascending: false }),
       supabase.from('vehicle_owners').select('*').order('full_name'),
-      supabase.from('drivers').select('*, vehicles(plate_number), vehicle_owners(full_name)').order('full_name'),
+      supabase.from('drivers').select('*, vehicle_owners(full_name)').order('full_name'),
     ])
     setLoading(false)
     if (vehicleResult.error || ownerResult.error || driverResult.error) return setMessage({ type: 'error', text: text.loadError })
@@ -121,9 +121,8 @@ export default function VehiclesPage({ language }) {
   async function submitVehicle(event) {
     event.preventDefault()
     if (!vehicleForm.owner_id || !vehicleForm.plate_number.trim() || !vehicleForm.vehicle_type.trim()) return setMessage({ type: 'error', text: text.required })
-    const { driver_id, add_driver, driver_name, driver_phone, driver_license, ...vehicleFields } = vehicleForm
     const payload = {
-      ...vehicleFields,
+      ...vehicleForm,
       capacity_tons: vehicleForm.capacity_tons || null,
       model_year: vehicleForm.model_year || null,
       permit_expiry: vehicleForm.permit_expiry || null,
@@ -131,18 +130,13 @@ export default function VehiclesPage({ language }) {
     const { data: vehicle, error } = await supabase.from('vehicles').insert(payload).select('id').single()
     if (error) return setMessage({ type: 'error', text: error.message })
     try { await uploadDocuments('vehicle', vehicle.id) } catch (error) { return setMessage({ type: 'error', text: `${text.saved} ${error.message}` }) }
-    if (driver_id) await supabase.from('drivers').update({ vehicle_id: vehicle.id, status: 'assigned' }).eq('id', driver_id)
-    if (add_driver && driver_name && driver_phone) {
-      const { error: driverError } = await supabase.from('drivers').insert({ owner_id: vehicleForm.owner_id, vehicle_id: vehicle.id, full_name: driver_name, phone: driver_phone, license_number: driver_license || null, status: 'assigned' })
-      if (driverError) return setMessage({ type: 'error', text: driverError.message })
-    }
     setVehicleForm(emptyVehicle); setDialog(null); setMessage({ type: 'success', text: text.saved }); loadRegistry()
   }
 
   async function submitDriver(event) {
     event.preventDefault()
     if (!driverForm.full_name.trim() || !driverForm.phone.trim()) return setMessage({ type: 'error', text: text.required })
-    const payload = { ...driverForm, owner_id: driverForm.owner_id || null, license_expiry: driverForm.license_expiry || null }
+    const payload = { ...driverForm, license_expiry: driverForm.license_expiry || null }
     const { data: driver, error } = await supabase.from('drivers').insert(payload).select('id').single()
     if (error) return setMessage({ type: 'error', text: error.message })
     try { await uploadDocuments('driver', driver.id) } catch (error) { return setMessage({ type: 'error', text: `${text.saved} ${error.message}` }) }
@@ -180,12 +174,12 @@ export default function VehiclesPage({ language }) {
       {loading ? <span className="spinner dark" /> : displayedVehicles.length ? displayedVehicles.map(vehicle => <article className="vehicle-row" key={vehicle.id}>
         <span className={`vehicle-mark ${vehicle.status}`}><Truck size={25} /></span>
         <div className="vehicle-main"><strong>{vehicle.plate_number}</strong><small>{vehicle.vehicle_type}{vehicle.capacity_tons ? ` · ${vehicle.capacity_tons} t` : ''}</small></div>
-        <div className="vehicle-owner"><UserRound size={15} /><span><strong>{vehicle.drivers?.[0]?.full_name || vehicle.vehicle_owners?.full_name}</strong><small>{vehicle.drivers?.[0] ? text.drivers : text.ownerCount}</small></span></div>
+        <div className="vehicle-owner"><UserRound size={15} /><span><strong>{vehicle.vehicle_owners?.full_name}</strong><small>{text.ownerCount}</small></span></div>
         <span className={`status-pill ${vehicle.status}`}>{text[vehicle.status]}</span>
       </article>) : <div className="registry-empty"><Truck size={34} /><strong>{text.noVehicles}</strong></div>}
     </div>
 
-    <div className="fleet-drivers"><h3><UserRound size={18} />{text.drivers}</h3>{drivers.length ? drivers.map(driver => <div className="driver-row" key={driver.id}><span className="driver-avatar"><UserRound size={18} /></span><span><strong>{driver.full_name}</strong><small>{driver.phone}</small></span><span>{driver.vehicles?.plate_number || text.available}</span></div>) : <div className="registry-empty"><UserRound size={30} /><strong>{text.noDrivers}</strong></div>}</div>
+    <div className="fleet-drivers"><h3><UserRound size={18} />{text.drivers}</h3>{drivers.length ? drivers.map(driver => <div className="driver-row" key={driver.id}><span className="driver-avatar"><UserRound size={18} /></span><span><strong>{driver.full_name}</strong><small>{driver.phone}</small></span><span>{driver.license_number || '—'}</span></div>) : <div className="registry-empty"><UserRound size={30} /><strong>{text.noDrivers}</strong></div>}</div>
 
     {dialog && <div className="registry-modal" role="dialog" aria-modal="true"><div className="registry-form-card">
       <div className="registry-form-head"><span className="module-card-icon green">{dialog === 'vehicle' ? <Truck size={27} /> : <UserRound size={27} />}</span><h2>{dialog === 'owner' ? text.owner : dialog === 'driver' ? text.driver : text.vehicle}</h2></div>
@@ -208,7 +202,6 @@ export default function VehiclesPage({ language }) {
         <Input label={text.nationalId} value={driverForm.national_id} onChange={value => setDriverForm({ ...driverForm, national_id: value })} />
         <Input label={text.license} value={driverForm.license_number} onChange={value => setDriverForm({ ...driverForm, license_number: value })} />
         <Input label={text.licenseExpiry} type="date" value={driverForm.license_expiry} onChange={value => setDriverForm({ ...driverForm, license_expiry: value })} />
-        <label><span>{text.selectOwner}</span><select value={driverForm.owner_id} onChange={event => setDriverForm({ ...driverForm, owner_id: event.target.value })}><option value="">—</option>{owners.map(owner => <option key={owner.id} value={owner.id}>{owner.full_name}</option>)}</select></label>
         <Input label={text.address} value={driverForm.address} onChange={value => setDriverForm({ ...driverForm, address: value })} wide />
         {documentFields('driver')}
         <FormActions text={text} onCancel={() => setDialog(null)} submit={text.saveDriver} />
@@ -225,9 +218,6 @@ export default function VehiclesPage({ language }) {
         <Input label={text.permit} value={vehicleForm.permit_number} onChange={value => setVehicleForm({ ...vehicleForm, permit_number: value })} />
         <Input label={text.permitExpiry} type="date" value={vehicleForm.permit_expiry} onChange={value => setVehicleForm({ ...vehicleForm, permit_expiry: value })} />
         <Input label={text.notes} value={vehicleForm.notes} onChange={value => setVehicleForm({ ...vehicleForm, notes: value })} wide />
-        <label className="wide"><span>{text.selectDriver}</span><select value={vehicleForm.driver_id} onChange={event => setVehicleForm({ ...vehicleForm, driver_id: event.target.value, add_driver: false })}><option value="">—</option>{drivers.filter(driver => !driver.vehicle_id).map(driver => <option key={driver.id} value={driver.id}>{driver.full_name} · {driver.phone}</option>)}</select></label>
-        <label className="wide registry-check"><input type="checkbox" checked={vehicleForm.add_driver} onChange={event => setVehicleForm({ ...vehicleForm, add_driver: event.target.checked, driver_id: '' })} /><span>{text.addDriverNow}</span></label>
-        {vehicleForm.add_driver && <><Input label={text.driverName} required value={vehicleForm.driver_name} onChange={value => setVehicleForm({ ...vehicleForm, driver_name: value })} /><Input label={text.phone} required value={vehicleForm.driver_phone} onChange={value => setVehicleForm({ ...vehicleForm, driver_phone: value })} /><Input label={text.license} value={vehicleForm.driver_license} onChange={value => setVehicleForm({ ...vehicleForm, driver_license: value })} /></>}
         {documentFields('vehicle')}
         <FormActions text={text} onCancel={() => setDialog(null)} submit={text.saveVehicle} />
       </form>}
