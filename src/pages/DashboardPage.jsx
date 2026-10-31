@@ -16,6 +16,7 @@ import { getTranslation } from '../lib/i18n'
 import { LanguageSwitch } from './LoginPage'
 import VehiclesPage from './VehiclesPage'
 import BranchesPage from './BranchesPage'
+import BookingsPage from './BookingsPage'
 
 const moduleDefinitions = [
   { id: 'branches', icon: Building2, titleKey: 'branches', pageKey: 'branchesPage', color: 'blue' },
@@ -76,12 +77,12 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
         <section className="module-page">
           <button className="module-back" onClick={closeModule}><Icon name="back" size={17} /> {text.presidentDashboard}</button>
           {activeModule.id === 'vehicles' && <h1 className="fleet-page-title">{text[activeModule.titleKey]}</h1>}
-          <div className={`module-shell ${activeModule.id === 'branches' ? 'branch-shell' : activeModule.id === 'vehicles' ? 'fleet-shell' : ''}`}>
-            {!['branches', 'vehicles'].includes(activeModule.id) && <div className="module-heading">
+          <div className={`module-shell ${activeModule.id === 'branches' ? 'branch-shell' : ['vehicles', 'bookings'].includes(activeModule.id) ? 'fleet-shell' : ''}`}>
+            {!['branches', 'vehicles', 'bookings'].includes(activeModule.id) && <div className="module-heading">
               <div className={`module-icon ${activeModule.color}`}><ActiveModuleIcon size={38} strokeWidth={1.8} /></div>
               <div><span className="section-label">{text.managementModule}</span><h1>{text[activeModule.titleKey]}</h1><p>{text[activeModule.pageKey]}</p></div>
             </div>}
-            {activeModule.id === 'branches' ? <BranchesPage language={language} /> : activeModule.id === 'vehicles' ? <VehiclesPage language={language} /> : <div className="empty-state">
+            {activeModule.id === 'branches' ? <BranchesPage language={language} /> : activeModule.id === 'vehicles' ? <VehiclesPage language={language} /> : activeModule.id === 'bookings' ? <BookingsPage language={language} /> : <div className="empty-state">
               <div className="empty-state-mark"><Icon name="layers" size={27} /></div>
               <h2>{text.readyTitle}</h2>
               <p>{text.readyText}</p>

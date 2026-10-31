@@ -419,6 +419,15 @@ html[dir='rtl'] .brand strong { font-family: 'DM Sans', sans-serif; letter-spaci
 .registry-check span { margin: 0 !important; }
 .fleet-drivers { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
 .fleet-drivers h3, .fleet-section-title { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 16px; font-weight: 800; }
+.booking-page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin: 12px 0 24px; }
+.booking-page-header h1 { margin: 0; font-size: 28px; font-weight: 800; }
+.booking-list { display: grid; gap: 14px; margin-top: 20px; }
+.booking-record { padding: 20px; border: 1px solid var(--line); border-radius: 14px; background: white; }
+.booking-record h3 { display: flex; align-items: center; gap: 8px; margin: 0; }
+.booking-record p { font-size: 14px; }
+.booking-totals { display: flex; flex-wrap: wrap; gap: 24px; padding: 14px 0; }
+.booking-totals span { display: grid; gap: 6px; font-size: 13px; }
+.booking-totals strong { font-size: 17px; }
 .fleet-page-title { margin: 12px 0 24px; font-size: 28px; font-weight: 800; }
 .module-shell.fleet-shell { background: transparent; border: 0; box-shadow: none; overflow: visible; }
 .fleet-shell .registry-page { padding: 0; background: transparent; }
