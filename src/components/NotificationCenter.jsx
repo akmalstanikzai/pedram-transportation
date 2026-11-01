@@ -1,5 +1,5 @@
 import { lazy, Suspense, useId, useState } from 'react'
-import { Bell } from 'lucide-react'
+import { Bell, CircleAlert } from 'lucide-react'
 import { visibleAlerts } from '../lib/workspaceTools'
 const NotificationDrawer = lazy(() => import('./NotificationDrawer'))
 
@@ -18,13 +18,30 @@ export default function NotificationCenter(props) {
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={open ? id : undefined}
-        title={t('Notifications', 'اعلان‌ها')}
+        title={
+          alerts.error
+            ? t(
+                'Notifications could not be loaded. Open to retry.',
+                'اعلان‌ها بارگیری نشد. برای کوشش مجدد باز کنید.',
+              )
+            : t('Notifications', 'اعلان‌ها')
+        }
+        aria-busy={alerts.loading}
         onClick={() => {
           setOpen(true)
           alerts.refresh()
         }}
       >
         <Bell size={20} />
+        {alerts.error && (
+          <span
+            className="notification-load-warning"
+            role="img"
+            aria-label={t('Notifications could not be loaded', 'اعلان‌ها بارگیری نشد')}
+          >
+            <CircleAlert size={13} />
+          </span>
+        )}
         {unread > 0 && (
           <span
             className="notification-count"

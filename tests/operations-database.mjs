@@ -622,6 +622,69 @@ check(
   ),
   'notification query respects branch isolation',
 )
+await admin(
+  `update public.bookings set status='confirmed',
+ departure_date=(now() at time zone 'Asia/Kabul')::date+3,
+ arrival_date=(now() at time zone 'Asia/Kabul')::date+4 where id=$1`,
+  [booked],
+)
+await actor(president)
+check(
+  (await db.query('select * from public.workspace_alerts(14)')).rows.some(
+    (row) => row.id === booked,
+  ),
+  'notification query includes confirmed upcoming departures',
+)
+await actor(outsider)
+check(
+  !(await db.query('select * from public.workspace_alerts(14)')).rows.some(
+    (row) => row.id === booked,
+  ),
+  'booking notifications respect branch isolation',
+)
+await admin(
+  `update public.bookings set departure_date=(now() at time zone 'Asia/Kabul')::date+20,
+ arrival_date=(now() at time zone 'Asia/Kabul')::date+21 where id=$1`,
+  [booked],
+)
+await actor(president)
+check(
+  !(await db.query('select * from public.workspace_alerts(14)')).rows.some(
+    (row) => row.id === booked,
+  ),
+  'departures outside the selected horizon do not create alerts',
+)
+check(
+  (await db.query('select * from public.workspace_alerts(30)')).rows.some(
+    (row) => row.id === booked,
+  ),
+  'extending the horizon includes later departures',
+)
+await admin("update public.bookings set status='completed' where id=$1", [booked])
+await actor(president)
+check(
+  !(await db.query('select * from public.workspace_alerts(30)')).rows.some(
+    (row) => row.id === booked,
+  ),
+  'completed bookings do not create upcoming-departure alerts',
+)
+await db.query('select public.set_fleet_document_expiry($1,null)', [alertDoc])
+check(
+  !(await db.query('select * from public.workspace_alerts(14)')).rows.some(
+    (row) => row.id === alertDoc,
+  ),
+  'uploaded documents without expiry do not create expiry alerts',
+)
+await db.query(
+  "select public.set_fleet_document_expiry($1,(now() at time zone 'Asia/Kabul')::date-3)",
+  [alertDoc],
+)
+check(
+  (await db.query('select * from public.workspace_alerts(14)')).rows.some(
+    (row) => row.id === alertDoc,
+  ),
+  'expired uploaded documents remain visible as alerts',
+)
 console.log(
   `${checks} operation checks passed: roles, branch isolation, disabled accounts, writes, bookings, lifecycle, retries, optimistic locking and storage.`,
 )

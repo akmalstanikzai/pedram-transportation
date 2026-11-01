@@ -66,6 +66,7 @@ export default function VehiclesPage({
   action,
   recordId,
   documentId,
+  onAlertsChanged,
 }) {
   const t = (en, fa) => (language === 'fa' ? fa : en)
   const kind = kinds[view]
@@ -139,6 +140,7 @@ export default function VehiclesPage({
   async function committed() {
     setEditor(null)
     setSaved(true)
+    onAlertsChanged?.()
     await refresh()
   }
   const title =
@@ -393,6 +395,7 @@ export default function VehiclesPage({
           record={documents}
           language={language}
           onClose={() => setDocuments(null)}
+          onChanged={onAlertsChanged}
         />
       )}
     </>
@@ -710,7 +713,7 @@ function FleetEditor({
   )
 }
 
-function Documents({ kind, record, language, onClose, highlightId }) {
+function Documents({ kind, record, language, onClose, highlightId, onChanged }) {
   const t = (en, fa) => (language === 'fa' ? fa : en)
   const [items, setItems] = useState([])
   const [error, setError] = useState(null)
@@ -760,6 +763,7 @@ function Documents({ kind, record, language, onClose, highlightId }) {
     } catch (failure) {
       setError(failure)
     } finally {
+      onChanged?.()
       try {
         setItems(await load())
       } catch (failure) {
@@ -781,6 +785,7 @@ function Documents({ kind, record, language, onClose, highlightId }) {
         .remove([item.storage_path])
       if (failure) throw failure
       await rpc('remove_fleet_document', { p_id: item.id, p_finish: true })
+      onChanged?.()
       setItems(await load())
       setRemoving(null)
     } catch (failure) {
@@ -818,6 +823,7 @@ function Documents({ kind, record, language, onClose, highlightId }) {
         p_id: editingExpiry.id,
         p_expires: editingExpiry.date || null,
       })
+      onChanged?.()
       setItems(await load())
       setEditingExpiry(null)
     } catch (failure) {

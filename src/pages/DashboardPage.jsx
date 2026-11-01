@@ -470,6 +470,7 @@ export default function DashboardPage({
                 action={action}
                 recordId={recordId}
                 documentId={params.get('document')}
+                onAlertsChanged={alerts.refresh}
               />
             ) : moduleId === 'bookings' ? (
               <BookingsPage
@@ -478,6 +479,7 @@ export default function DashboardPage({
                 action={action}
                 recordId={recordId}
                 traderId={params.get('trader')}
+                onAlertsChanged={alerts.refresh}
               />
             ) : moduleId === 'cashbook' ? (
               <CashbookPage

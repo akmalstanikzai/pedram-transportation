@@ -31,6 +31,7 @@ export default function NotificationDrawer({
     }
   }, [])
   const items = visibleAlerts(alerts.items, preferences, { archived: tab === 'archived', category })
+  const alertsDisabled = !preferences.documentAlerts && !preferences.bookingAlerts
   function change(patch) {
     try {
       onPreferencesChange(patch)
@@ -139,6 +140,22 @@ export default function NotificationDrawer({
             </button>
           ))}
         </div>
+        <div className="notification-view-options">
+          <span>
+            {t(
+              `Next ${preferences.notificationDays} days + expired documents`,
+              `${preferences.notificationDays} روز آینده و اسناد منقضی‌شده`,
+            )}
+          </span>
+          <label>
+            <input
+              type="checkbox"
+              checked={preferences.unreadOnly}
+              onChange={(event) => change({ unreadOnly: event.target.checked })}
+            />
+            {t('Unread only', 'فقط خوانده‌نشده')}
+          </label>
+        </div>
         <Notice error={error || alerts.error} language={language} />
         {alerts.loading ? (
           <Loading language={language} />
@@ -153,13 +170,33 @@ export default function NotificationDrawer({
             title={
               tab === 'archived'
                 ? t('No archived notifications', 'اعلان بایگانی‌شده موجود نیست')
-                : t('You’re all caught up', 'تمام اعلان‌ها بررسی شده‌اند')
+                : alertsDisabled
+                  ? t('Alerts are turned off', 'اعلان‌ها غیرفعال‌اند')
+                  : preferences.unreadOnly
+                    ? t('No unread notifications', 'اعلان خوانده‌نشده موجود نیست')
+                    : t('No matching notifications', 'اعلان مطابق موجود نیست')
             }
-            description={t(
-              'No alerts match this folder and your notification preferences.',
-              'اعلانی مطابق این پوشه و تنظیمات شما موجود نیست.',
-            )}
-          />
+            description={
+              alertsDisabled
+                ? t(
+                    'Enable document or booking alerts in Notification Settings.',
+                    'اعلان اسناد یا بوکینگ را در تنظیمات اعلان‌ها فعال کنید.',
+                  )
+                : preferences.unreadOnly
+                  ? t(
+                      'Turn off Unread only to include notifications you have already read.',
+                      'برای دیدن اعلان‌های خوانده‌شده، گزینه فقط خوانده‌نشده را غیرفعال کنید.',
+                    )
+                  : t(
+                      'Alerts appear for scheduled booking departures and expired or soon-to-expire uploaded documents. Registering a vehicle or driver alone does not create an alert.',
+                      'اعلان‌ها برای حرکت بوکینگ‌ها و اسناد آپلودشده منقضی یا نزدیک به انقضا نمایش داده می‌شوند. ثبت واسطه یا راننده به تنهایی اعلان ایجاد نمی‌کند.',
+                    )
+            }
+          >
+            <a className="text-button" href="#/settings/notifications" onClick={onClose}>
+              {t('Notification Settings', 'تنظیمات اعلان‌ها')}
+            </a>
+          </EmptyState>
         ) : (
           <NotificationItems
             items={items}

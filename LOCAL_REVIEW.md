@@ -26,6 +26,12 @@ state are saved per user in this browser. The bell beside the profile opens a
 notification panel opposite the sidebar (right in English, left in Dari), with Inbox/Archived folders, document/booking
 filters, read/archive/restore actions and a Notification Settings link.
 No email or push subscriptions are added.
+Alerts cover scheduled departures of active bookings within the selected horizon,
+plus expired or soon-expiring uploaded documents with an expiry date. Registering
+a vehicle, owner or driver alone does not create an alert. The bell refreshes after
+booking/document changes, on returning to the tab and every minute while visible.
+Empty views identify the date range, disabled alerts and the unread-only filter;
+loading failures show a warning rather than silently appearing as no alerts.
 Username-based accounts keep their administrator-managed username and can change
 their password; accounts with real email addresses can request an email change.
 
@@ -157,3 +163,5 @@ Browser checks use an isolated browser context with all Supabase requests interc
 by test fixtures. They verify frontend behavior, not the deployed Auth/Storage/Edge
 services. Live integration and true multi-client PostgreSQL contention testing remain
 release checks. No live records were created, edited or deleted during this work.
+Notification counts in screenshots from these isolated browser checks belong to
+the fixtures and do not reflect the signed-in user's real Supabase records.

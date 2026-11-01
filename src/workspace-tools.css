@@ -2,12 +2,12 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 0 0 26px;
+  padding: 0 0 18px;
 }
 .sidebar-top .sidebar-brand {
   flex: 1;
   min-width: 0;
-  padding: 0 0 0 8px;
+  padding: 0;
 }
 .sidebar-collapse-button {
   color: #d6e8dc;
@@ -72,7 +72,7 @@
   border: 0;
   outline: none !important;
   font: inherit;
-  font-size: 12px;
+  font-size: 14px;
   color: #374151;
   padding: 0 10px;
 }
@@ -93,7 +93,7 @@
   background: #f3f4f6;
   color: #4b5563;
   font: inherit;
-  font-size: 11px;
+  font-size: 13px;
   cursor: pointer;
 }
 html[dir='rtl'] .global-search-field select {
@@ -126,7 +126,7 @@ html[dir='rtl'] .global-search-field select {
   padding: 13px 16px;
   border-bottom: 1px solid #f3f4f6;
   color: #4b5563;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.07em;
   display: flex;
@@ -141,7 +141,7 @@ html[dir='rtl'] .global-search-field select {
 .search-error {
   margin: 0;
   padding: 19px 16px;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.8;
   color: #4b5563;
 }
@@ -167,7 +167,7 @@ html[dir='rtl'] .global-search-field select {
   background: #f3f4f6;
 }
 .search-result-category {
-  font-size: 9px;
+  font-size: 11px;
   color: #4b5563;
 }
 .search-result-text {
@@ -175,7 +175,7 @@ html[dir='rtl'] .global-search-field select {
 }
 .search-result-text strong {
   display: block;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   color: #374151;
   overflow: hidden;
@@ -185,7 +185,7 @@ html[dir='rtl'] .global-search-field select {
 .search-result-text small {
   display: block;
   margin-top: 4px;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.6;
   color: #6b7280;
   overflow-wrap: anywhere;
@@ -193,7 +193,7 @@ html[dir='rtl'] .global-search-field select {
 .global-search-results .search-limit {
   border-top: 1px solid #e5e7eb;
   padding: 10px 16px;
-  font-size: 10px;
+  font-size: 12px;
 }
 .profile-menu {
   position: relative;
@@ -222,7 +222,7 @@ html[dir='rtl'] .global-search-field select {
   display: block;
 }
 .profile-trigger-name strong {
-  font-size: 11px;
+  font-size: 13px;
   max-width: 135px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -230,7 +230,7 @@ html[dir='rtl'] .global-search-field select {
 }
 .profile-trigger-name small {
   margin-top: 4px;
-  font-size: 9px;
+  font-size: 11px;
   color: #6b7280;
 }
 .profile-dropdown {
@@ -268,11 +268,11 @@ html[dir='rtl'] .global-search-field select {
   white-space: nowrap;
 }
 .profile-dropdown-summary strong {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
 }
 .profile-dropdown-summary small {
-  font-size: 10px;
+  font-size: 12px;
   color: #6b7280;
   margin-top: 4px;
 }
@@ -286,7 +286,7 @@ html[dir='rtl'] .global-search-field select {
   color: inherit;
   padding: 12px 16px;
   font: inherit;
-  font-size: 12px;
+  font-size: 14px;
   text-align: start;
 }
 .profile-dropdown [role='menuitem']:hover,
@@ -317,7 +317,7 @@ html[dir='rtl'] .global-search-field select {
   padding: 13px 14px;
   border-radius: 7px;
   color: #4b5563;
-  font-size: 12px;
+  font-size: 14px;
 }
 .settings-tabs a:hover,
 .settings-tabs a.active {
@@ -351,7 +351,7 @@ html[dir='rtl'] .global-search-field select {
 }
 .settings-heading p {
   margin: 0 0 22px;
-  font-size: 12px;
+  font-size: 14px;
   color: #4b5563;
   line-height: 1.8;
 }
@@ -381,7 +381,7 @@ html[dir='rtl'] .global-search-field select {
 .account-summary small {
   margin-top: 5px;
   color: #6b7280;
-  font-size: 11px;
+  font-size: 13px;
   overflow-wrap: anywhere;
 }
 .account-fact {
@@ -394,11 +394,11 @@ html[dir='rtl'] .global-search-field select {
 }
 .account-fact > span {
   color: #6b7280;
-  font-size: 11px;
+  font-size: 13px;
   margin-bottom: 8px;
 }
 .account-fact > strong {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
   overflow-wrap: anywhere;
 }
@@ -444,7 +444,7 @@ html[dir='rtl'] .global-search-field select {
   outline-offset: 3px;
 }
 .theme-choice strong {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
 }
 .theme-choice > svg {
@@ -514,12 +514,12 @@ html[dir='rtl'] .global-search-field select {
   display: block;
 }
 .settings-switch strong {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
 }
 .settings-switch small {
   margin-top: 7px;
-  font-size: 11px;
+  font-size: 13px;
   color: #6b7280;
   line-height: 1.7;
 }
@@ -584,7 +584,7 @@ html[dir='rtl'] .settings-switch input:checked::before {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 13px;
   color: #6b7280;
 }
 .notification-unread input {
@@ -607,26 +607,26 @@ html[dir='rtl'] .settings-switch input:checked::before {
   min-width: 0;
 }
 .notification-item strong {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   overflow-wrap: anywhere;
 }
 .notification-item p {
   margin: 7px 0 0;
   color: #4b5563;
-  font-size: 11px;
+  font-size: 13px;
 }
 .notification-item small {
   display: block;
   margin-top: 7px;
-  font-size: 10px;
+  font-size: 12px;
   color: #6b7280;
 }
 .notification-item.read {
   opacity: 0.65;
 }
 .table-filter-note {
-  font-size: 12px;
+  font-size: 14px;
   color: #4b5563;
   margin: 0 0 18px;
 }
@@ -911,7 +911,7 @@ html[dir='rtl'] .settings-switch input:checked::before {
     gap: 5px;
   }
   .settings-tabs a {
-    font-size: 10px;
+    font-size: 12px;
     padding: 10px;
     flex: 1 0 40%;
   }

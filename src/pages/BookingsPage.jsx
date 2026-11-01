@@ -53,7 +53,14 @@ const statusLabel = (status, t) =>
     cancelled: t('Cancelled', 'لغوشده'),
   })[status] || status
 
-export default function BookingsPage({ language, profile, action, recordId, traderId }) {
+export default function BookingsPage({
+  language,
+  profile,
+  action,
+  recordId,
+  traderId,
+  onAlertsChanged,
+}) {
   const t = (en, fa) => (language === 'fa' ? fa : en)
   const writable = canOperate(profile.role)
   const [data, setData] = useState({
@@ -129,6 +136,7 @@ export default function BookingsPage({ language, profile, action, recordId, trad
     setTransition(null)
     setDetails(null)
     setSaved(true)
+    onAlertsChanged?.()
     await refresh()
   }
   const filtered = data.bookings.filter(
