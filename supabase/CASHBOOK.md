@@ -2,7 +2,7 @@
 
 Apply `202611010002_simplify_cashbook.sql` after `202611010001_branch_cashbooks.sql`. The forward migration removes the old transfer/setup API and preserves all existing entries and balances.
 
-The page has only Money In and Money Out, with a single list and totals underneath. The President selects All accounts, Admin account, or a branch. Branch managers see only their own branch. Currency totals remain separate.
+The page has Money In / آمد in a table on the right and Money Out / رفت in a table on the left. Large, bold headings and a central divider separate them. Each table shows date, description, amount and its own total; the balance appears underneath both tables. On smaller screens they stack vertically with a horizontal divider. The President selects All accounts, Admin account, or a branch. Branch managers see only their own branch. Currency totals remain separate.
 
 Click Money In or Money Out. Enter the date, name/description, and amount; the President can choose the receiving/recording account. Accounts start automatically at zero. No opening-balance setup, bank/cash selection, transfer, reversal, or booking-payment setup is required. Negative balances are allowed and shown as deficits.
 
