@@ -28,7 +28,7 @@ export default function CashbookPage({ language, profile }) {
     void Promise.resolve().then(load).catch(()=>{if(active)setError(language==='fa'?'روزنامچه بارگیری نشد. اتصال و تنظیمات دیتابیس را بررسی کنید.':'Could not load the cashbook. Check the connection and database setup.')}).finally(()=>{if(active)setLoading(false)})
     return()=>{active=false}
   },[load,language])
-  const money=value=>`${(value/100).toLocaleString(language==='fa'?'fa-AF':'en',{minimumFractionDigits:2,maximumFractionDigits:2})} ${currency}`
+  const money=value=>`${(value/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} ${currency}`
   const name=id=>id?data.branches.find(b=>b.id===id)?.name||'—':t('Admin account','حساب مرکزی')
   const ledger=simpleLedger(data.accounts,data.entries,scope,currency)
   const accountOptions=<>{president&&<option value="admin">{t('Admin account','حساب مرکزی')}</option>}{data.branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</>

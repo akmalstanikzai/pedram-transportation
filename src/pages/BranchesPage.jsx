@@ -23,7 +23,7 @@ const labels = {
     managerPhone: 'شماره تماس مدیر', nationalId: 'نمبر تذکره', managerAddress: 'آدرس خانه',
     login: 'ایمیل یا نام کاربری', password: 'رمز عبور', confirm: 'تکرار رمز عبور', create: 'ایجاد شعبه و حساب',
     cancel: 'انصراف', required: 'خانه‌های ضروری را تکمیل کنید.', mismatch: 'رمزهای عبور یکسان نیست.',
-    shortPassword: 'رمز عبور باید حداقل ۸ حرف داشته باشد.', success: 'شعبه و حساب مدیر ایجاد شد.',
+    shortPassword: 'رمز عبور باید حداقل 8 حرف داشته باشد.', success: 'شعبه و حساب مدیر ایجاد شد.',
     loadError: 'دیتابیس شعبات آماده نیست. تغییرات جدید Supabase را اجرا و نشر کنید.', total: 'شعبات', managers: 'مدیران',
   },
 }

@@ -2,6 +2,8 @@
 
 A bilingual English/Dari management application for Pedram Transportation Company, built with React, Vite, Supabase, and Lucide icons.
 
+Switching language translates labels and changes layout direction; displayed numbers continue to use English digits (0–9), including money amounts and totals.
+
 Project documentation updated: **1 November 2026**. This describes the current source code; live Supabase must be updated separately with the corresponding migrations and Edge Function.
 
 ## Current features

@@ -75,7 +75,7 @@ export default function VehiclesPage({ language }) {
 
   function documentFields(kind) {
     const labels = kind === 'vehicle'
-      ? [['photos', 'Vehicle pictures (2)', 'عکس‌های موتر (۲ قطعه)'], ['permit', 'Road permit', 'جواز سیر'], ['card', 'Vehicle card', 'کارت'], ['booklet', 'Vehicle booklet', 'کتابچه'], ['international', 'International certificate', 'سرتفیکت بین المللی']]
+      ? [['photos', 'Vehicle pictures (2)', 'عکس‌های موتر (2 قطعه)'], ['permit', 'Road permit', 'جواز سیر'], ['card', 'Vehicle card', 'کارت'], ['booklet', 'Vehicle booklet', 'کتابچه'], ['international', 'International certificate', 'سرتفیکت بین المللی']]
       : kind === 'owner' ? [['identity', 'CNIC / Tazkira scan', 'اسکن تذکره']]
         : [['identity', 'CNIC / Tazkira scan', 'اسکن تذکره'], ['licence', 'Driving licence', 'اسکن لایسنس'], ['health', 'Health card', 'کارت صحت'], ['contract', 'Contract', 'قرارداد خط']]
     return labels.map(([key, en, fa]) => <label key={key}><span>{language === 'fa' ? fa : en}</span><input type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.heic,.heif,.tif,.tiff" onChange={event => setDocuments(current => ({ ...current, [key]: Array.from(event.target.files || []) }))} /></label>)
