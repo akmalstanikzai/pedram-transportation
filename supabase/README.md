@@ -1,5 +1,13 @@
 # Pedram Transportation Supabase setup
 
+Fleet/booking/notification database-update errors: follow
+[FIX_DATABASE_SETUP.md](FIX_DATABASE_SETUP.md) and run the read-only
+[CHECK_SETUP.sql](CHECK_SETUP.sql) in the SQL Editor to identify pending updates.
+
+For the pending operations hardening release, read [LOCAL_REVIEW.md](../LOCAL_REVIEW.md)
+before applying `202611010003_operations_security.sql`. Apply only pending migrations.
+The updated branch creation Edge Function and frontend must accompany that migration.
+
 1. Apply every migration in filename order, or run `supabase db push` from a linked Supabase CLI project.
 2. Deploy the current branch creation function after applying migrations:
    `supabase functions deploy create-branch-with-manager --project-ref YOUR_PROJECT_REF --use-api`

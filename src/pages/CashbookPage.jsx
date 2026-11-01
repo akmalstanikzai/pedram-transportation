@@ -3,7 +3,7 @@ import { ArrowDownLeft, ArrowUpRight, RefreshCw, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { allRows, cents, currencies, kabulToday, simpleLedger } from '../lib/cashbook'
 
-export default function CashbookPage({ language, profile }) {
+export default function CashbookPage({ language, profile, initialScope, initialCurrency, highlightEntry }) {
   const t=(en,fa)=>language==='fa'?fa:en
   const president=profile?.role==='president'
   const [data,setData]=useState({branches:[],accounts:[],entries:[]})
@@ -11,8 +11,8 @@ export default function CashbookPage({ language, profile }) {
   const [loaded,setLoaded]=useState(false)
   const [error,setError]=useState('')
   const [notice,setNotice]=useState('')
-  const [scope,setScope]=useState(president?'all':profile?.branch_id || '')
-  const [currency,setCurrency]=useState('AFN')
+  const [scope,setScope]=useState(president?(initialScope || 'all'):profile?.branch_id || '')
+  const [currency,setCurrency]=useState(currencies.includes(initialCurrency)?initialCurrency:'AFN')
   const [direction,setDirection]=useState('')
   const [form,setForm]=useState({scope:'',amount:'',description:'',date:''})
   const [request,setRequest]=useState('')
@@ -28,6 +28,11 @@ export default function CashbookPage({ language, profile }) {
     void Promise.resolve().then(load).catch(()=>{if(active)setError(language==='fa'?'روزنامچه بارگیری نشد. اتصال و تنظیمات دیتابیس را بررسی کنید.':'Could not load the cashbook. Check the connection and database setup.')}).finally(()=>{if(active)setLoading(false)})
     return()=>{active=false}
   },[load,language])
+  useEffect(()=>{
+    if(!loaded||!highlightEntry)return undefined
+    const frame=requestAnimationFrame(()=>document.getElementById(`cashbook-entry-${highlightEntry}`)?.scrollIntoView({block:'center'}))
+    return()=>cancelAnimationFrame(frame)
+  },[loaded,highlightEntry])
   const money=value=>`${(value/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} ${currency}`
   const name=id=>id?data.branches.find(b=>b.id===id)?.name||'—':t('Admin account','حساب مرکزی')
   const ledger=simpleLedger(data.accounts,data.entries,scope,currency)
@@ -79,7 +84,7 @@ export default function CashbookPage({ language, profile }) {
         return <section key={flow} className={`cashbook-ledger-side ${incoming?'ledger-in':'ledger-out'}`} dir={language==='fa'?'rtl':'ltr'} aria-label={title}>
           <h2><Icon size={21}/>{title}</h2>
           <div className="simple-cashbook-list"><table><thead><tr><th scope="col">{t('Date','تاریخ')}</th><th scope="col">{t('Description','شرح معامله')}</th><th scope="col">{t('Amount','مبلغ')}</th></tr></thead><tbody>
-            {rows.map(e=><tr key={e.id}><td>{e.entry_date}</td><td>{e.opening?t('Earlier balance','موجودی قبلی'):e.description}{president&&<small className="cashbook-ledger-account">{name(e.branch_id)}</small>}</td><td className={incoming?'simple-money-in':'simple-money-out'}>{money(cents(e.amount))}</td></tr>)}
+            {rows.map(e=><tr key={e.id} id={`cashbook-entry-${e.id}`} className={highlightEntry===e.id?'search-highlight':undefined}><td>{e.entry_date}</td><td>{e.opening?t('Earlier balance','موجودی قبلی'):e.description}{president&&<small className="cashbook-ledger-account">{name(e.branch_id)}</small>}</td><td className={incoming?'simple-money-in':'simple-money-out'}>{money(cents(e.amount))}</td></tr>)}
             {!rows.length&&<tr><td colSpan={3} className="simple-cashbook-empty">{incoming?t('No money received yet.','هنوز دریافتی ثبت نشده است.'):t('No money paid yet.','هنوز پرداختی ثبت نشده است.')}</td></tr>}
           </tbody><tfoot><tr><th scope="row" colSpan={2}>{incoming?t('Total received','مجموع آمد'):t('Total paid','مجموع رفت')}</th><td className={incoming?'simple-money-in':'simple-money-out'}>{money(incoming?ledger.incoming:ledger.outgoing)}</td></tr></tfoot></table></div>
         </section>

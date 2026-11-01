@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
+    "test": "node --test tests/operations.test.js tests/branch-function.test.js tests/cashbook.test.js tests/workspace-tools.test.js tests/fleet-documents.test.js",
+    "test:database": "node tests/operations-database.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

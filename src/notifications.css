@@ -1,0 +1,290 @@
+.notification-bell {
+  position: relative;
+  color: #4b5563;
+}
+.notification-count {
+  position: absolute;
+  top: -3px;
+  inset-inline-end: -5px;
+  min-width: 17px;
+  height: 17px;
+  padding-inline: 4px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  border: 2px solid #fff;
+}
+.notification-drawer {
+  position: fixed;
+  inset-block: 0;
+  inset-inline: auto 0;
+  margin: 0;
+  width: min(500px, 100vw);
+  height: 100dvh;
+  max-height: 100dvh;
+  max-width: 100vw;
+  padding: 0;
+  border: 0;
+  border-inline-start: 1px solid var(--border);
+  border-radius: 0;
+  background: #fff;
+  color: #1f2937;
+  box-shadow: -15px 0 50px #11182720;
+}
+html[dir='rtl'] .notification-drawer {
+  box-shadow: 15px 0 50px #11182720;
+}
+.notification-drawer[open] {
+  display: flex;
+  flex-direction: column;
+}
+.notification-drawer::backdrop {
+  background: #11182766;
+}
+.notification-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 20px 12px;
+}
+.notification-drawer h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+.notification-drawer-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.notification-options-menu {
+  position: relative;
+}
+.notification-options-menu > a {
+  position: absolute;
+  inset-inline-end: 0;
+  top: calc(100% + 6px);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-width: 230px;
+  padding: 16px;
+  background: #fff;
+  color: #374151;
+  font-size: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 6px 24px #1118271a;
+}
+.notification-options-menu > a:hover {
+  background: #f9fafb;
+}
+.notification-tabs {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+  padding-inline: 20px;
+  gap: 24px;
+}
+.notification-tabs button {
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  color: #6b7280;
+  padding: 14px 4px;
+  font-size: 13px;
+}
+.notification-tabs button.active {
+  color: #1d4ed8;
+  border-bottom-color: #2563eb;
+  font-weight: 600;
+}
+.notification-drawer-body {
+  padding: 18px 20px 24px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.notification-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.notification-filters button {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 18px;
+  padding: 7px 12px;
+  color: #4b5563;
+  font-size: 11px;
+}
+.notification-filters button[aria-pressed='true'] {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+.notification-type-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+}
+.notification-item[data-severity='danger'] .notification-type-icon {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+.notification-item[data-severity='warning'] .notification-type-icon {
+  background: #fffbeb;
+  color: #92400e;
+}
+.notification-item[data-severity='info'] .notification-type-icon {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.notification-item[data-severity='danger'] .notification-event {
+  color: #b91c1c;
+}
+.notification-item[data-severity='warning'] .notification-event {
+  color: #92400e;
+}
+.notification-item[data-severity='info'] .notification-event {
+  color: #1d4ed8;
+}
+.notification-item.read {
+  opacity: 1;
+}
+.notification-item.read strong {
+  font-weight: 400;
+}
+.notification-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 9px;
+}
+.notification-item-actions .text-button {
+  padding-inline: 0;
+  margin-inline-end: 12px;
+  color: #4b5563;
+}
+.notification-storage-note {
+  font-size: 10px;
+  color: #6b7280;
+  line-height: 1.8;
+  margin-top: 24px;
+}
+.notification-retry {
+  display: flex;
+  justify-content: center;
+  padding-block: 20px;
+}
+.workspace .registry-notice.error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+.workspace .registry-notice.success {
+  background: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+.workspace .registry-notice svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.workspace .status-badge.confirmed {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.workspace .status-badge:is(.in_transit, .on_trip, .assigned) {
+  background: #eef2ff;
+  color: #4338ca;
+}
+.workspace .status-badge:is(.available, .completed) {
+  background: #f0fdf4;
+  color: #166534;
+}
+.workspace .status-badge:is(.cancelled, .inactive) {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+.workspace .status-badge.archived {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+.workspace .status-badge.under_repair {
+  background: #fffbeb;
+  color: #92400e;
+}
+.workspace .settings-switch input:checked {
+  background: #2563eb;
+}
+.workspace .theme-preview i:first-child {
+  background: #173f33;
+}
+.workspace .search-highlight {
+  background: #eff6ff;
+  outline-color: #60a5fa;
+}
+.workspace[data-theme='dark'] .notification-drawer {
+  background: #111827;
+  color: #f3f4f6;
+}
+.workspace[data-theme='dark'] :is(.notification-options-menu > a, .notification-filters button) {
+  background: #1f2937;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+.workspace[data-theme='dark'] :is(.notification-tabs, .notification-item) {
+  border-color: #374151;
+}
+.workspace[data-theme='dark'] .notification-filters button[aria-pressed='true'] {
+  color: #bfdbfe;
+  background: #1e3a5f;
+  border-color: #60a5fa;
+}
+.workspace[data-theme='dark'] .notification-item[data-severity='danger'] .notification-event {
+  color: #fca5a5;
+}
+.workspace[data-theme='dark'] .notification-item[data-severity='warning'] .notification-event {
+  color: #fcd34d;
+}
+.workspace[data-theme='dark'] .notification-item[data-severity='info'] .notification-event {
+  color: #93c5fd;
+}
+.workspace[data-theme='dark'] .registry-notice.error {
+  background: #452023;
+  color: #fecaca;
+  border-color: #7f1d1d;
+}
+.workspace[data-theme='dark'] .registry-notice.success {
+  background: #163b28;
+  color: #bbf7d0;
+  border-color: #166534;
+}
+.workspace[data-theme='dark'] .notification-bell {
+  color: #d1d5db;
+}
+.workspace[data-theme='dark'] .notification-count {
+  border-color: #111827;
+}
+.workspace[data-theme='dark'] .notification-item-actions .text-button {
+  color: #d1d5db;
+}
+@media (max-width: 760px) {
+  .notification-drawer-header {
+    padding-inline: 16px;
+  }
+  .notification-drawer-body {
+    padding-inline: 16px;
+  }
+}
