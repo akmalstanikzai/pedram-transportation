@@ -5,6 +5,7 @@ import {
   FileBarChart,
   HandCoins,
   MapPinned,
+  BookOpen,
   ShieldCheck,
   Truck,
   WalletCards,
@@ -16,8 +17,10 @@ import { LanguageSwitch } from './LoginPage'
 import VehiclesPage from './VehiclesPage'
 import BranchesPage from './BranchesPage'
 import BookingsPage from './BookingsPage'
+import CashbookPage from './CashbookPage'
 
 const moduleDefinitions = [
+  { id: 'cashbook', icon: BookOpen, titleKey: 'cashbook', color: 'green' },
   { id: 'branches', icon: Building2, titleKey: 'branches', pageKey: 'branchesPage', color: 'blue' },
   { id: 'vehicles', icon: Truck, titleKey: 'vehicles', pageKey: 'vehiclesPage', color: 'green' },
   { id: 'bookings', icon: ClipboardList, titleKey: 'bookings', pageKey: 'bookingsPage', color: 'red' },
@@ -71,16 +74,16 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
         </div>
       </header>
 
-      {activeModule && role === 'president' ? (
+      {activeModule && (role === 'president' || (role === 'branch_manager' && activeModule.id === 'cashbook')) ? (
         <section className="module-page">
-          <button className="module-back" onClick={closeModule}><Icon name="back" size={17} /> {text.presidentDashboard}</button>
+          <button className="module-back" onClick={closeModule}><Icon name="back" size={17} /> {role === 'president' ? text.presidentDashboard : text.roles.branch_manager}</button>
           {activeModule.id === 'vehicles' && <h1 className="fleet-page-title">{text[activeModule.titleKey]}</h1>}
-          <div className={`module-shell ${activeModule.id === 'branches' ? 'branch-shell' : ['vehicles', 'bookings'].includes(activeModule.id) ? 'fleet-shell' : ''}`}>
-            {!['branches', 'vehicles', 'bookings'].includes(activeModule.id) && <div className="module-heading">
+          <div className={`module-shell ${activeModule.id === 'branches' ? 'branch-shell' : ['vehicles', 'bookings', 'cashbook'].includes(activeModule.id) ? 'fleet-shell' : ''}`}>
+            {!['branches', 'vehicles', 'bookings', 'cashbook'].includes(activeModule.id) && <div className="module-heading">
               <div className={`module-icon ${activeModule.color}`}><ActiveModuleIcon size={38} strokeWidth={1.8} /></div>
               <div><span className="section-label">{text.managementModule}</span><h1>{text[activeModule.titleKey]}</h1><p>{text[activeModule.pageKey]}</p></div>
             </div>}
-            {activeModule.id === 'branches' ? <BranchesPage language={language} /> : activeModule.id === 'vehicles' ? <VehiclesPage language={language} /> : activeModule.id === 'bookings' ? <BookingsPage language={language} /> : <div className="empty-state">
+            {activeModule.id === 'cashbook' ? <CashbookPage language={language} profile={profile} /> : activeModule.id === 'branches' ? <BranchesPage language={language} /> : activeModule.id === 'vehicles' ? <VehiclesPage language={language} /> : activeModule.id === 'bookings' ? <BookingsPage language={language} /> : <div className="empty-state">
               <div className="empty-state-mark"><Icon name="layers" size={27} /></div>
               <h2>{text.readyTitle}</h2>
               <p>{text.readyText}</p>
@@ -89,9 +92,9 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
         </section>
       ) : (
         <section className="dashboard-content">
-          {role === 'president' ? (
+          {['president', 'branch_manager'].includes(role) ? (
             <div className="module-grid">
-              {moduleDefinitions.map(module => {
+              {moduleDefinitions.filter(module => role === 'president' || module.id === 'cashbook').map(module => {
                 const ModuleIcon = module.icon
                 return (
                   <button className="module-card" key={module.id} onClick={() => openModule(module)}>

@@ -34,7 +34,7 @@ export default function App() {
 
   useEffect(() => {
     if (!session || !supabase) return
-    supabase.from('profiles').select('full_name, role').eq('id', session.user.id).single().then(({ data }) => setProfile(data))
+    supabase.from('profiles').select('full_name, role, branch_id').eq('id', session.user.id).single().then(({ data }) => setProfile(data))
   }, [session])
 
   return useMemo(() => {
