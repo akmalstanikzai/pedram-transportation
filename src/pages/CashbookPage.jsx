@@ -60,21 +60,30 @@ export default function CashbookPage({ language, profile }) {
     <div className="simple-cashbook-toolbar">
       {president?<label><span>{t('Account','حساب')}</span><select value={scope} disabled={busy||!!direction} onChange={e=>setScope(e.target.value)}><option value="all">{t('All accounts','تمام حساب‌ها')}</option>{accountOptions}</select></label>:<strong>{name(profile?.branch_id)}</strong>}
       <label><span>{t('Currency','واحد پول')}</span><select value={currency} disabled={busy||!!direction} onChange={e=>setCurrency(e.target.value)}>{currencies.map(c=><option key={c}>{c}</option>)}</select></label>
-      <div className="simple-cashbook-buttons"><button className="cashbook-in" disabled={loading||!loaded||busy||!!direction||(!president&&!profile?.branch_id)} onClick={()=>start('in')}><ArrowDownLeft size={20}/>{t('Money In','دریافت پول')}</button><button className="cashbook-out" disabled={loading||!loaded||busy||!!direction||(!president&&!profile?.branch_id)} onClick={()=>start('out')}><ArrowUpRight size={20}/>{t('Money Out','پرداخت پول')}</button></div>
+      <div className="simple-cashbook-buttons"><button className="cashbook-in" disabled={loading||!loaded||busy||!!direction||(!president&&!profile?.branch_id)} onClick={()=>start('in')}><ArrowDownLeft size={20}/>{t('Money In','آمد')}</button><button className="cashbook-out" disabled={loading||!loaded||busy||!!direction||(!president&&!profile?.branch_id)} onClick={()=>start('out')}><ArrowUpRight size={20}/>{t('Money Out','رفت')}</button></div>
     </div>
     {notice&&<p className="registry-notice success" role="status">{notice}</p>}
     {error&&<p className="registry-notice error" role="alert">{error}</p>}
-    {direction&&<form className="simple-cashbook-form" onSubmit={save}><div className="simple-cashbook-form-heading"><h2>{direction==='in'?t('Money In','دریافت پول'):t('Money Out','پرداخت پول')}</h2><button type="button" aria-label={t('Close','بستن')} disabled={busy} onClick={()=>{setDirection('');setError('')}}><X size={18}/></button></div><fieldset disabled={busy||uncertain}>
+    {direction&&<form className="simple-cashbook-form" onSubmit={save}><div className="simple-cashbook-form-heading"><h2>{direction==='in'?t('Money In','آمد'):t('Money Out','رفت')}</h2><button type="button" aria-label={t('Close','بستن')} disabled={busy} onClick={()=>{setDirection('');setError('')}}><X size={18}/></button></div><fieldset disabled={busy||uncertain}>
       {president&&<label><span>{t('Account','حساب')} *</span><select required value={form.scope} onChange={e=>setForm({...form,scope:e.target.value})}>{accountOptions}</select></label>}
       <label><span>{t('Date','تاریخ')} *</span><input required type="date" max={kabulToday()} value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></label>
       <label className="simple-cashbook-description"><span>{t('Name / description','نام / شرح معامله')} *</span><input required autoFocus value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label>
       <label><span>{t('Amount','مبلغ')} ({currency}) *</span><input required type="number" min="0.01" max="999999999999.99" step="0.01" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})}/></label>
     </fieldset><div className="registry-form-actions"><button type="button" disabled={busy} onClick={()=>{setDirection('');setError('')}}>{t('Cancel','انصراف')}</button><button className="registry-primary" disabled={busy}>{busy?t('Saving…','در حال ثبت…'):uncertain?t('Retry','کوشش مجدد'):t('Save','ثبت')}</button></div></form>}
     {loading?<p role="status">{t('Loading…','در حال بارگیری…')}</p>:loaded&&<>
-      <div className="simple-cashbook-list"><table><thead><tr><th>{t('Date','تاریخ')}</th>{president&&<th>{t('Account','حساب')}</th>}<th>{t('Name / description','نام / شرح معامله')}</th><th>{t('Money In','دریافت')}</th><th>{t('Money Out','پرداخت')}</th></tr></thead><tbody>
-        {ledger.rows.map(e=><tr key={e.id}><td>{e.entry_date}</td>{president&&<td>{name(e.branch_id)}</td>}<td>{e.opening?t('Earlier balance','موجودی قبلی'):e.description}</td><td className="simple-money-in">{e.direction==='in'?money(cents(e.amount)):'—'}</td><td className="simple-money-out">{e.direction==='out'?money(cents(e.amount)):'—'}</td></tr>)}
-        {!ledger.rows.length&&<tr><td colSpan={president?5:4} className="simple-cashbook-empty">{t('No entries yet. Use Money In or Money Out to add the first record.','هنوز معامله‌ای ثبت نشده است. با دریافت پول یا پرداخت پول، اولین معامله را ثبت کنید.')}</td></tr>}
-      </tbody><tfoot><tr><th colSpan={president?3:2}>{t('Total','مجموع')}</th><td className="simple-money-in">{money(ledger.incoming)}</td><td className="simple-money-out">{money(ledger.outgoing)}</td></tr></tfoot></table></div>
+      <div className="cashbook-ledger-spread">{['in','out'].map(flow=>{
+        const incoming=flow==='in'
+        const rows=ledger.rows.filter(e=>e.direction===flow)
+        const title=incoming?t('Money In','آمد'):t('Money Out','رفت')
+        const Icon=incoming?ArrowDownLeft:ArrowUpRight
+        return <section key={flow} className={`cashbook-ledger-side ${incoming?'ledger-in':'ledger-out'}`} dir={language==='fa'?'rtl':'ltr'} aria-label={title}>
+          <h2><Icon size={21}/>{title}</h2>
+          <div className="simple-cashbook-list"><table><thead><tr><th scope="col">{t('Date','تاریخ')}</th><th scope="col">{t('Description','شرح معامله')}</th><th scope="col">{t('Amount','مبلغ')}</th></tr></thead><tbody>
+            {rows.map(e=><tr key={e.id}><td>{e.entry_date}</td><td>{e.opening?t('Earlier balance','موجودی قبلی'):e.description}{president&&<small className="cashbook-ledger-account">{name(e.branch_id)}</small>}</td><td className={incoming?'simple-money-in':'simple-money-out'}>{money(cents(e.amount))}</td></tr>)}
+            {!rows.length&&<tr><td colSpan={3} className="simple-cashbook-empty">{incoming?t('No money received yet.','هنوز دریافتی ثبت نشده است.'):t('No money paid yet.','هنوز پرداختی ثبت نشده است.')}</td></tr>}
+          </tbody><tfoot><tr><th scope="row" colSpan={2}>{incoming?t('Total received','مجموع آمد'):t('Total paid','مجموع رفت')}</th><td className={incoming?'simple-money-in':'simple-money-out'}>{money(incoming?ledger.incoming:ledger.outgoing)}</td></tr></tfoot></table></div>
+        </section>
+      })}</div>
       <div className="simple-cashbook-balance"><span>{t('Balance','موجودی')}</span><strong>{money(ledger.balance)}</strong></div>
     </>}
   </div>

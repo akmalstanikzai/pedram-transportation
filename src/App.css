@@ -450,6 +450,18 @@ html[dir='rtl'] .brand strong { font-family: 'DM Sans', sans-serif; letter-spaci
 .simple-cashbook-form fieldset { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 15px; padding: 0; margin: 0; border: 0; min-width: 0; }
 .simple-cashbook-description { grid-column: 1/-1; }
 .simple-cashbook-list { overflow-x: auto; }
+.cashbook-ledger-spread { position: relative; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); grid-template-areas: "outgoing incoming"; gap: 36px; direction: ltr; }
+.cashbook-ledger-spread::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; background: #b5c3ca; transform: translateX(-50%); }
+.cashbook-ledger-side { min-width: 0; }
+.cashbook-ledger-side.ledger-in { grid-area: incoming; }
+.cashbook-ledger-side.ledger-out { grid-area: outgoing; }
+.cashbook-ledger-side h2 { display: flex; justify-content: center; align-items: center; gap: 12px; margin: 0; padding: 20px 12px; border-bottom: 2px solid var(--line); font-size: clamp(28px, 3vw, 38px); line-height: 1.5; font-weight: 900; }
+.cashbook-ledger-side h2 svg { width: 28px; height: 28px; stroke-width: 2.5; }
+.ledger-in h2 { color: #216547; }
+.ledger-out h2 { color: #a23e46; }
+.cashbook-ledger-account { display: block; color: #657581; font-size: 11px; margin-top: 5px; }
+.cashbook-ledger-side td:nth-child(2) { overflow-wrap: anywhere; min-width: 110px; }
+@media(max-width:800px) { .cashbook-ledger-spread { grid-template-columns: minmax(0,1fr); grid-template-areas: "incoming" "outgoing"; gap: 28px; } .cashbook-ledger-spread::before { display: none; } .cashbook-ledger-side.ledger-out { border-top: 2px solid #b5c3ca; padding-top: 16px; } }
 .simple-cashbook-list table { width: 100%; border-collapse: collapse; text-align: start; }
 .simple-cashbook-list th { padding: 14px 12px; border-bottom: 2px solid var(--line); font-size: 12px; text-align: start; white-space: nowrap; }
 .simple-cashbook-list td { padding: 14px 12px; border-bottom: 1px solid var(--line); font-size: 13px; }
