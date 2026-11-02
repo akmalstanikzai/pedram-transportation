@@ -13,24 +13,26 @@ Project documentation updated: **2 November 2026**. The current source adds simp
 | Login | Company branding, email or username sign-in, English/Dari switch, and right-to-left Dari layout. |
 | Branches | Create, edit, view, archive/restore, and enable/disable the manager's login. New manager credentials are assigned in the registration form. |
 | Fleet | Independent owner, vehicle and driver records, with edit, detail, status, archive/restore, documents and driver login management. |
-| Traders | Standalone create, edit, view and archive/restore; normalized name/contact duplicate detection. Existing booking snapshots are preserved. |
+| Traders | Create, edit and archive/restore traders; open their profile and account together. Record fares and receipts, and see money owed, credit and payment history by currency. |
 | Bookings | Create, edit, view, cancel, start, complete and archive/restore. Capacity, expiry, schedule conflict and duplicate-request checks. No money fields. |
 | Cashbook / روزنامچه | Simple Money In / آمد and Money Out / رفت records for the admin account and branches, with separate tables and automatic totals. |
 
-Trip Plans, Trader Accounts, Customs, Finance, and Reports are navigation placeholders. The separate Trips page has been removed from the President portal. Financial recording currently takes place in Cashbook, rather than the Finance placeholder.
+The President menu contains only working pages: Cashbook, Branches, Fleet, Bookings, and Traders. Empty Trip Plans, Customs, Finance and Reports pages have been removed, along with the duplicate Trader Accounts page. Old Trader Accounts links resolve to Traders. No business records were deleted when removing these menu items.
 
 ## Roles and access
 
 The database defines five roles: President, Vice-president, Departmental Manager, Branch Manager, and Driver.
 
 - **President:** accesses the implemented President modules and views cashbook records for the admin account, one branch, or all accounts.
-- **Branch Manager:** accesses the cashbook for their own assigned branch. Branch access is enforced in the database.
+- **Branch Manager:** accesses Cashbook, Fleet, Bookings and Traders for their assigned branch. They can register and manage branch-owned records, create and process their branch's bookings, and maintain their branch's trader fares and receipts. Shared head-office directory profiles can be viewed and selected for bookings, but cannot be edited, archived or have their private documents opened by branch staff. Other branches' records and accounts remain hidden.
 - **Driver:** a linked login sees only that driver's assigned booking details, with no financial information. The President can create a driver login or link an existing unused Driver-role account from Fleet.
 - **Vice-president / Departmental Manager:** exist in the role model, but their working portals have not yet been implemented.
 
 Disabled accounts cannot use the new operational APIs. The app rechecks account status on focus and every 30 seconds. Branch archiving disables its manager's login; driver archiving or setting the driver inactive disables that driver's login. Restoring a record does not automatically re-enable the account.
 
 New authenticated users receive the least-privileged `driver` role. The first President must be assigned through a trusted Supabase admin session; the browser cannot assign roles.
+
+Branch selection is automatic in the branch portal; changing a request in the browser cannot assign work or money to another branch. Only the President manages branches and creates, links or enables/disables login accounts. The President keeps all five working pages and a full view across branches. Branch trader statements show only that branch's charges and receipts, even when the trader profile is shared with head office.
 
 ## Cashbook / روزنامچه
 
@@ -71,7 +73,9 @@ Bookings follow **Confirmed → On road → Completed**, or **Cancelled**. Only 
 
 Delete moves records to a recoverable Archive. Active work must be completed or cancelled before archiving a resource; a confirmed booking is cancelled when archived. An on-road booking must be cancelled or completed first. Restoring a cancelled/completed booking preserves its status and does not reserve resources again. Linked historical and financial records remain intact.
 
-Booking payments and account settlement are **not part of the current simplified workflow**. Historical payment-related data may remain in the database, but no current UI configures it.
+Trader profiles and accounts are managed together in **Traders**. Use the account/wallet icon to open the profile, fares, receipts and remaining balance. Add a fare (optionally linked to a booking), then use Receive payment. A receipt is saved once in the selected admin/branch cashbook and appears in the trader statement automatically. Cashbook entries can also optionally link a trader; outgoing linked entries reduce net payments, for example for refunds. Entries without a trader link cannot be attributed from their description alone.
+
+Charges record what the trader owes and do not add cash. Fares can be cancelled when entered by mistake; the cancelled row remains in history. Currency balances never mix. Historical agreed booking totals and explicitly booking-linked receipts are migrated into the combined view. Booking cancellation does not automatically cancel a financial charge; review and cancel the charge separately when appropriate.
 
 ## Fleet and documents
 
@@ -118,7 +122,7 @@ Open the local URL printed by Vite, normally `http://localhost:5173`. Restart Vi
 
 1. Apply the SQL files in [supabase/migrations](supabase/migrations) in filename order. For an existing database, apply only pending migrations. With an installed, authenticated, initialized and linked Supabase CLI project, `supabase db push` is an alternative to SQL Editor.
 2. Apply both cashbook migrations: `202611010001_branch_cashbooks.sql`, then `202611010002_simplify_cashbook.sql`. The second migration removes the earlier transfer API and enables the current simplified admin/branch ledgers. Do not stop at the first migration.
-3. Apply the later migrations in order, including the historical operations migrations and rollback, then **`202611020002_simple_record_workflows.sql`**. This latest migration restores the needed record APIs without the removed workspace widgets or transfer UI. Deploy both account Edge Functions using your project reference:
+3. Apply the later migrations in order, including the historical operations migrations and rollback, then **`202611020002_simple_record_workflows.sql`**, **`202611020003_combined_trader_accounts.sql`**, and **`202611020004_branch_portal.sql`**. They provide the record APIs, combined trader ledger and branch portal permissions without restoring removed workspace widgets or transfer UI. Deploy both account Edge Functions using your project reference:
 
    ```powershell
    supabase functions deploy create-branch-with-manager --project-ref YOUR_PROJECT_REF --use-api

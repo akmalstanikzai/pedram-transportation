@@ -6,6 +6,8 @@ export const roleLabels = {
   driver: 'Driver',
 }
 
+export const branchModuleIds = ['cashbook','vehicles','bookings','traders']
+
 export function getDashboardTitle(role) {
   return `${roleLabels[role] || 'Driver'} Dashboard`
 }

@@ -2,18 +2,14 @@ import { useEffect, useState } from 'react'
 import {
   Building2,
   ClipboardList,
-  FileBarChart,
-  HandCoins,
-  MapPinned,
   BookOpen,
-  ShieldCheck,
   Truck,
-  WalletCards,
   Users,
 } from 'lucide-react'
 import Brand from '../components/Brand'
 import Icon from '../components/Icon'
 import { getTranslation } from '../lib/i18n'
+import { branchModuleIds } from '../lib/roles'
 import { LanguageSwitch } from './LoginPage'
 import VehiclesPage from './VehiclesPage'
 import BranchesPage from './BranchesPage'
@@ -28,15 +24,11 @@ const moduleDefinitions = [
   { id: 'vehicles', icon: Truck, titleKey: 'vehicles', pageKey: 'vehiclesPage', color: 'green' },
   { id: 'bookings', icon: ClipboardList, titleKey: 'bookings', pageKey: 'bookingsPage', color: 'red' },
   { id: 'traders', icon: Users, titleKey: 'traders', color: 'cyan' },
-  { id: 'trip-plans', icon: MapPinned, titleKey: 'tripPlans', pageKey: 'tripPlansPage', color: 'gold' },
-  { id: 'trader-accounts', icon: HandCoins, titleKey: 'traderAccounts', pageKey: 'traderAccountsPage', color: 'cyan' },
-  { id: 'customs', icon: ShieldCheck, titleKey: 'customDuty', pageKey: 'customDutyPage', color: 'gold' },
-  { id: 'finance', icon: WalletCards, titleKey: 'finance', pageKey: 'financePage', color: 'indigo' },
-  { id: 'reports', icon: FileBarChart, titleKey: 'reports', pageKey: 'reportsPage', color: 'orange' },
 ]
 
 function getModuleFromHash() {
-  const id = window.location.hash.replace('#/', '')
+  const raw = window.location.hash.replace('#/', '')
+  const id = raw === 'trader-accounts' ? 'traders' : raw
   return moduleDefinitions.find(module => module.id === id) || null
 }
 
@@ -78,7 +70,7 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
         </div>
       </header>
 
-      {activeModule && (role === 'president' || (role === 'branch_manager' && activeModule.id === 'cashbook')) ? (
+      {activeModule && (role === 'president' || (role === 'branch_manager' && branchModuleIds.includes(activeModule.id))) ? (
         <section className="module-page">
           <button className="module-back" onClick={closeModule}><Icon name="back" size={17} /> {role === 'president' ? text.presidentDashboard : text.roles.branch_manager}</button>
           {activeModule.id === 'vehicles' && <h1 className="fleet-page-title">{text[activeModule.titleKey]}</h1>}
@@ -87,7 +79,7 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
               <div className={`module-icon ${activeModule.color}`}><ActiveModuleIcon size={38} strokeWidth={1.8} /></div>
               <div><span className="section-label">{text.managementModule}</span><h1>{text[activeModule.titleKey]}</h1><p>{text[activeModule.pageKey]}</p></div>
             </div>}
-            {activeModule.id === 'traders' ? <TradersPage language={language} /> : activeModule.id === 'cashbook' ? <CashbookPage language={language} profile={profile} /> : activeModule.id === 'branches' ? <BranchesPage language={language} /> : activeModule.id === 'vehicles' ? <VehiclesPage language={language} /> : activeModule.id === 'bookings' ? <BookingsPage language={language} /> : <div className="empty-state">
+            {activeModule.id === 'traders' ? <TradersPage language={language} profile={profile} /> : activeModule.id === 'cashbook' ? <CashbookPage language={language} profile={profile} /> : activeModule.id === 'branches' ? <BranchesPage language={language} /> : activeModule.id === 'vehicles' ? <VehiclesPage language={language} profile={profile} /> : activeModule.id === 'bookings' ? <BookingsPage language={language} profile={profile} /> : <div className="empty-state">
               <div className="empty-state-mark"><Icon name="layers" size={27} /></div>
               <h2>{text.readyTitle}</h2>
               <p>{text.readyText}</p>
@@ -98,7 +90,7 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
         <section className="dashboard-content">
           {['president', 'branch_manager'].includes(role) ? (
             <div className="module-grid">
-              {moduleDefinitions.filter(module => role === 'president' || module.id === 'cashbook').map(module => {
+              {moduleDefinitions.filter(module => role === 'president' || branchModuleIds.includes(module.id)).map(module => {
                 const ModuleIcon = module.icon
                 return (
                   <button className="module-card" key={module.id} onClick={() => openModule(module)}>

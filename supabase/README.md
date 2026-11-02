@@ -6,6 +6,10 @@ The earlier forward and rollback files remain historical steps. The latest
 migration adds simple lifecycle APIs and account controls, preserving business
 records. Use the current frontend and redeploy both account Edge Functions.
 
+Apply `202611020003_combined_trader_accounts.sql` afterwards for the combined Traders profile/account screen and optional trader links in cashbook entries. This adds trader fare records and account statements; receipts remain in the existing cashbook without duplication. Removed menu pages do not delete their historical data. No Edge Function change is needed for this additional migration.
+
+Apply `202611020004_branch_portal.sql` next to enable branch Fleet, Bookings and Traders workflows alongside Cashbook. Branch users can edit their own branch records and select shared head-office directory profiles in bookings. Private head-office documents, other branches' records and financial data, and account administration remain restricted. Trader charges and statements are now branch-scoped. The President retains the all-branch view. No additional Edge Function deployment is needed for this migration.
+
 1. Apply every migration in filename order, or run `supabase db push` from a linked Supabase CLI project.
 2. Deploy the current branch creation function after applying migrations:
    `supabase functions deploy create-branch-with-manager --project-ref YOUR_PROJECT_REF --use-api`

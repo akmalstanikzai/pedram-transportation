@@ -13,7 +13,8 @@ function today() {
   return `${get('year')}-${get('month')}-${get('day')}`
 }
 
-export default function BookingsPage({ language }) {
+export default function BookingsPage({ language, profile }) {
+  const branchManager=profile?.role==='branch_manager'
   const t = (en, fa) => language === 'fa' ? fa : en
   const [rows, setRows] = useState([])
   const [traders, setTraders] = useState([])
@@ -62,7 +63,7 @@ export default function BookingsPage({ language }) {
     finally { setBusy(false) }
   }
   return <div className="registry-page">
-    <div className="booking-page-header"><h1>{t('Bookings','بوکینگ‌ها')}</h1><button className="registry-primary" disabled={!ready} onClick={() => { setEditing(null);request.current=null;setForm({ ...blank, booking_date: today(),departure_date:today(),arrival_date:today() }); setMessage(''); setOpen(true) }}><Plus size={18} />{t('New booking','بوکینگ جدید')}</button></div>
+    <div className="booking-page-header"><h1>{t('Bookings','بوکینگ‌ها')}</h1><button className="registry-primary" disabled={!ready||(branchManager&&!profile?.branch_id)} onClick={() => { setEditing(null);request.current=null;setForm({ ...blank, branch_id:branchManager?profile.branch_id:'',booking_date: today(),departure_date:today(),arrival_date:today() }); setMessage(''); setOpen(true) }}><Plus size={18} />{t('New booking','بوکینگ جدید')}</button></div>
     {message && !open && <div role="alert" className="registry-notice error">{message}</div>}
     <label className="registry-search"><Search size={17} /><input aria-label={t('Search bookings','جستجوی بوکینگ‌ها')} placeholder={t('Search booking, trader or route','جستجوی بوکینگ، تاجر یا مسیر')} value={query} onChange={e => setQuery(e.target.value)} /></label>
     <button className="registry-secondary" aria-pressed={archived} onClick={()=>setArchived(!archived)}><Archive size={18}/>{t('Archive','بایگانی')}</button>
@@ -79,7 +80,7 @@ export default function BookingsPage({ language }) {
       <form className="registry-form booking-form" onSubmit={submit}><fieldset disabled={busy} className="booking-fields">
         {heading(CalendarDays,'Booking date','تاریخ بوکینگ')}{field('booking_date','Date','تاریخ',{type:'date'})}
         {field('departure_date','Departure','تاریخ حرکت',{type:'date'})}{field('arrival_date','Expected arrival','تاریخ رسیدن',{type:'date'})}
-        <label><span>{t('Branch','شعبه')}</span><select disabled={!!editing} value={form.branch_id||''} onChange={e=>setForm({...form,branch_id:e.target.value})}><option value="">{t('Head office','دفتر مرکزی')}</option>{branches.filter(b=>!b.archived_at||b.id===form.branch_id).map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
+        {!branchManager&&<label><span>{t('Branch','شعبه')}</span><select disabled={!!editing} value={form.branch_id||''} onChange={e=>setForm({...form,branch_id:e.target.value})}><option value="">{t('Head office','دفتر مرکزی')}</option>{branches.filter(b=>!b.archived_at||b.id===form.branch_id).map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>}
         <label><span>{t('Booking type','نوع بوکینگ')}</span><select value={form.service_type} onChange={e => setForm({ ...form, service_type: e.target.value })}><option value="arrangement">{t('Vehicle arrangement','معرفی واسطه')}</option><option value="managed">{t('Company-managed transport','انتقال توسط شرکت')}</option></select></label>
         {heading(UserRound,'Trader information','مشخصات تاجر')}
         <label className="wide"><span>{t('Select an existing trader or enter a new trader below','تاجر ثبت‌شده را انتخاب کنید یا مشخصات تاجر جدید را وارد کنید')}</span><select value={form.trader_id} onChange={e => chooseTrader(e.target.value)}><option value="">{t('New trader','تاجر جدید')}</option>{traders.filter(r=>!r.archived_at).map(r => <option key={r.id} value={r.id}>{r.full_name} · {r.phone}</option>)}</select></label>

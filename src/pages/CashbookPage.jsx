@@ -7,6 +7,7 @@ export default function CashbookPage({ language, profile }) {
   const t=(en,fa)=>language==='fa'?fa:en
   const president=profile?.role==='president'
   const [data,setData]=useState({branches:[],accounts:[],entries:[]})
+  const [traders,setTraders]=useState([])
   const [loading,setLoading]=useState(true)
   const [loaded,setLoaded]=useState(false)
   const [error,setError]=useState('')
@@ -22,6 +23,7 @@ export default function CashbookPage({ language, profile }) {
     if(!supabase)throw new Error('Database unavailable')
     const [branches,accounts,entries]=await Promise.all(['branches','cashbook_accounts','cashbook_entries'].map(table=>allRows(supabase,table)))
     setData({branches,accounts,entries});setLoaded(true)
+    setTraders(await allRows(supabase,'traders'))
   },[])
   useEffect(()=>{
     let active=true
@@ -34,7 +36,7 @@ export default function CashbookPage({ language, profile }) {
   const accountOptions=<>{president&&<option value="admin">{t('Admin account','حساب مرکزی')}</option>}{data.branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</>
   function start(flow){
     setDirection(flow);setRequest(crypto.randomUUID());setUncertain(false);setError('');setNotice('')
-    setForm({scope:scope==='all'?'admin':scope,amount:'',description:'',date:kabulToday()})
+    setForm({scope:scope==='all'?'admin':scope,amount:'',description:'',date:kabulToday(),trader_id:''})
   }
   async function refresh(){
     setLoading(true);setError('')
@@ -44,7 +46,7 @@ export default function CashbookPage({ language, profile }) {
     e.preventDefault();if(busy)return
     setBusy(true);setError('')
     try{
-      const {error:failure}=await supabase.rpc('cashbook_simple_post',{p_request:request,p_data:{branch_id:form.scope==='admin'?null:form.scope,currency,direction,amount:form.amount,date:form.date,description:form.description.trim()}})
+      const {error:failure}=await supabase.rpc('cashbook_simple_post',{p_request:request,p_data:{branch_id:form.scope==='admin'?null:form.scope,currency,direction,amount:form.amount,date:form.date,description:form.description.trim(),trader_id:form.trader_id||null}})
       if(failure){
         const messages={ACCESS_DENIED:t('You cannot record money for this account.','شما اجازه ثبت پول در این حساب را ندارید.'),INVALID_AMOUNT:t('Enter a positive amount with up to two decimal places.','یک مبلغ مثبت با حداکثر دو رقم اعشار وارد کنید.'),INVALID_DATE:t('Choose today or an earlier date.','تاریخ امروز یا گذشته را انتخاب کنید.'),DESCRIPTION_REQUIRED:t('Enter a name or description.','نام یا شرح معامله را وارد کنید.')}
         const key=Object.keys(messages).find(k=>failure.message.includes(k))
@@ -65,10 +67,11 @@ export default function CashbookPage({ language, profile }) {
     {notice&&<p className="registry-notice success" role="status">{notice}</p>}
     {error&&<p className="registry-notice error" role="alert">{error}</p>}
     {direction&&<form className="simple-cashbook-form" onSubmit={save}><div className="simple-cashbook-form-heading"><h2>{direction==='in'?t('Money In','آمد'):t('Money Out','رفت')}</h2><button type="button" aria-label={t('Close','بستن')} disabled={busy} onClick={()=>{setDirection('');setError('')}}><X size={18}/></button></div><fieldset disabled={busy||uncertain}>
-      {president&&<label><span>{t('Account','حساب')} *</span><select required value={form.scope} onChange={e=>setForm({...form,scope:e.target.value})}>{accountOptions}</select></label>}
+      {president&&<label><span>{t('Account','حساب')} *</span><select required value={form.scope} onChange={e=>setForm({...form,scope:e.target.value,trader_id:''})}>{accountOptions}</select></label>}
       <label><span>{t('Date','تاریخ')} *</span><input required type="date" max={kabulToday()} value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></label>
       <label className="simple-cashbook-description"><span>{t('Name / description','نام / شرح معامله')} *</span><input required autoFocus value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label>
       <label><span>{t('Amount','مبلغ')} ({currency}) *</span><input required type="number" min="0.01" max="999999999999.99" step="0.01" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})}/></label>
+      {traders.length>0&&<details className="simple-cashbook-description"><summary>{t('Link to a trader (optional)','وصل به حساب تاجر (اختیاری)')}</summary><label><span>{t('Trader','تاجر')}</span><select value={form.trader_id||''} onChange={e=>setForm({...form,trader_id:e.target.value})}><option value="">—</option>{traders.filter(r=>!r.archived_at&&(!r.branch_id||r.branch_id===form.scope)).map(r=><option key={r.id} value={r.id}>{r.full_name} · {r.phone}</option>)}</select></label></details>}
     </fieldset><div className="registry-form-actions"><button type="button" disabled={busy} onClick={()=>{setDirection('');setError('')}}>{t('Cancel','انصراف')}</button><button className="registry-primary" disabled={busy}>{busy?t('Saving…','در حال ثبت…'):uncertain?t('Retry','کوشش مجدد'):t('Save','ثبت')}</button></div></form>}
     {loading?<p role="status">{t('Loading…','در حال بارگیری…')}</p>:loaded&&<>
       <div className="cashbook-ledger-spread">{['in','out'].map(flow=>{
