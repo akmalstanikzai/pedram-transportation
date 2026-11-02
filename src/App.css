@@ -430,6 +430,20 @@ html[dir='rtl'] .brand strong { font-family: 'DM Sans', sans-serif; letter-spaci
 .record-row-main strong,.record-row-main small { display: block; overflow-wrap: anywhere; }
 .record-row-main small { color: #657581; font-size: 12px; margin-top: 5px; }
 .fleet-section { margin-top: 25px; }
+.fleet-tabs { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 24px; }
+.fleet-tabs button { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 66px; padding: 12px 16px; border: 1px solid transparent; border-radius: 10px; background: transparent; color: #657581; cursor: pointer; }
+.fleet-tabs button strong { font-size: 16px; font-weight: 800; }
+.fleet-tabs button > span { min-width: 25px; padding: 4px 7px; font-size: 12px; border-radius: 20px; background: #edf1f3; color: #536572; }
+.fleet-tabs button.active { color: #216547; background: #e8f3ed; border-color: #c6dfd0; }
+.fleet-tabs button.active > span { background: #d2e9dc; color: #216547; }
+.fleet-tabs button:focus-visible, .fleet-panel:focus-visible { outline: 3px solid #9bc8b4; outline-offset: 3px; }
+.fleet-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 20px; }
+.fleet-panel-heading h2 { display: flex; align-items: center; gap: 9px; font-size: 20px; font-weight: 800; margin: 0; }
+.fleet-panel .registry-toolbar { justify-content: space-between; }
+.fleet-panel .registry-search { flex: 1; max-width: 480px; }
+.fleet-owner-help { margin-bottom: 15px; }
+.fleet-owner-help button { border: 0; padding: 5px; background: transparent; color: #216547; text-decoration: underline; font-weight: 700; }
+@media(max-width:600px) { .fleet-tabs { gap: 4px; } .fleet-tabs button { flex-wrap: wrap; gap: 6px; padding: 10px 5px; } .fleet-tabs button strong { font-size: 13px; } .fleet-tabs button > svg { width: 22px; } .fleet-panel-heading h2 { font-size: 18px; } }
 .booking-record-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 13px 0; }
 .documents-panel { margin-top: 25px; border-top: 1px solid var(--line); padding-top: 18px; }
 .documents-panel h3 { display: flex; align-items: center; gap: 9px; }

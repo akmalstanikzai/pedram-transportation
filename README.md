@@ -75,6 +75,8 @@ Booking payments and account settlement are **not part of the current simplified
 
 ## Fleet and documents
 
+Fleet has three separate icon tabs: Vehicles, Drivers, and Owners. Each tab has its own list, search, archive filter, and Add button. Search and archive choices are kept separately when switching tabs. Record counts use English digits. Vehicle registration requires an existing active owner; the page provides a shortcut to Owners when none are registered.
+
 - **Vehicles:** owner, plate, optional foreign plate, type, color, VIN/chassis number, weight capacity (tons), volume capacity (m³), model year, permit details and expiry. Registration expiry has been removed.
 - **Owners:** name, father's name, mobile/contact details, residence information, and Tazkira/CNIC scan upload.
 - **Drivers:** personal/contact details, licence details, and document uploads. Driver registration does not require selecting a vehicle or vehicle owner.
