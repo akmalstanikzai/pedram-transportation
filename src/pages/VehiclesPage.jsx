@@ -1,234 +1,43 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  AlertTriangle,
-  CheckCircle2,
-  CircleParking,
-  Plus,
-  Search,
-  Truck,
-  UserRound,
-  Wrench,
-} from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Archive, Plus, Search, Truck, UserRound, Users } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { allRows } from '../lib/cashbook'
+import { rpc, explain } from '../lib/operations'
+import { ConfirmArchive, Modal, RecordTools } from '../components/RecordTools'
+import DocumentsPanel from '../components/DocumentsPanel'
+import DriverAccount from '../components/DriverAccount'
 
-const copy = {
-  en: {
-    owner: 'Register Owner', vehicle: 'Register Vehicle', driver: 'Register Driver', all: 'All Vehicles', available: 'Available',
-    assigned: 'Assigned', on_trip: 'On Trip', under_repair: 'Under Repair', inactive: 'Inactive',
-    owners: 'Vehicle Owners', search: 'Search plate, owner or type', noVehicles: 'No vehicles found.',
-    noOwners: 'Register an owner before adding a vehicle.', fullName: 'Owner name', fatherName: 'Father name',
-    phone: 'Phone number', nationalId: 'National ID', address: 'Address', notes: 'Notes', saveOwner: 'Save owner',
-    plate: 'Plate number', type: 'Vehicle type', capacity: 'Capacity (tons)', model: 'Model year', color: 'Color',
-    selectOwner: 'Select vehicle owner', status: 'Status', permit: 'Permit number', permitExpiry: 'Permit expiry',
-    registrationExpiry: 'Registration expiry', saveVehicle: 'Save vehicle', cancel: 'Cancel', saved: 'Record saved.',
-    loadError: 'The vehicle database is not ready. Apply the latest Supabase migration.', required: 'Complete the required fields.',
-    total: 'Vehicles', ownerCount: 'Owners', driverCount: 'Drivers', drivers: 'Drivers', noDrivers: 'No drivers registered.',
-    driverName: 'Driver name', license: 'Licence number', licenseExpiry: 'Licence expiry', saveDriver: 'Save driver',
-    ownerIsDriver: 'Owner is also a driver', selectDriver: 'Assign an existing driver', addDriverNow: 'Register a new driver with this vehicle',
-  },
-  fa: {
-    owner: 'ثبت مالک', vehicle: 'ثبت واسطه', driver: 'ثبت راننده', all: 'تمام وسایط', available: 'آماده', assigned: 'تعیین‌شده',
-    on_trip: 'در سفر', under_repair: 'در ترمیم', inactive: 'غیرفعال', owners: 'مالکان وسایط',
-    search: 'جستجوی پلیت، مالک یا نوع واسطه', noVehicles: 'واسطه‌ای یافت نشد.',
-    noOwners: 'قبل از ثبت واسطه، مالک را ثبت کنید.', fullName: 'نام مالک', fatherName: 'نام پدر',
-    phone: 'شماره تماس', nationalId: 'نمبر تذکره', address: 'آدرس', notes: 'ملاحظات', saveOwner: 'ثبت مالک',
-    plate: 'نمبر پلیت', type: 'نوع واسطه', capacity: 'ظرفیت (تن)', model: 'سال ساخت', color: 'رنگ',
-    selectOwner: 'انتخاب مالک واسطه', status: 'وضعیت', permit: 'نمبر جواز', permitExpiry: 'تاریخ ختم جواز',
-    registrationExpiry: 'تاریخ ختم ثبت', saveVehicle: 'ثبت واسطه', cancel: 'انصراف', saved: 'معلومات ثبت شد.',
-    loadError: 'دیتابیس وسایط آماده نیست. آخرین مایگریشن Supabase را اجرا کنید.', required: 'خانه‌های ضروری را تکمیل کنید.',
-    total: 'وسایط', ownerCount: 'مالکان', driverCount: 'رانندگان', drivers: 'رانندگان', noDrivers: 'راننده‌ای ثبت نشده است.',
-    driverName: 'نام راننده', license: 'نمبر جواز رانندگی', licenseExpiry: 'تاریخ ختم جواز', saveDriver: 'ثبت راننده',
-    ownerIsDriver: 'مالک راننده نیز است', selectDriver: 'انتخاب راننده موجود', addDriverNow: 'ثبت راننده جدید با این واسطه',
-  },
+const tables={vehicle:'vehicles',owner:'vehicle_owners',driver:'drivers'}
+const fields={
+ owner:[['full_name','Name','نام','text',true],['father_name','Father name','نام پدر'],['phone','Mobile','موبایل','tel',true],['national_id','Tazkira number','نمبر تذکره'],['province','Province','ولایت'],['address','Address','آدرس'],['notes','Notes','ملاحظات']],
+ driver:[['full_name','Name','نام','text',true],['father_name','Father name','نام پدر'],['phone','Mobile','موبایل','tel',true],['national_id','Tazkira number','نمبر تذکره'],['address','Address','آدرس'],['license_number','Licence number','نمبر لایسنس'],['license_expiry','Licence expiry','تاریخ ختم لایسنس','date']],
+ vehicle:[['plate_number','Plate number','نمبر پلیت','text',true],['foreign_plate_number','Foreign plate (optional)','پلیت خارجی (اختیاری)'],['vehicle_type','Vehicle type','نوع واسطه','text',true],['color','Color','رنگ'],['vin_number','VIN / chassis','نمبر شاسی'],['capacity_tons','Weight capacity (tons)','ظرفیت وزنی (تن)','number'],['volume_capacity_m3','Volume capacity (m³)','ظرفیت حجمی (متر مکعب)','number'],['model_year','Model year','سال ساخت','number'],['permit_number','Permit number','نمبر جواز'],['permit_expiry','Permit expiry','تاریخ ختم جواز','date'],['notes','Notes','ملاحظات']]
 }
-
-const emptyOwner = { full_name: '', father_name: '', phone: '', national_id: '', address: '', notes: '', owner_is_driver: false, license_number: '', license_expiry: '' }
-const emptyDriver = { full_name: '', father_name: '', phone: '', national_id: '', license_number: '', license_expiry: '', address: '' }
-const emptyVehicle = { owner_id: '', plate_number: '', vehicle_type: '', capacity_tons: '', model_year: '', color: '', status: 'available', permit_number: '', permit_expiry: '', notes: '' }
-
-export default function VehiclesPage({ language }) {
-  const text = copy[language] || copy.en
-  const [vehicles, setVehicles] = useState([])
-  const [owners, setOwners] = useState([])
-  const [drivers, setDrivers] = useState([])
-  const [query, setQuery] = useState('')
-  const [dialog, setDialog] = useState(null)
-  const [ownerForm, setOwnerForm] = useState(emptyOwner)
-  const [vehicleForm, setVehicleForm] = useState(emptyVehicle)
-  const [driverForm, setDriverForm] = useState(emptyDriver)
-  const [message, setMessage] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [documents, setDocuments] = useState({})
-
-  useEffect(() => { setDocuments({}) }, [dialog])
-
-  async function uploadDocuments(kind, id) {
-    for (const [category, files] of Object.entries(documents)) {
-      for (const file of files) {
-        const path = `${kind}/${id}/${category}/${crypto.randomUUID()}.${file.name.split('.').pop()}`
-        const { error } = await supabase.storage.from('fleet-documents').upload(path, file)
-        if (error) throw error
-      }
-    }
-    setDocuments({})
-  }
-
-  function documentFields(kind) {
-    const labels = kind === 'vehicle'
-      ? [['photos', 'Vehicle pictures (2)', 'عکس‌های موتر (2 قطعه)'], ['permit', 'Road permit', 'جواز سیر'], ['card', 'Vehicle card', 'کارت'], ['booklet', 'Vehicle booklet', 'کتابچه'], ['international', 'International certificate', 'سرتفیکت بین المللی']]
-      : kind === 'owner' ? [['identity', 'CNIC / Tazkira scan', 'اسکن تذکره']]
-        : [['identity', 'CNIC / Tazkira scan', 'اسکن تذکره'], ['licence', 'Driving licence', 'اسکن لایسنس'], ['health', 'Health card', 'کارت صحت'], ['contract', 'Contract', 'قرارداد خط']]
-    return labels.map(([key, en, fa]) => <label key={key}><span>{language === 'fa' ? fa : en}</span><input type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.heic,.heif,.tif,.tiff" onChange={event => setDocuments(current => ({ ...current, [key]: Array.from(event.target.files || []) }))} /></label>)
-  }
-
-  const loadRegistry = useCallback(async () => {
-    if (!supabase) return setLoading(false)
-    const [vehicleResult, ownerResult, driverResult] = await Promise.all([
-      supabase.from('vehicles').select('*, vehicle_owners(id, full_name, phone)').order('created_at', { ascending: false }),
-      supabase.from('vehicle_owners').select('*').order('full_name'),
-      supabase.from('drivers').select('*, vehicle_owners(full_name)').order('full_name'),
-    ])
-    setLoading(false)
-    if (vehicleResult.error || ownerResult.error || driverResult.error) return setMessage({ type: 'error', text: text.loadError })
-    setVehicles(vehicleResult.data || [])
-    setOwners(ownerResult.data || [])
-    setDrivers(driverResult.data || [])
-  }, [text.loadError])
-
-  // Loading external registry data is the synchronization performed by this effect.
-  // oxlint-disable-next-line react/set-state-in-effect
-  useEffect(() => { void loadRegistry() }, [loadRegistry])
-
-  const displayedVehicles = useMemo(() => vehicles.filter(vehicle => {
-    const haystack = `${vehicle.plate_number} ${vehicle.vehicle_type} ${vehicle.vehicle_owners?.full_name || ''}`.toLowerCase()
-    return haystack.includes(query.trim().toLowerCase())
-  }), [vehicles, query])
-
-  async function submitOwner(event) {
-    event.preventDefault()
-    if (!ownerForm.full_name.trim() || !ownerForm.phone.trim()) return setMessage({ type: 'error', text: text.required })
-    const { owner_is_driver, license_number, license_expiry, ...ownerPayload } = ownerForm
-    const { data: owner, error } = await supabase.from('vehicle_owners').insert(ownerPayload).select('id').single()
-    if (error) return setMessage({ type: 'error', text: error.message })
-    try { await uploadDocuments('owner', owner.id) } catch (error) { return setMessage({ type: 'error', text: `${text.saved} ${error.message}` }) }
-    if (owner_is_driver) {
-      const { error: driverError } = await supabase.from('drivers').insert({ owner_id: owner.id, full_name: ownerForm.full_name, father_name: ownerForm.father_name || null, phone: ownerForm.phone, national_id: ownerForm.national_id || null, address: ownerForm.address || null, license_number: license_number || null, license_expiry: license_expiry || null })
-      if (driverError) return setMessage({ type: 'error', text: driverError.message })
-    }
-    setOwnerForm(emptyOwner); setDialog(null); setMessage({ type: 'success', text: text.saved }); loadRegistry()
-  }
-
-  async function submitVehicle(event) {
-    event.preventDefault()
-    if (!vehicleForm.owner_id || !vehicleForm.plate_number.trim() || !vehicleForm.vehicle_type.trim()) return setMessage({ type: 'error', text: text.required })
-    const payload = {
-      ...vehicleForm,
-      capacity_tons: vehicleForm.capacity_tons || null,
-      model_year: vehicleForm.model_year || null,
-      permit_expiry: vehicleForm.permit_expiry || null,
-    }
-    const { data: vehicle, error } = await supabase.from('vehicles').insert(payload).select('id').single()
-    if (error) return setMessage({ type: 'error', text: error.message })
-    try { await uploadDocuments('vehicle', vehicle.id) } catch (error) { return setMessage({ type: 'error', text: `${text.saved} ${error.message}` }) }
-    setVehicleForm(emptyVehicle); setDialog(null); setMessage({ type: 'success', text: text.saved }); loadRegistry()
-  }
-
-  async function submitDriver(event) {
-    event.preventDefault()
-    if (!driverForm.full_name.trim() || !driverForm.phone.trim()) return setMessage({ type: 'error', text: text.required })
-    const payload = { ...driverForm, license_expiry: driverForm.license_expiry || null }
-    const { data: driver, error } = await supabase.from('drivers').insert(payload).select('id').single()
-    if (error) return setMessage({ type: 'error', text: error.message })
-    try { await uploadDocuments('driver', driver.id) } catch (error) { return setMessage({ type: 'error', text: `${text.saved} ${error.message}` }) }
-    setDriverForm(emptyDriver); setDialog(null); setMessage({ type: 'success', text: text.saved }); loadRegistry()
-  }
-
-  const filters = [
-    ['all', text.all, Truck], ['available', text.available, CheckCircle2], ['assigned', text.assigned, CircleParking],
-    ['on_trip', text.on_trip, Truck], ['under_repair', text.under_repair, Wrench], ['inactive', text.inactive, AlertTriangle],
-  ]
-
-  return <div className="registry-page">
-    <div className="registry-actions">
-      <button className="registry-primary" onClick={() => { setMessage(null); setDialog('vehicle') }} disabled={!owners.length}><Plus size={18} />{text.vehicle}</button>
-      <button className="registry-secondary" onClick={() => { setMessage(null); setDialog('owner') }}><UserRound size={18} />{text.owner}</button>
-      <button className="registry-secondary" onClick={() => { setMessage(null); setDialog('driver') }}><UserRound size={18} />{text.driver}</button>
-    </div>
-
-    {message && <div className={`registry-notice ${message.type}`}>{message.text}</div>}
-    {!owners.length && !loading && !message && <div className="registry-notice info">{text.noOwners}</div>}
-
-    <div className="registry-stats">
-      <div><Truck size={21} /><span><strong>{vehicles.length}</strong>{text.total}</span></div>
-      <div><UserRound size={21} /><span><strong>{owners.length}</strong>{text.ownerCount}</span></div>
-      <div><UserRound size={21} /><span><strong>{drivers.length}</strong>{text.driverCount}</span></div>
-      <div><CheckCircle2 size={21} /><span><strong>{vehicles.filter(v => v.status === 'available').length}</strong>{text.available}</span></div>
-    </div>
-
-    <div className="registry-toolbar">
-      <label className="registry-search"><Search size={17} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder={text.search} /></label>
-    </div>
-
-    <h3 className="fleet-section-title"><Truck size={18} />{text.total}</h3>
-    <div className="vehicle-list">
-      {loading ? <span className="spinner dark" /> : displayedVehicles.length ? displayedVehicles.map(vehicle => <article className="vehicle-row" key={vehicle.id}>
-        <span className={`vehicle-mark ${vehicle.status}`}><Truck size={25} /></span>
-        <div className="vehicle-main"><strong>{vehicle.plate_number}</strong><small>{vehicle.vehicle_type}{vehicle.capacity_tons ? ` · ${vehicle.capacity_tons} t` : ''}</small></div>
-        <div className="vehicle-owner"><UserRound size={15} /><span><strong>{vehicle.vehicle_owners?.full_name}</strong><small>{text.ownerCount}</small></span></div>
-        <span className={`status-pill ${vehicle.status}`}>{text[vehicle.status]}</span>
-      </article>) : <div className="registry-empty"><Truck size={34} /><strong>{text.noVehicles}</strong></div>}
-    </div>
-
-    <div className="fleet-drivers"><h3><UserRound size={18} />{text.drivers}</h3>{drivers.length ? drivers.map(driver => <div className="driver-row" key={driver.id}><span className="driver-avatar"><UserRound size={18} /></span><span><strong>{driver.full_name}</strong><small>{driver.phone}</small></span><span>{driver.license_number || '—'}</span></div>) : <div className="registry-empty"><UserRound size={30} /><strong>{text.noDrivers}</strong></div>}</div>
-
-    {dialog && <div className="registry-modal" role="dialog" aria-modal="true"><div className="registry-form-card">
-      <div className="registry-form-head"><span className="module-card-icon green">{dialog === 'vehicle' ? <Truck size={27} /> : <UserRound size={27} />}</span><h2>{dialog === 'owner' ? text.owner : dialog === 'driver' ? text.driver : text.vehicle}</h2></div>
-      {dialog === 'owner' ? <form onSubmit={submitOwner} className="registry-form">
-        <Input label={text.fullName} required value={ownerForm.full_name} onChange={value => setOwnerForm({ ...ownerForm, full_name: value })} />
-        <Input label={text.fatherName} value={ownerForm.father_name} onChange={value => setOwnerForm({ ...ownerForm, father_name: value })} />
-        <Input label={text.phone} required value={ownerForm.phone} onChange={value => setOwnerForm({ ...ownerForm, phone: value })} />
-        <Input label={text.nationalId} value={ownerForm.national_id} onChange={value => setOwnerForm({ ...ownerForm, national_id: value })} />
-        <Input label={text.address} value={ownerForm.address} onChange={value => setOwnerForm({ ...ownerForm, address: value })} wide />
-        <Input label={language === 'fa' ? 'ولایت محل سکونت' : 'Province of residence'} value={ownerForm.province || ''} onChange={value => setOwnerForm({ ...ownerForm, province: value })} />
-        <Input label={text.notes} value={ownerForm.notes} onChange={value => setOwnerForm({ ...ownerForm, notes: value })} wide />
-        <label className="wide registry-check"><input type="checkbox" checked={ownerForm.owner_is_driver} onChange={event => setOwnerForm({ ...ownerForm, owner_is_driver: event.target.checked })} /><span>{text.ownerIsDriver}</span></label>
-        {ownerForm.owner_is_driver && <><Input label={text.license} value={ownerForm.license_number} onChange={value => setOwnerForm({ ...ownerForm, license_number: value })} /><Input label={text.licenseExpiry} type="date" value={ownerForm.license_expiry} onChange={value => setOwnerForm({ ...ownerForm, license_expiry: value })} /></>}
-        {documentFields('owner')}
-        <FormActions text={text} onCancel={() => setDialog(null)} submit={text.saveOwner} />
-      </form> : dialog === 'driver' ? <form onSubmit={submitDriver} className="registry-form">
-        <Input label={text.driverName} required value={driverForm.full_name} onChange={value => setDriverForm({ ...driverForm, full_name: value })} />
-        <Input label={text.fatherName} value={driverForm.father_name} onChange={value => setDriverForm({ ...driverForm, father_name: value })} />
-        <Input label={text.phone} required value={driverForm.phone} onChange={value => setDriverForm({ ...driverForm, phone: value })} />
-        <Input label={text.nationalId} value={driverForm.national_id} onChange={value => setDriverForm({ ...driverForm, national_id: value })} />
-        <Input label={text.license} value={driverForm.license_number} onChange={value => setDriverForm({ ...driverForm, license_number: value })} />
-        <Input label={text.licenseExpiry} type="date" value={driverForm.license_expiry} onChange={value => setDriverForm({ ...driverForm, license_expiry: value })} />
-        <Input label={text.address} value={driverForm.address} onChange={value => setDriverForm({ ...driverForm, address: value })} wide />
-        {documentFields('driver')}
-        <FormActions text={text} onCancel={() => setDialog(null)} submit={text.saveDriver} />
-      </form> : <form onSubmit={submitVehicle} className="registry-form">
-        <label><span>{text.selectOwner} *</span><select required value={vehicleForm.owner_id} onChange={event => setVehicleForm({ ...vehicleForm, owner_id: event.target.value })}><option value="">—</option>{owners.map(owner => <option key={owner.id} value={owner.id}>{owner.full_name} · {owner.phone}</option>)}</select></label>
-        <Input label={text.plate} required value={vehicleForm.plate_number} onChange={value => setVehicleForm({ ...vehicleForm, plate_number: value })} />
-        <Input label={language === 'fa' ? 'نمبر پلیت خارجی (اختیاری)' : 'Foreign plate number (optional)'} value={vehicleForm.foreign_plate_number || ''} onChange={value => setVehicleForm({ ...vehicleForm, foreign_plate_number: value })} />
-        <Input label={language === 'fa' ? 'نمبر شاسی' : 'VIN / Chassis number'} value={vehicleForm.vin_number || ''} onChange={value => setVehicleForm({ ...vehicleForm, vin_number: value })} />
-        <Input label={text.type} required value={vehicleForm.vehicle_type} onChange={value => setVehicleForm({ ...vehicleForm, vehicle_type: value })} />
-        <Input label={text.capacity} type="number" value={vehicleForm.capacity_tons} onChange={value => setVehicleForm({ ...vehicleForm, capacity_tons: value })} />
-        <Input label={text.model} type="number" value={vehicleForm.model_year} onChange={value => setVehicleForm({ ...vehicleForm, model_year: value })} />
-        <Input label={text.color} value={vehicleForm.color} onChange={value => setVehicleForm({ ...vehicleForm, color: value })} />
-        <label><span>{text.status}</span><select value={vehicleForm.status} onChange={event => setVehicleForm({ ...vehicleForm, status: event.target.value })}>{filters.slice(1).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
-        <Input label={text.permit} value={vehicleForm.permit_number} onChange={value => setVehicleForm({ ...vehicleForm, permit_number: value })} />
-        <Input label={text.permitExpiry} type="date" value={vehicleForm.permit_expiry} onChange={value => setVehicleForm({ ...vehicleForm, permit_expiry: value })} />
-        <Input label={text.notes} value={vehicleForm.notes} onChange={value => setVehicleForm({ ...vehicleForm, notes: value })} wide />
-        {documentFields('vehicle')}
-        <FormActions text={text} onCancel={() => setDialog(null)} submit={text.saveVehicle} />
-      </form>}
-    </div></div>}
-  </div>
-}
-
-function Input({ label, required, type = 'text', value, onChange, wide }) {
-  return <label className={wide ? 'wide' : ''}><span>{label}{required ? ' *' : ''}</span><input required={required} type={type} value={value} onChange={event => onChange(event.target.value)} /></label>
-}
-
-function FormActions({ text, onCancel, submit }) {
-  return <div className="registry-form-actions"><button type="button" onClick={onCancel}>{text.cancel}</button><button type="submit" className="registry-primary">{submit}</button></div>
+export default function VehiclesPage({language}){
+ const t=(en,fa)=>language==='fa'?fa:en
+ const [data,setData]=useState({vehicle:[],owner:[],driver:[]}),[query,setQuery]=useState(''),[archived,setArchived]=useState(false),[editor,setEditor]=useState(null),[detail,setDetail]=useState(null),[account,setAccount]=useState(null),[deletion,setDeletion]=useState(null),[form,setForm]=useState({}),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState('')
+ const request=useRef(null)
+ const load=useCallback(async()=>{const [vehicle,owner,driver]=await Promise.all(Object.values(tables).map(table=>allRows(supabase,table)));setData({vehicle,owner,driver});return{vehicle,owner,driver}},[])
+ useEffect(()=>{void Promise.resolve().then(load).catch(e=>setError(explain(e,language))).finally(()=>setLoading(false))},[load,language])
+ const title=kind=>kind==='vehicle'?t('Vehicles','وسایط'):kind==='driver'?t('Drivers','رانندگان'):t('Owners','مالکان')
+ const statusLabel=id=>({available:t('Available','آماده'),assigned:t('Assigned','تعیین‌شده'),on_trip:t('On trip','در سفر'),under_repair:t('Under repair','در ترمیم'),inactive:t('Inactive','غیرفعال')})[id]||id
+ function edit(kind,row=null){setEditor({kind,row});setError('');request.current=null;setForm(row?{...row}:{status:'available',branch_id:null})}
+ async function write(kind,row,payload){const key=JSON.stringify({kind,id:row?.id,payload});if(request.current?.key!==key)request.current={key,id:crypto.randomUUID()};return rpc('save_fleet_record',{p_kind:kind,p_id:row?.id||null,p_request:request.current.id,p_data:payload,p_expected:row?.updated_at||null})}
+ async function save(e){e.preventDefault();if(busy)return;setBusy(true);setError('');try{const id=await write(editor.kind,editor.row,{...form,archived:!!form.archived_at});const kind=editor.kind;setEditor(null);const updated=await load();setDetail({kind,row:updated[kind].find(r=>r.id===id),documents:true})}catch(e){setError(explain(e,language))}finally{setBusy(false)}}
+ async function archive(){setBusy(true);setError('');try{await write(deletion.kind,deletion.row,{...deletion.row,archived:!deletion.row.archived_at});setDeletion(null);await load()}catch(e){setError(explain(e,language))}finally{setBusy(false)}}
+ const rowName=r=>r.plate_number||r.full_name
+ const detailRow=detail&&data[detail.kind].find(r=>r.id===detail.row?.id)
+ return <div className="registry-page"><div className="registry-actions">{['vehicle','owner','driver'].map(kind=><button key={kind} className={kind==='vehicle'?'registry-primary':'registry-secondary'} disabled={busy||(kind==='vehicle'&&!data.owner.some(o=>!o.archived_at))} onClick={()=>edit(kind)}><Plus size={18}/>{kind==='vehicle'?t('Vehicle','واسطه'):kind==='owner'?t('Owner','مالک'):t('Driver','راننده')}</button>)}</div>
+ <div className="registry-toolbar"><label className="registry-search"><Search size={18}/><input aria-label={t('Search fleet','جستجوی وسایط')} placeholder={t('Search name, plate or phone','جستجوی نام، پلیت یا موبایل')} value={query} onChange={e=>setQuery(e.target.value)}/></label><button className="registry-secondary" onClick={()=>setArchived(!archived)} aria-pressed={archived}><Archive size={18}/>{archived?t('Archived','بایگانی‌شده'):t('Archive','بایگانی')}</button></div>
+ {error&&!editor&&!deletion&&<p className="registry-notice error" role="alert">{error}</p>}{loading&&<p>{t('Loading…','در حال بارگیری…')}</p>}
+ {['vehicle','driver','owner'].map(kind=>{const Icon=kind==='vehicle'?Truck:kind==='driver'?UserRound:Users;const rows=data[kind].filter(r=>!!r.archived_at===archived&&`${rowName(r)} ${r.phone||''} ${r.vehicle_type||''}`.toLowerCase().includes(query.toLowerCase()));return <section className="fleet-section" key={kind}><h3 className="fleet-section-title"><Icon size={21}/>{title(kind)} <small>({rows.length})</small></h3><div className="record-list">{rows.map(row=><article className="record-row" key={row.id}><Icon size={23}/><div className="record-row-main"><strong>{rowName(row)}</strong><small>{kind==='vehicle'?row.vehicle_type:row.phone}</small></div>{row.status&&<span className={`status-pill ${row.status}`}>{statusLabel(row.status)}</span>}<RecordTools language={language} archived={row.archived_at} disabled={busy} onView={()=>setDetail({kind,row})} onEdit={()=>edit(kind,row)} onDocuments={()=>setDetail({kind,row,documents:true})} onAccount={kind==='driver'?()=>setAccount(row):undefined} onArchive={()=>{setError('');request.current=null;setDeletion({kind,row})}}/></article>)}{!rows.length&&!loading&&<p className="booking-help">{t('No records.','معلومات موجود نیست.')}</p>}</div></section>})}
+ {editor&&<Modal title={editor.row?t('Edit','ویرایش'):t('Register','ثبت')} onClose={()=>setEditor(null)} busy={busy}><form className="registry-form" onSubmit={save}><fieldset className="booking-fields wide" disabled={busy}>
+ {editor.kind==='vehicle'&&<label><span>{t('Owner','مالک')} *</span><select required value={form.owner_id||''} onChange={e=>setForm({...form,owner_id:e.target.value})}><option value="">—</option>{data.owner.filter(o=>!o.archived_at||o.id===form.owner_id).map(o=><option key={o.id} value={o.id}>{o.full_name} · {o.phone}</option>)}</select></label>}
+ {fields[editor.kind].map(([key,en,fa,type='text',required=false])=><label key={key}><span>{t(en,fa)}{required?' *':''}</span><input required={required} type={type} step={type==='number'?(key==='model_year'?'1':'0.001'):undefined} min={type==='number'?'0.001':undefined} value={form[key]??''} onChange={e=>setForm({...form,[key]:e.target.value})}/></label>)}
+ {editor.kind!=='owner'&&<label><span>{t('Status','وضعیت')}</span><select value={form.status||'available'} onChange={e=>setForm({...form,status:e.target.value})}>{(editor.kind==='driver'?['available','assigned','inactive']:['available','assigned','on_trip','under_repair','inactive']).map(id=><option key={id} value={id}>{statusLabel(id)}</option>)}</select></label>}
+ <p className="wide booking-help">{t('Save first, then upload documents using the document icon.','ابتدا ثبت کنید، سپس با آیکن اسناد فایل‌ها را اضافه کنید.')}</p></fieldset>{error&&<p role="alert" className="wide registry-notice error">{error}</p>}<div className="registry-form-actions"><button type="button" disabled={busy} onClick={()=>setEditor(null)}>{t('Cancel','انصراف')}</button><button className="registry-primary" disabled={busy}>{t('Save','ثبت')}</button></div></form></Modal>}
+ {detailRow&&<Modal title={rowName(detailRow)} onClose={()=>setDetail(null)}><div className="record-modal-body">{!detail.documents&&<dl className="record-details">{fields[detail.kind].map(([key,en,fa])=><div key={key}><dt>{t(en,fa)}</dt><dd>{detailRow[key]??'—'}</dd></div>)}{detailRow.status&&<div><dt>{t('Status','وضعیت')}</dt><dd>{statusLabel(detailRow.status)}</dd></div>}{detail.kind==='vehicle'&&<div><dt>{t('Owner','مالک')}</dt><dd>{data.owner.find(o=>o.id===detailRow.owner_id)?.full_name||'—'}</dd></div>}</dl>}{detail.documents&&<DocumentsPanel kind={detail.kind} parentId={detailRow.id} language={language} archived={!!detailRow.archived_at}/>}</div></Modal>}
+ {account&&<Modal title={t('Driver login','حساب ورود راننده')} onClose={()=>setAccount(null)}><DriverAccount driver={account} language={language} onChanged={async()=>{const updated=await load();setAccount(updated.driver.find(d=>d.id===account.id))}}/></Modal>}
+ {deletion&&<ConfirmArchive language={language} busy={busy} error={error} restore={!!deletion.row.archived_at} onClose={()=>setDeletion(null)} onConfirm={archive}/>}
+ </div>
 }

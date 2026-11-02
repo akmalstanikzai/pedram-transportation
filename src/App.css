@@ -415,6 +415,34 @@ html[dir='rtl'] .brand strong { font-family: 'DM Sans', sans-serif; letter-spaci
 .registry-form-actions { display: flex; justify-content: flex-end; gap: 9px; padding-top: 8px; }
 .registry-form-actions > button:first-child { min-height: 42px; padding: 0 16px; border: 1px solid var(--line); border-radius: 9px; color: #667581; background: #fff; font-size: 12px; font-weight: 750; }
 .registry-check { min-height: 42px; display: flex; align-items: center; gap: 9px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: #f8fafb; }
+.record-tools { display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.record-icon-button { width: 36px; height: 36px; display: inline-grid; place-items: center; border: 1px solid #dbe4e8; border-radius: 8px; background: white; color: #31546b; cursor: pointer; }
+.record-icon-button:hover { background: #eaf3f0; border-color: #8db5a2; }
+.record-icon-button:focus-visible { outline: 3px solid #9bc8b4; outline-offset: 2px; }
+.record-modal { width: min(850px,100%); }
+.record-modal .registry-form-head { justify-content: space-between; }
+.record-modal-body { padding: 22px 25px; }
+.record-details { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 17px; }
+.record-details dt { font-size: 12px; color: #657581; }
+.record-details dd { margin: 5px 0 0; font-size: 14px; font-weight: 650; overflow-wrap: anywhere; }
+.record-row { display: flex; align-items: center; gap: 13px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.record-row-main { flex: 1; min-width: 0; }
+.record-row-main strong,.record-row-main small { display: block; overflow-wrap: anywhere; }
+.record-row-main small { color: #657581; font-size: 12px; margin-top: 5px; }
+.fleet-section { margin-top: 25px; }
+.booking-record-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 13px 0; }
+.documents-panel { margin-top: 25px; border-top: 1px solid var(--line); padding-top: 18px; }
+.documents-panel h3 { display: flex; align-items: center; gap: 9px; }
+.document-upload { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin-bottom: 15px; }
+.document-upload label { display: grid; gap: 7px; font-size: 12px; }
+.document-upload input,.document-upload select,.documents-panel input[type=date] { width: 100%; min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 7px; background: white; }
+.document-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); padding: 15px 0; }
+.document-row > div:first-child { min-width: 0; overflow-wrap: anywhere; }
+.document-row small { display: block; color: #657581; margin-top: 5px; font-size: 11px; }
+.document-row .document-expired { color: #a13b42; font-weight: 800; }
+.document-retry { display: inline-flex; align-items: center; justify-content: center; position: relative; width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.document-retry input { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: pointer; }
+@media(max-width:600px) { .record-row { flex-wrap: wrap; } .record-row .record-tools { margin-inline-start: auto; } .record-details,.document-upload { grid-template-columns: minmax(0,1fr); } .document-row { align-items: flex-start; flex-wrap: wrap; } }
 .registry-check input { width: 17px; height: 17px; margin: 0; }
 .registry-check span { margin: 0 !important; }
 .fleet-drivers { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }

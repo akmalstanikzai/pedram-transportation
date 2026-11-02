@@ -1,18 +1,30 @@
 # Pedram Transportation Supabase setup
 
-The `202611020001_revert_noman_operations.sql` migration restores the database
-access and booking RPC expected by the 1 November frontend. The previously
-applied `202611010003` and `202611010004` files remain in migration history so
-existing and fresh databases follow the same ordered path. Apply the rollback
-migration with this frontend and the earlier branch creation Edge Function.
-It retains newer columns and records to avoid deleting business data.
+The current release requires `202611020002_simple_record_workflows.sql` after
+the existing ordered migrations, including `202611020001_revert_noman_operations.sql`.
+The earlier forward and rollback files remain historical steps. The latest
+migration adds simple lifecycle APIs and account controls, preserving business
+records. Use the current frontend and redeploy both account Edge Functions.
 
 1. Apply every migration in filename order, or run `supabase db push` from a linked Supabase CLI project.
 2. Deploy the current branch creation function after applying migrations:
    `supabase functions deploy create-branch-with-manager --project-ref YOUR_PROJECT_REF --use-api`
+   and the driver account function:
+   `supabase functions deploy create-driver-account --project-ref YOUR_PROJECT_REF --use-api`
 3. Create the initial President in Supabase Authentication. A profile is created automatically for every new user.
 4. New profiles default to the least-privileged `driver` role. Assign the initial President role from a trusted admin SQL session. Branch Manager accounts are created by the deployed Edge Function.
 5. Keep `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in the app's `.env` file.
+
+## Deploy through the Dashboard editor
+
+Both account function `index.ts` files are self-contained for single-file Dashboard deployment. For each function, replace the editor's entire `index.ts` with the corresponding local file, then deploy:
+
+- `functions/create-branch-with-manager/index.ts`
+- `functions/create-driver-account/index.ts`
+
+Do not paste the old two-line wrapper that imports `../_shared/provision.ts`. That wrapper needs the shared file in its deployment bundle and fails if pasted alone into the Dashboard. The current entrypoints contain their provisioning logic directly; `_shared/provision.ts` remains a reference for keeping the two copies consistent, not a runtime dependency of either entrypoint.
+
+Run `node --test tests/edge-function-entrypoints.test.js` from the project root (Node.js 24) to check the standalone entrypoints and shared-logic consistency. This does not deploy to Supabase or test live Auth credentials.
 
 Whenever the branch schema or `create-branch-with-manager` source changes, apply the new migration first and redeploy the function. A 400 response after a form change usually means the deployed function and database schema are on different versions.
 

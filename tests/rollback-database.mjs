@@ -22,7 +22,7 @@ try {
     grant select on storage.buckets to authenticated;
   `)
   const migrations = (await readdir(new URL('../supabase/migrations/', import.meta.url)))
-    .filter((name) => name.endsWith('.sql')).sort()
+    .filter((name) => name.endsWith('.sql') && name <= '202611020001_revert_noman_operations.sql').sort()
   for (const name of migrations) {
     try {
       await db.exec(await readFile(new URL(`../supabase/migrations/${name}`, import.meta.url), 'utf8'))

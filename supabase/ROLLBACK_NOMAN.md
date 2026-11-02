@@ -1,5 +1,7 @@
 # Roll back the 2 November operations release
 
+> Historical rollback guide. The current record-management release supersedes this cutover with `202611020002_simple_record_workflows.sql` and both current account Edge Functions. Do not reapply this rollback to the new release. The paths and instructions below describe the earlier rollback snapshot, not the current function contents. Follow [README.md](../README.md) for current deployment.
+
 This release reverses Git commits `3d54d05` and `3d0931b`. The matching database
 change is [202611020001_revert_noman_operations.sql](migrations/202611020001_revert_noman_operations.sql).
 The matching Edge Function source is

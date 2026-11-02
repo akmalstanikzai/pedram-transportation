@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Truck,
   WalletCards,
+  Users,
 } from 'lucide-react'
 import Brand from '../components/Brand'
 import Icon from '../components/Icon'
@@ -18,12 +19,15 @@ import VehiclesPage from './VehiclesPage'
 import BranchesPage from './BranchesPage'
 import BookingsPage from './BookingsPage'
 import CashbookPage from './CashbookPage'
+import TradersPage from './TradersPage'
+import DriverBookingsPage from './DriverBookingsPage'
 
 const moduleDefinitions = [
   { id: 'cashbook', icon: BookOpen, titleKey: 'cashbook', color: 'green' },
   { id: 'branches', icon: Building2, titleKey: 'branches', pageKey: 'branchesPage', color: 'blue' },
   { id: 'vehicles', icon: Truck, titleKey: 'vehicles', pageKey: 'vehiclesPage', color: 'green' },
   { id: 'bookings', icon: ClipboardList, titleKey: 'bookings', pageKey: 'bookingsPage', color: 'red' },
+  { id: 'traders', icon: Users, titleKey: 'traders', color: 'cyan' },
   { id: 'trip-plans', icon: MapPinned, titleKey: 'tripPlans', pageKey: 'tripPlansPage', color: 'gold' },
   { id: 'trader-accounts', icon: HandCoins, titleKey: 'traderAccounts', pageKey: 'traderAccountsPage', color: 'cyan' },
   { id: 'customs', icon: ShieldCheck, titleKey: 'customDuty', pageKey: 'customDutyPage', color: 'gold' },
@@ -78,12 +82,12 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
         <section className="module-page">
           <button className="module-back" onClick={closeModule}><Icon name="back" size={17} /> {role === 'president' ? text.presidentDashboard : text.roles.branch_manager}</button>
           {activeModule.id === 'vehicles' && <h1 className="fleet-page-title">{text[activeModule.titleKey]}</h1>}
-          <div className={`module-shell ${activeModule.id === 'branches' ? 'branch-shell' : ['vehicles', 'bookings', 'cashbook'].includes(activeModule.id) ? 'fleet-shell' : ''}`}>
-            {!['branches', 'vehicles', 'bookings', 'cashbook'].includes(activeModule.id) && <div className="module-heading">
+          <div className={`module-shell ${activeModule.id === 'branches' ? 'branch-shell' : ['vehicles', 'bookings', 'cashbook', 'traders'].includes(activeModule.id) ? 'fleet-shell' : ''}`}>
+            {!['branches', 'vehicles', 'bookings', 'cashbook', 'traders'].includes(activeModule.id) && <div className="module-heading">
               <div className={`module-icon ${activeModule.color}`}><ActiveModuleIcon size={38} strokeWidth={1.8} /></div>
               <div><span className="section-label">{text.managementModule}</span><h1>{text[activeModule.titleKey]}</h1><p>{text[activeModule.pageKey]}</p></div>
             </div>}
-            {activeModule.id === 'cashbook' ? <CashbookPage language={language} profile={profile} /> : activeModule.id === 'branches' ? <BranchesPage language={language} /> : activeModule.id === 'vehicles' ? <VehiclesPage language={language} /> : activeModule.id === 'bookings' ? <BookingsPage language={language} /> : <div className="empty-state">
+            {activeModule.id === 'traders' ? <TradersPage language={language} /> : activeModule.id === 'cashbook' ? <CashbookPage language={language} profile={profile} /> : activeModule.id === 'branches' ? <BranchesPage language={language} /> : activeModule.id === 'vehicles' ? <VehiclesPage language={language} /> : activeModule.id === 'bookings' ? <BookingsPage language={language} /> : <div className="empty-state">
               <div className="empty-state-mark"><Icon name="layers" size={27} /></div>
               <h2>{text.readyTitle}</h2>
               <p>{text.readyText}</p>
@@ -105,7 +109,7 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
               })}
             </div>
           ) : (
-            <h1 className="role-title">{text.roles[role] || text.roles.driver}</h1>
+            role === 'driver' ? <DriverBookingsPage language={language} /> : <h1 className="role-title">{text.roles[role] || text.roles.driver}</h1>
           )}
         </section>
       )}
