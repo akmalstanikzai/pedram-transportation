@@ -22,48 +22,11 @@ dist-ssr
 *.tsbuildinfo
 coverage/
 .nyc_output/
-.cache/
-.turbo/
-.eslintcache
-.stylelintcache
-
-# Local hosting links and generated deployment output
-.vercel/
-.netlify/
-.output/
-
-# Browser test reports, screenshots and saved authentication sessions
-playwright-report/
-test-results/
-blob-report/
-playwright/.auth/
-/screenshots/
-/artifacts/
 
 # Supabase local development output
 supabase/.branches/
 supabase/.temp/
 supabase/.env
-
-# Local credentials, certificates and database exports
-/.aws/
-/.supabase/
-/.secrets/
-credentials*.json
-service-account*.json
-*-service-account.json
-*.pem
-*.key
-*.p12
-*.pfx
-*.keystore
-*.dump
-*.backup
-/backups/
-
-# Local assistant settings and session files
-/.codex/
-/.agents/
 
 # Editor directories and files
 .vscode/*

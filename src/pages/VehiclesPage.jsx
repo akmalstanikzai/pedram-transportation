@@ -1,989 +1,234 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  Archive,
-  CalendarDays,
-  Download,
-  FileText,
-  Pencil,
+  AlertTriangle,
+  CheckCircle2,
+  CircleParking,
   Plus,
-  Trash2,
+  Search,
   Truck,
-  Upload,
   UserRound,
-  Users,
+  Wrench,
 } from 'lucide-react'
-import { client, rows, rpc } from '../lib/api'
-import { clean, errorCode, normalizePlate } from '../lib/operations'
-import { documentCategories as categories, uploadFleetDocument } from '../lib/fleetDocuments'
-import DocumentPicker from '../components/DocumentPicker'
-import '../fleet-documents.css'
-import {
-  EmptyState,
-  FormActions,
-  FormField,
-  FormSection,
-  Loading,
-  Modal,
-  Notice,
-  PageHeading,
-  Pagination,
-  RefreshButton,
-  SearchBox,
-} from '../components/Workspace'
+import { supabase } from '../lib/supabase'
 
-const tables = { vehicle: 'vehicles', owner: 'vehicle_owners', driver: 'drivers' }
-const kinds = { vehicles: 'vehicle', owners: 'owner', drivers: 'driver' }
-const blank = {
-  full_name: '',
-  father_name: '',
-  phone: '',
-  national_id: '',
-  address: '',
-  notes: '',
-  province: '',
-  owner_id: '',
-  plate_number: '',
-  foreign_plate_number: '',
-  vin_number: '',
-  vehicle_type: '',
-  capacity_tons: '',
-  model_year: '',
-  color: '',
-  status: 'available',
-  permit_number: '',
-  permit_expiry: '',
-  license_number: '',
-  license_expiry: '',
-  user_id: '',
-  owner_is_driver: false,
-  branch_id: '',
-  archived: false,
+const copy = {
+  en: {
+    owner: 'Register Owner', vehicle: 'Register Vehicle', driver: 'Register Driver', all: 'All Vehicles', available: 'Available',
+    assigned: 'Assigned', on_trip: 'On Trip', under_repair: 'Under Repair', inactive: 'Inactive',
+    owners: 'Vehicle Owners', search: 'Search plate, owner or type', noVehicles: 'No vehicles found.',
+    noOwners: 'Register an owner before adding a vehicle.', fullName: 'Owner name', fatherName: 'Father name',
+    phone: 'Phone number', nationalId: 'National ID', address: 'Address', notes: 'Notes', saveOwner: 'Save owner',
+    plate: 'Plate number', type: 'Vehicle type', capacity: 'Capacity (tons)', model: 'Model year', color: 'Color',
+    selectOwner: 'Select vehicle owner', status: 'Status', permit: 'Permit number', permitExpiry: 'Permit expiry',
+    registrationExpiry: 'Registration expiry', saveVehicle: 'Save vehicle', cancel: 'Cancel', saved: 'Record saved.',
+    loadError: 'The vehicle database is not ready. Apply the latest Supabase migration.', required: 'Complete the required fields.',
+    total: 'Vehicles', ownerCount: 'Owners', driverCount: 'Drivers', drivers: 'Drivers', noDrivers: 'No drivers registered.',
+    driverName: 'Driver name', license: 'Licence number', licenseExpiry: 'Licence expiry', saveDriver: 'Save driver',
+    ownerIsDriver: 'Owner is also a driver', selectDriver: 'Assign an existing driver', addDriverNow: 'Register a new driver with this vehicle',
+  },
+  fa: {
+    owner: 'ثبت مالک', vehicle: 'ثبت واسطه', driver: 'ثبت راننده', all: 'تمام وسایط', available: 'آماده', assigned: 'تعیین‌شده',
+    on_trip: 'در سفر', under_repair: 'در ترمیم', inactive: 'غیرفعال', owners: 'مالکان وسایط',
+    search: 'جستجوی پلیت، مالک یا نوع واسطه', noVehicles: 'واسطه‌ای یافت نشد.',
+    noOwners: 'قبل از ثبت واسطه، مالک را ثبت کنید.', fullName: 'نام مالک', fatherName: 'نام پدر',
+    phone: 'شماره تماس', nationalId: 'نمبر تذکره', address: 'آدرس', notes: 'ملاحظات', saveOwner: 'ثبت مالک',
+    plate: 'نمبر پلیت', type: 'نوع واسطه', capacity: 'ظرفیت (تن)', model: 'سال ساخت', color: 'رنگ',
+    selectOwner: 'انتخاب مالک واسطه', status: 'وضعیت', permit: 'نمبر جواز', permitExpiry: 'تاریخ ختم جواز',
+    registrationExpiry: 'تاریخ ختم ثبت', saveVehicle: 'ثبت واسطه', cancel: 'انصراف', saved: 'معلومات ثبت شد.',
+    loadError: 'دیتابیس وسایط آماده نیست. آخرین مایگریشن Supabase را اجرا کنید.', required: 'خانه‌های ضروری را تکمیل کنید.',
+    total: 'وسایط', ownerCount: 'مالکان', driverCount: 'رانندگان', drivers: 'رانندگان', noDrivers: 'راننده‌ای ثبت نشده است.',
+    driverName: 'نام راننده', license: 'نمبر جواز رانندگی', licenseExpiry: 'تاریخ ختم جواز', saveDriver: 'ثبت راننده',
+    ownerIsDriver: 'مالک راننده نیز است', selectDriver: 'انتخاب راننده موجود', addDriverNow: 'ثبت راننده جدید با این واسطه',
+  },
 }
-export default function VehiclesPage({
-  language,
-  profile,
-  view = 'vehicles',
-  action,
-  recordId,
-  documentId,
-  onAlertsChanged,
-}) {
-  const t = (en, fa) => (language === 'fa' ? fa : en)
-  const kind = kinds[view]
-  const [data, setData] = useState({ records: [], owners: [], branches: [], profiles: [] })
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [saved, setSaved] = useState(false)
+
+const emptyOwner = { full_name: '', father_name: '', phone: '', national_id: '', address: '', notes: '', owner_is_driver: false, license_number: '', license_expiry: '' }
+const emptyDriver = { full_name: '', father_name: '', phone: '', national_id: '', license_number: '', license_expiry: '', address: '' }
+const emptyVehicle = { owner_id: '', plate_number: '', vehicle_type: '', capacity_tons: '', model_year: '', color: '', status: 'available', permit_number: '', permit_expiry: '', notes: '' }
+
+export default function VehiclesPage({ language }) {
+  const text = copy[language] || copy.en
+  const [vehicles, setVehicles] = useState([])
+  const [owners, setOwners] = useState([])
+  const [drivers, setDrivers] = useState([])
   const [query, setQuery] = useState('')
-  const [showArchived, setShowArchived] = useState(false)
-  const [page, setPage] = useState(1)
-  const [editor, setEditor] = useState(() =>
-    action === 'new' ? { record: null, request: crypto.randomUUID() } : null,
-  )
-  const [documents, setDocuments] = useState(null)
-  const load = useCallback(async () => {
-    const [records, owners, branches, profiles] = await Promise.all([
-      rows(tables[kind]),
-      kind === 'vehicle' ? rows('vehicle_owners') : Promise.resolve([]),
-      rows('branches', 'id,name,archived_at'),
-      profile.role === 'president' && kind === 'driver'
-        ? rows('profiles', 'id,full_name,role,branch_id,account_enabled', (q) =>
-            q.eq('role', 'driver'),
-          )
-        : Promise.resolve([]),
-    ])
-    return {
-      records: records.sort((a, b) => b.created_at.localeCompare(a.created_at)),
-      owners,
-      branches,
-      profiles,
-    }
-  }, [kind, profile.role])
-  useEffect(() => {
-    let active = true
-    void load()
-      .then((result) => {
-        if (active) {
-          setData(result)
-          if (recordId && ['view', 'documents'].includes(action)) {
-            const record = result.records.find((item) => item.id === recordId)
-            if (!record) setError(new Error('ACCESS_DENIED'))
-            else {
-              setShowArchived(Boolean(record.archived_at))
-              if (action === 'documents') setDocuments(record)
-              else setEditor({ record, request: crypto.randomUUID() })
-            }
-          }
-        }
-      })
-      .catch((failure) => {
-        if (active) setError(failure)
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-    return () => {
-      active = false
-    }
-  }, [load, action, recordId])
-  async function refresh() {
-    setLoading(true)
-    setError(null)
-    try {
-      setData(await load())
-    } catch (failure) {
-      setError(failure)
-    } finally {
-      setLoading(false)
-    }
-  }
-  async function committed() {
-    setEditor(null)
-    setSaved(true)
-    onAlertsChanged?.()
-    await refresh()
-  }
-  const title =
-    kind === 'vehicle'
-      ? t('Vehicles', 'وسایط')
-      : kind === 'owner'
-        ? t('Vehicle owners', 'مالکان وسایط')
-        : t('Drivers', 'رانندگان')
-  const register =
-    kind === 'vehicle'
-      ? t('Register vehicle', 'ثبت واسطه')
-      : kind === 'owner'
-        ? t('Register owner', 'ثبت مالک')
-        : t('Register driver', 'ثبت راننده')
-  const Icon = kind === 'vehicle' ? Truck : kind === 'owner' ? Users : UserRound
-  const filtered = data.records.filter(
-    (record) =>
-      Boolean(record.archived_at) === showArchived &&
-      `${record.plate_number || ''} ${record.vehicle_type || ''} ${record.full_name || ''} ${record.phone || ''}`
-        .toLowerCase()
-        .includes(query.trim().toLowerCase()),
-  )
-  const visiblePage = Math.min(page, Math.max(1, Math.ceil(filtered.length / 15)))
-  return (
-    <>
-      <PageHeading
-        title={title}
-        description={t(
-          'One place for reliable fleet records, contacts and documents.',
-          'محلی برای مدیریت سوابق وسایط، تماس‌ها و اسناد.',
-        )}
-      >
-        <RefreshButton loading={loading} onClick={refresh} language={language} />
-        <button
-          className="registry-primary"
-          disabled={loading}
-          onClick={() => {
-            setSaved(false)
-            setEditor({ record: null, request: crypto.randomUUID() })
-          }}
-        >
-          <Plus size={17} />
-          {register}
-        </button>
-      </PageHeading>
-      <div className="mini-stats">
-        <div>
-          <span>{t('Registered', 'ثبت‌شده')}</span>
-          <strong>
-            {loading || error ? '—' : data.records.filter((r) => !r.archived_at).length}
-          </strong>
-        </div>
-        <div>
-          <span>{t('Available', 'آماده')}</span>
-          <strong>
-            {loading || error
-              ? '—'
-              : data.records.filter(
-                  (r) => !r.archived_at && (!r.status || r.status === 'available'),
-                ).length}
-          </strong>
-        </div>
-        <div>
-          <span>{t('Archived', 'بایگانی')}</span>
-          <strong>
-            {loading || error ? '—' : data.records.filter((r) => r.archived_at).length}
-          </strong>
-        </div>
-      </div>
-      <Notice
-        error={error}
-        message={
-          saved
-            ? t('Record saved. Your list has been refreshed.', 'سابقه ثبت و فهرست تازه شد.')
-            : null
-        }
-        language={language}
-      />
-      <section className="surface-card">
-        <div className="table-toolbar">
-          <div className="segmented-control">
-            <button
-              className={!showArchived ? 'active' : ''}
-              onClick={() => {
-                setShowArchived(false)
-                setPage(1)
-              }}
-            >
-              {t('Active records', 'سوابق فعال')}
-            </button>
-            <button
-              className={showArchived ? 'active' : ''}
-              onClick={() => {
-                setShowArchived(true)
-                setPage(1)
-              }}
-            >
-              <Archive size={14} />
-              {t('Archived', 'بایگانی')}
-            </button>
-          </div>
-          <SearchBox
-            label={t('Search records…', 'جستجوی سوابق…')}
-            value={query}
-            onChange={(value) => {
-              setQuery(value)
-              setPage(1)
-            }}
-          />
-        </div>
-        {loading ? (
-          <Loading language={language} />
-        ) : error && !data.records.length ? (
-          <EmptyState
-            title={t('Records could not be loaded', 'سوابق بارگیری نشد')}
-            description={t(
-              'Resolve the error above, then refresh. Your records have not been deleted.',
-              'خطای بالا را رفع و صفحه را تازه‌سازی کنید. سوابق شما حذف نشده‌اند.',
-            )}
-          />
-        ) : !filtered.length ? (
-          <EmptyState
-            title={t('No matching records', 'سابقه‌ای یافت نشد')}
-            description={t(
-              'Register a record or try another search.',
-              'یک سابقه ثبت کنید یا جستجو را تغییر دهید.',
-            )}
-          />
-        ) : (
-          <div className="data-table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>{kind === 'vehicle' ? t('Vehicle', 'واسطه') : t('Name', 'نام')}</th>
-                  <th>
-                    {kind === 'vehicle'
-                      ? t('Owner / capacity', 'مالک / ظرفیت')
-                      : t('Contact / identity', 'تماس / هویت')}
-                  </th>
-                  <th>{t('Branch', 'شعبه')}</th>
-                  <th>{t('Status', 'وضعیت')}</th>
-                  <th className="actions-cell">{t('Actions', 'عملیات')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.slice((visiblePage - 1) * 15, visiblePage * 15).map((record) => (
-                  <tr key={record.id}>
-                    <td>
-                      <div className="record-identity">
-                        <span className="table-record-icon">
-                          <Icon size={20} />
-                        </span>
-                        <span>
-                          <strong>{record.plate_number || record.full_name}</strong>
-                          <small>
-                            {record.vehicle_type || record.license_number || record.province || '—'}
-                          </small>
-                        </span>
-                      </div>
-                    </td>
-                    <td>
-                      <strong>
-                        {kind === 'vehicle'
-                          ? data.owners.find((o) => o.id === record.owner_id)?.full_name || '—'
-                          : record.phone}
-                      </strong>
-                      <small>
-                        {kind === 'vehicle'
-                          ? record.capacity_tons
-                            ? `${record.capacity_tons} ${t('tons', 'تن')}`
-                            : t('Capacity not set', 'ظرفیت تعیین نشده')
-                          : record.national_id || '—'}
-                      </small>
-                    </td>
-                    <td>
-                      {data.branches.find((b) => b.id === record.branch_id)?.name ||
-                        t('Central office', 'دفتر مرکزی')}
-                    </td>
-                    <td>
-                      <span
-                        className={`status-badge ${record.archived_at ? 'archived' : record.status || 'available'}`}
-                      >
-                        {record.archived_at
-                          ? t('Archived', 'بایگانی')
-                          : statusText(record.status || 'available', t)}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="table-actions">
-                        <button
-                          className="text-button"
-                          onClick={() => {
-                            setSaved(false)
-                            setEditor({ record, request: crypto.randomUUID() })
-                          }}
-                        >
-                          <Pencil size={15} />
-                          {t('View / edit', 'مشاهده / ویرایش')}
-                        </button>
-                        <button
-                          className="text-button"
-                          title={t('Documents', 'اسناد')}
-                          aria-label={`${t('Documents for', 'اسناد')} ${record.plate_number || record.full_name}`}
-                          onClick={() => setDocuments(record)}
-                        >
-                          <FileText size={18} />
-                          {t('Documents', 'اسناد')}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        {!loading && (!error || data.records.length > 0) && (
-          <Pagination
-            page={visiblePage}
-            setPage={setPage}
-            count={filtered.length}
-            language={language}
-          />
-        )}
-      </section>
-      {editor && (
-        <FleetEditor
-          key={editor.request}
-          kind={kind}
-          record={editor.record}
-          request={editor.request}
-          data={data}
-          profile={profile}
-          language={language}
-          title={
-            editor.record
-              ? `${t('Record details', 'مشخصات سابقه')} · ${editor.record.plate_number || editor.record.full_name}`
-              : register
-          }
-          onClose={() => setEditor(null)}
-          onSaved={committed}
-          onManageDocuments={(record) => {
-            setEditor(null)
-            setDocuments(record)
-          }}
-        />
-      )}
-      {documents && (
-        <Documents
-          highlightId={documentId}
-          kind={kind}
-          record={documents}
-          language={language}
-          onClose={() => setDocuments(null)}
-          onChanged={onAlertsChanged}
-        />
-      )}
-    </>
-  )
-}
-function statusText(status, t) {
-  return (
-    {
-      available: t('Available', 'آماده'),
-      assigned: t('Assigned', 'تعیین‌شده'),
-      on_trip: t('On trip', 'در سفر'),
-      under_repair: t('Under repair', 'در ترمیم'),
-      inactive: t('Inactive', 'غیرفعال'),
-    }[status] || status
-  )
-}
-
-function FleetEditor({
-  kind,
-  record,
-  request,
-  data,
-  profile,
-  language,
-  title,
-  onClose,
-  onSaved,
-  onManageDocuments,
-}) {
-  const t = (en, fa) => (language === 'fa' ? fa : en)
-  const [form, setForm] = useState(() => ({
-    ...blank,
-    ...record,
-    branch_id: record ? record.branch_id || '' : profile.branch_id || '',
-    archived: Boolean(record?.archived_at),
-  }))
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState(null)
-  const [uncertain, setUncertain] = useState(false)
-  const [jobs, setJobs] = useState([])
-  const [savedId, setSavedId] = useState(null)
-  const submission = useRef(null)
-  const guard = useRef(false)
-  const update = (key, value) => setForm((current) => ({ ...current, [key]: value }))
-  const input = (key, label, props = {}) => (
-    <FormField
-      label={label}
-      {...props}
-      value={form[key]}
-      onChange={(event) => update(key, event.target.value)}
-    />
-  )
-  async function save(event) {
-    event.preventDefault()
-    if (guard.current) return
-    guard.current = true
-    setBusy(true)
-    setError(null)
-    let recordCommitted = Boolean(savedId)
-    try {
-      const payload = clean(form)
-      if (kind === 'vehicle') payload.plate_number = normalizePlate(payload.plate_number)
-      submission.current ||= {
-        p_kind: kind,
-        p_id: record?.id || null,
-        p_request: request,
-        p_data: payload,
-        p_expected: record?.updated_at || null,
-      }
-      const parentId = savedId || (await rpc('save_fleet_record', submission.current))
-      setSavedId(parentId)
-      recordCommitted = true
-      for (const job of jobs) {
-        await uploadFleetDocument(kind, parentId, job, {
-          rpc,
-          storage: client().storage.from('fleet-documents'),
-        })
-        setJobs((current) => current.filter((item) => item.id !== job.id))
-      }
-      await onSaved()
-    } catch (failure) {
-      setError(failure)
-      const unknown =
-        !recordCommitted && ['UNKNOWN_ERROR', 'NETWORK_ERROR'].includes(errorCode(failure))
-      setUncertain(unknown)
-      if (!unknown) submission.current = null
-    } finally {
-      guard.current = false
-      setBusy(false)
-    }
-  }
-  return (
-    <Modal
-      title={title}
-      language={language}
-      busy={busy}
-      onClose={savedId ? () => void onSaved() : onClose}
-      wide
-    >
-      <form onSubmit={save} className="workspace-form">
-        <fieldset disabled={busy || uncertain || Boolean(savedId)}>
-          <FormSection title={t('Record information', 'معلومات سابقه')}>
-            <FormField label={t('Branch', 'شعبه')}>
-              <select
-                value={form.branch_id}
-                disabled={Boolean(record) || profile.role === 'branch_manager'}
-                onChange={(event) => update('branch_id', event.target.value)}
-              >
-                <option value="">{t('Central office', 'دفتر مرکزی')}</option>
-                {data.branches
-                  .filter((b) => !b.archived_at || b.id === form.branch_id)
-                  .map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-              </select>
-            </FormField>
-            {kind === 'vehicle' ? (
-              <>
-                <FormField label={t('Vehicle owner *', 'مالک واسطه *')}>
-                  <select
-                    required
-                    value={form.owner_id}
-                    onChange={(event) => update('owner_id', event.target.value)}
-                  >
-                    <option value="">{t('Select owner', 'انتخاب مالک')}</option>
-                    {data.owners
-                      .filter((o) => !o.archived_at && (o.branch_id || '') === form.branch_id)
-                      .map((o) => (
-                        <option key={o.id} value={o.id}>
-                          {o.full_name} · {o.phone}
-                        </option>
-                      ))}
-                  </select>
-                </FormField>
-                {input('plate_number', t('Plate number', 'نمبر پلیت'), {
-                  required: true,
-                  maxLength: 40,
-                })}
-                {input('foreign_plate_number', t('Foreign plate', 'پلیت خارجی'))}
-                {input('vin_number', t('VIN / chassis number', 'نمبر شاسی'))}
-                {input('vehicle_type', t('Vehicle type', 'نوع واسطه'), { required: true })}
-                {input('capacity_tons', t('Capacity (tons)', 'ظرفیت (تن)'), {
-                  type: 'number',
-                  min: '0.01',
-                  max: '999999.99',
-                  step: '0.01',
-                })}
-                {input('model_year', t('Model year', 'سال ساخت'), {
-                  type: 'number',
-                  min: 1950,
-                  max: 2100,
-                  step: 1,
-                })}
-                {input('color', t('Color', 'رنگ'))}
-                {input('permit_number', t('Road permit number', 'نمبر جواز سیر'))}
-                {input('permit_expiry', t('Permit expiry', 'تاریخ ختم جواز'), { type: 'date' })}
-              </>
-            ) : (
-              <>
-                {input('full_name', t('Full name', 'نام کامل'), { required: true, maxLength: 160 })}
-                {input('father_name', t('Father name', 'نام پدر'))}
-                {input('phone', t('Phone number', 'شماره تماس'), {
-                  required: true,
-                  type: 'tel',
-                  maxLength: 40,
-                })}
-                {input('national_id', t('National ID', 'نمبر تذکره'))}
-                {input('address', t('Address', 'آدرس'), { wide: true })}
-                {kind === 'owner' &&
-                  input('province', t('Province of residence', 'ولایت محل سکونت'))}
-              </>
-            )}
-            {kind !== 'owner' && (
-              <FormField label={t('Status', 'وضعیت')}>
-                <select
-                  value={form.status}
-                  onChange={(event) => update('status', event.target.value)}
-                >
-                  {(kind === 'vehicle'
-                    ? ['available', 'assigned', 'on_trip', 'under_repair', 'inactive']
-                    : ['available', 'assigned', 'inactive']
-                  ).map((status) => (
-                    <option key={status} value={status}>
-                      {statusText(status, t)}
-                    </option>
-                  ))}
-                </select>
-              </FormField>
-            )}
-            {kind !== 'driver' && input('notes', t('Notes', 'ملاحظات'), { wide: true })}
-          </FormSection>
-          {(kind === 'driver' || kind === 'owner') && (
-            <FormSection title={t('Driver information', 'معلومات راننده')}>
-              {kind === 'owner' && !record && (
-                <label className="check-field span-full">
-                  <input
-                    type="checkbox"
-                    checked={form.owner_is_driver}
-                    onChange={(event) => update('owner_is_driver', event.target.checked)}
-                  />
-                  {t('Owner is also a driver', 'مالک راننده نیز است')}
-                </label>
-              )}
-              {(kind === 'driver' || form.owner_is_driver) && (
-                <>
-                  {input('license_number', t('Driving licence', 'نمبر لایسنس'))}
-                  {input('license_expiry', t('Licence expiry', 'تاریخ ختم لایسنس'), {
-                    type: 'date',
-                  })}
-                  {kind === 'driver' && profile.role === 'president' && (
-                    <FormField
-                      label={t(
-                        'Link existing driver login (optional)',
-                        'اتصال حساب راننده (اختیاری)',
-                      )}
-                      wide
-                    >
-                      <select
-                        value={form.user_id || ''}
-                        onChange={(event) => update('user_id', event.target.value)}
-                      >
-                        <option value="">{t('No linked account', 'بدون حساب مرتبط')}</option>
-                        {data.profiles
-                          .filter(
-                            (p) => p.account_enabled && (p.branch_id || '') === form.branch_id,
-                          )
-                          .map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.full_name || p.id}
-                            </option>
-                          ))}
-                      </select>
-                    </FormField>
-                  )}
-                </>
-              )}
-            </FormSection>
-          )}
-          {record && (
-            <FormSection title={t('Record lifecycle', 'مدیریت وضعیت سابقه')}>
-              <label className="check-field span-full">
-                <input
-                  type="checkbox"
-                  checked={form.archived}
-                  disabled={jobs.length > 0}
-                  onChange={(event) => update('archived', event.target.checked)}
-                />
-                {t('Archive this record', 'بایگانی این سابقه')}
-              </label>
-              <p className="form-help span-full">
-                {t(
-                  'Archived records remain in historical bookings. Records in active use cannot be archived.',
-                  'سوابق بایگانی در بوکینگ‌های قبلی حفظ می‌شوند. سوابق در حال استفاده قابل بایگانی نیستند.',
-                )}
-              </p>
-            </FormSection>
-          )}
-        </fieldset>
-        {!form.archived && (
-          <DocumentPicker
-            kind={kind}
-            language={language}
-            jobs={jobs}
-            onChange={setJobs}
-            onError={setError}
-            disabled={busy || uncertain || Boolean(savedId)}
-            expiryDefaults={{ permit: form.permit_expiry, licence: form.license_expiry }}
-            registration
-            onManage={record ? () => onManageDocuments(record) : undefined}
-          />
-        )}
-        <Notice error={error} language={language} />
-        {savedId && jobs.length > 0 && !busy && (
-          <div className="document-save-status" role="status">
-            <FileText size={20} />
-            <span>
-              {t(
-                'Your record is saved. Some files still need uploading. Keep this form open and retry the remaining files. The record will not be created again.',
-                'سابقه ثبت شده است. برخی فایل‌ها هنوز آپلود نشده‌اند. فورم را باز نگه دارید و فایل‌های باقی‌مانده را دوباره آپلود کنید. سابقه دوباره ایجاد نمی‌شود.',
-              )}
-            </span>
-          </div>
-        )}
-        {uncertain && (
-          <p className="form-help">
-            {t(
-              'Retry sends the same request safely. Close and refresh to check the result before making different changes.',
-              'کوشش مجدد همان درخواست را ارسال می‌کند. برای تغییر معلومات ابتدا فورم را بسته و فهرست را تازه کنید.',
-            )}
-          </p>
-        )}
-        <FormActions
-          busy={busy}
-          onClose={savedId ? () => void onSaved() : onClose}
-          language={language}
-          label={
-            savedId
-              ? t('Retry remaining uploads', 'آپلود فایل‌های باقی‌مانده')
-              : uncertain
-                ? t('Retry save', 'کوشش مجدد')
-                : jobs.length > 0
-                  ? t('Save and upload documents', 'ثبت و آپلود اسناد')
-                  : undefined
-          }
-          busyLabel={
-            savedId && jobs.length > 0
-              ? t('Uploading documents…', 'در حال آپلود اسناد…')
-              : undefined
-          }
-        />
-      </form>
-    </Modal>
-  )
-}
-
-function Documents({ kind, record, language, onClose, highlightId, onChanged }) {
-  const t = (en, fa) => (language === 'fa' ? fa : en)
-  const [items, setItems] = useState([])
-  const [error, setError] = useState(null)
+  const [dialog, setDialog] = useState(null)
+  const [ownerForm, setOwnerForm] = useState(emptyOwner)
+  const [vehicleForm, setVehicleForm] = useState(emptyVehicle)
+  const [driverForm, setDriverForm] = useState(emptyDriver)
+  const [message, setMessage] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [busy, setBusy] = useState(false)
-  const [jobs, setJobs] = useState([])
-  const [uploadStarted, setUploadStarted] = useState(false)
-  const [removing, setRemoving] = useState(null)
-  const [editingExpiry, setEditingExpiry] = useState(null)
-  const guard = useRef(false)
-  const load = useCallback(
-    () => rows('vehicle_documents', '*', (query) => query.eq(`${kind}_id`, record.id)),
-    [kind, record.id],
-  )
-  useEffect(() => {
-    let active = true
-    void load()
-      .then((data) => {
-        if (active) setItems(data)
-      })
-      .catch((failure) => {
-        if (active) setError(failure)
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-    return () => {
-      active = false
-    }
-  }, [load])
-  async function upload(event) {
-    event.preventDefault()
-    if (guard.current || !jobs.length) return
-    guard.current = true
-    setBusy(true)
-    setError(null)
-    setUploadStarted(true)
-    try {
-      for (const job of jobs) {
-        await uploadFleetDocument(kind, record.id, job, {
-          rpc,
-          storage: client().storage.from('fleet-documents'),
-        })
-        setJobs((current) => current.filter((item) => item.id !== job.id))
+  const [documents, setDocuments] = useState({})
+
+  useEffect(() => { setDocuments({}) }, [dialog])
+
+  async function uploadDocuments(kind, id) {
+    for (const [category, files] of Object.entries(documents)) {
+      for (const file of files) {
+        const path = `${kind}/${id}/${category}/${crypto.randomUUID()}.${file.name.split('.').pop()}`
+        const { error } = await supabase.storage.from('fleet-documents').upload(path, file)
+        if (error) throw error
       }
-      setUploadStarted(false)
-    } catch (failure) {
-      setError(failure)
-    } finally {
-      onChanged?.()
-      try {
-        setItems(await load())
-      } catch (failure) {
-        setError(failure)
-      }
-      guard.current = false
-      setBusy(false)
     }
+    setDocuments({})
   }
-  async function remove(item) {
-    if (guard.current) return
-    guard.current = true
-    setBusy(true)
-    setError(null)
-    try {
-      await rpc('remove_fleet_document', { p_id: item.id, p_finish: false })
-      const { error: failure } = await client()
-        .storage.from('fleet-documents')
-        .remove([item.storage_path])
-      if (failure) throw failure
-      await rpc('remove_fleet_document', { p_id: item.id, p_finish: true })
-      onChanged?.()
-      setItems(await load())
-      setRemoving(null)
-    } catch (failure) {
-      setError(failure)
-    } finally {
-      guard.current = false
-      setBusy(false)
-    }
+
+  function documentFields(kind) {
+    const labels = kind === 'vehicle'
+      ? [['photos', 'Vehicle pictures (2)', 'عکس‌های موتر (2 قطعه)'], ['permit', 'Road permit', 'جواز سیر'], ['card', 'Vehicle card', 'کارت'], ['booklet', 'Vehicle booklet', 'کتابچه'], ['international', 'International certificate', 'سرتفیکت بین المللی']]
+      : kind === 'owner' ? [['identity', 'CNIC / Tazkira scan', 'اسکن تذکره']]
+        : [['identity', 'CNIC / Tazkira scan', 'اسکن تذکره'], ['licence', 'Driving licence', 'اسکن لایسنس'], ['health', 'Health card', 'کارت صحت'], ['contract', 'Contract', 'قرارداد خط']]
+    return labels.map(([key, en, fa]) => <label key={key}><span>{language === 'fa' ? fa : en}</span><input type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.heic,.heif,.tif,.tiff" onChange={event => setDocuments(current => ({ ...current, [key]: Array.from(event.target.files || []) }))} /></label>)
   }
-  async function download(item) {
-    setError(null)
-    try {
-      const { data, error: failure } = await client()
-        .storage.from('fleet-documents')
-        .download(item.storage_path)
-      if (failure) throw failure
-      const url = URL.createObjectURL(data)
-      const anchor = document.createElement('a')
-      anchor.href = url
-      anchor.download = item.file_name
-      anchor.click()
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
-    } catch (failure) {
-      setError(failure)
-    }
-  }
-  async function saveExpiry(event) {
+
+  const loadRegistry = useCallback(async () => {
+    if (!supabase) return setLoading(false)
+    const [vehicleResult, ownerResult, driverResult] = await Promise.all([
+      supabase.from('vehicles').select('*, vehicle_owners(id, full_name, phone)').order('created_at', { ascending: false }),
+      supabase.from('vehicle_owners').select('*').order('full_name'),
+      supabase.from('drivers').select('*, vehicle_owners(full_name)').order('full_name'),
+    ])
+    setLoading(false)
+    if (vehicleResult.error || ownerResult.error || driverResult.error) return setMessage({ type: 'error', text: text.loadError })
+    setVehicles(vehicleResult.data || [])
+    setOwners(ownerResult.data || [])
+    setDrivers(driverResult.data || [])
+  }, [text.loadError])
+
+  // Loading external registry data is the synchronization performed by this effect.
+  // oxlint-disable-next-line react/set-state-in-effect
+  useEffect(() => { void loadRegistry() }, [loadRegistry])
+
+  const displayedVehicles = useMemo(() => vehicles.filter(vehicle => {
+    const haystack = `${vehicle.plate_number} ${vehicle.vehicle_type} ${vehicle.vehicle_owners?.full_name || ''}`.toLowerCase()
+    return haystack.includes(query.trim().toLowerCase())
+  }), [vehicles, query])
+
+  async function submitOwner(event) {
     event.preventDefault()
-    if (guard.current) return
-    guard.current = true
-    setBusy(true)
-    setError(null)
-    try {
-      await rpc('set_fleet_document_expiry', {
-        p_id: editingExpiry.id,
-        p_expires: editingExpiry.date || null,
-      })
-      onChanged?.()
-      setItems(await load())
-      setEditingExpiry(null)
-    } catch (failure) {
-      setError(failure)
-    } finally {
-      guard.current = false
-      setBusy(false)
+    if (!ownerForm.full_name.trim() || !ownerForm.phone.trim()) return setMessage({ type: 'error', text: text.required })
+    const { owner_is_driver, license_number, license_expiry, ...ownerPayload } = ownerForm
+    const { data: owner, error } = await supabase.from('vehicle_owners').insert(ownerPayload).select('id').single()
+    if (error) return setMessage({ type: 'error', text: error.message })
+    try { await uploadDocuments('owner', owner.id) } catch (error) { return setMessage({ type: 'error', text: `${text.saved} ${error.message}` }) }
+    if (owner_is_driver) {
+      const { error: driverError } = await supabase.from('drivers').insert({ owner_id: owner.id, full_name: ownerForm.full_name, father_name: ownerForm.father_name || null, phone: ownerForm.phone, national_id: ownerForm.national_id || null, address: ownerForm.address || null, license_number: license_number || null, license_expiry: license_expiry || null })
+      if (driverError) return setMessage({ type: 'error', text: driverError.message })
     }
+    setOwnerForm(emptyOwner); setDialog(null); setMessage({ type: 'success', text: text.saved }); loadRegistry()
   }
-  return (
-    <Modal
-      title={`${t('Documents', 'اسناد')} · ${record.plate_number || record.full_name}`}
-      onClose={onClose}
-      busy={busy}
-      language={language}
-      wide
-    >
-      <div className="workspace-form">
-        <Notice error={error} language={language} />
-        {loading ? (
-          <Loading language={language} />
-        ) : items.length ? (
-          <div className="document-list">
-            {items.map((item) => (
-              <div
-                className={`document-row ${highlightId === item.id ? 'search-highlight' : ''}`}
-                key={item.id}
-              >
-                <FileText size={22} />
-                <div>
-                  <strong>{item.file_name}</strong>
-                  <small>
-                    {categories[kind].find(([key]) => key === item.document_type)?.[
-                      language === 'fa' ? 2 : 1
-                    ] || item.document_type}{' '}
-                    ·{' '}
-                    {item.state === 'pending'
-                      ? t('Upload pending', 'در انتظار آپلود')
-                      : item.state === 'deleting'
-                        ? t('Removal pending', 'در انتظار حذف')
-                        : item.expires_on
-                          ? `${t('Expires', 'تاریخ ختم')} ${item.expires_on}`
-                          : t('No expiry set', 'بدون تاریخ ختم')}
-                  </small>
-                </div>
-                <div className="table-actions">
-                  {item.state === 'ready' && (
-                    <button
-                      className="icon-button"
-                      disabled={busy}
-                      onClick={() => setEditingExpiry({ id: item.id, date: item.expires_on || '' })}
-                      aria-label={t('Edit expiry', 'ویرایش تاریخ ختم')}
-                    >
-                      <CalendarDays size={17} />
-                    </button>
-                  )}
-                  {item.state === 'ready' && (
-                    <button
-                      className="icon-button"
-                      disabled={busy}
-                      onClick={() => download(item)}
-                      aria-label={`${t('Download', 'دانلود')} ${item.file_name}`}
-                    >
-                      <Download size={17} />
-                    </button>
-                  )}
-                  <button
-                    className="icon-button danger"
-                    disabled={busy}
-                    onClick={() => setRemoving(item)}
-                    aria-label={`${t('Remove', 'حذف')} ${item.file_name}`}
-                  >
-                    <Trash2 size={17} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <EmptyState title={t('No documents yet', 'هنوز سندی موجود نیست')} />
-        )}
-        {editingExpiry && (
-          <form onSubmit={saveExpiry} className="confirm-panel">
-            <FormField
-              label={t('Document expiry', 'تاریخ ختم سند')}
-              type="date"
-              value={editingExpiry.date}
-              onChange={(event) =>
-                setEditingExpiry((current) => ({ ...current, date: event.target.value }))
-              }
-              disabled={busy}
-            />
-            <div className="form-actions">
-              <button
-                type="button"
-                className="registry-secondary"
-                disabled={busy}
-                onClick={() => setEditingExpiry(null)}
-              >
-                {t('Cancel', 'انصراف')}
-              </button>
-              <button className="registry-primary" disabled={busy}>
-                {t('Save expiry', 'ثبت تاریخ ختم')}
-              </button>
-            </div>
-          </form>
-        )}
-        {removing && (
-          <div className="confirm-panel">
-            <strong>{t('Remove this document?', 'این سند حذف شود؟')}</strong>
-            <p>{removing.file_name}</p>
-            <div className="page-heading-actions">
-              <button
-                className="registry-secondary"
-                disabled={busy}
-                onClick={() => setRemoving(null)}
-              >
-                {t('Keep document', 'حفظ سند')}
-              </button>
-              <button className="danger-button" disabled={busy} onClick={() => remove(removing)}>
-                {t('Remove document', 'حذف سند')}
-              </button>
-            </div>
-          </div>
-        )}
-        {!record.archived_at && (
-          <form onSubmit={upload}>
-            <DocumentPicker
-              kind={kind}
-              language={language}
-              jobs={jobs}
-              onChange={setJobs}
-              onError={setError}
-              disabled={busy || (uploadStarted && jobs.length > 0)}
-              expiryDefaults={{ permit: record.permit_expiry, licence: record.license_expiry }}
-            />
-            <div className="form-actions">
-              {!!jobs.length && (
-                <button
-                  className="registry-secondary"
-                  type="button"
-                  disabled={busy}
-                  onClick={() => {
-                    setJobs([])
-                    setUploadStarted(false)
-                  }}
-                >
-                  {t('Clear selection', 'پاک‌کردن انتخاب')}
-                </button>
-              )}
-              <button className="registry-primary" disabled={busy || !jobs.length}>
-                <Upload size={17} />
-                {busy
-                  ? t('Uploading…', 'در حال آپلود…')
-                  : t('Upload / retry remaining', 'آپلود / کوشش مجدد')}
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
-    </Modal>
-  )
+
+  async function submitVehicle(event) {
+    event.preventDefault()
+    if (!vehicleForm.owner_id || !vehicleForm.plate_number.trim() || !vehicleForm.vehicle_type.trim()) return setMessage({ type: 'error', text: text.required })
+    const payload = {
+      ...vehicleForm,
+      capacity_tons: vehicleForm.capacity_tons || null,
+      model_year: vehicleForm.model_year || null,
+      permit_expiry: vehicleForm.permit_expiry || null,
+    }
+    const { data: vehicle, error } = await supabase.from('vehicles').insert(payload).select('id').single()
+    if (error) return setMessage({ type: 'error', text: error.message })
+    try { await uploadDocuments('vehicle', vehicle.id) } catch (error) { return setMessage({ type: 'error', text: `${text.saved} ${error.message}` }) }
+    setVehicleForm(emptyVehicle); setDialog(null); setMessage({ type: 'success', text: text.saved }); loadRegistry()
+  }
+
+  async function submitDriver(event) {
+    event.preventDefault()
+    if (!driverForm.full_name.trim() || !driverForm.phone.trim()) return setMessage({ type: 'error', text: text.required })
+    const payload = { ...driverForm, license_expiry: driverForm.license_expiry || null }
+    const { data: driver, error } = await supabase.from('drivers').insert(payload).select('id').single()
+    if (error) return setMessage({ type: 'error', text: error.message })
+    try { await uploadDocuments('driver', driver.id) } catch (error) { return setMessage({ type: 'error', text: `${text.saved} ${error.message}` }) }
+    setDriverForm(emptyDriver); setDialog(null); setMessage({ type: 'success', text: text.saved }); loadRegistry()
+  }
+
+  const filters = [
+    ['all', text.all, Truck], ['available', text.available, CheckCircle2], ['assigned', text.assigned, CircleParking],
+    ['on_trip', text.on_trip, Truck], ['under_repair', text.under_repair, Wrench], ['inactive', text.inactive, AlertTriangle],
+  ]
+
+  return <div className="registry-page">
+    <div className="registry-actions">
+      <button className="registry-primary" onClick={() => { setMessage(null); setDialog('vehicle') }} disabled={!owners.length}><Plus size={18} />{text.vehicle}</button>
+      <button className="registry-secondary" onClick={() => { setMessage(null); setDialog('owner') }}><UserRound size={18} />{text.owner}</button>
+      <button className="registry-secondary" onClick={() => { setMessage(null); setDialog('driver') }}><UserRound size={18} />{text.driver}</button>
+    </div>
+
+    {message && <div className={`registry-notice ${message.type}`}>{message.text}</div>}
+    {!owners.length && !loading && !message && <div className="registry-notice info">{text.noOwners}</div>}
+
+    <div className="registry-stats">
+      <div><Truck size={21} /><span><strong>{vehicles.length}</strong>{text.total}</span></div>
+      <div><UserRound size={21} /><span><strong>{owners.length}</strong>{text.ownerCount}</span></div>
+      <div><UserRound size={21} /><span><strong>{drivers.length}</strong>{text.driverCount}</span></div>
+      <div><CheckCircle2 size={21} /><span><strong>{vehicles.filter(v => v.status === 'available').length}</strong>{text.available}</span></div>
+    </div>
+
+    <div className="registry-toolbar">
+      <label className="registry-search"><Search size={17} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder={text.search} /></label>
+    </div>
+
+    <h3 className="fleet-section-title"><Truck size={18} />{text.total}</h3>
+    <div className="vehicle-list">
+      {loading ? <span className="spinner dark" /> : displayedVehicles.length ? displayedVehicles.map(vehicle => <article className="vehicle-row" key={vehicle.id}>
+        <span className={`vehicle-mark ${vehicle.status}`}><Truck size={25} /></span>
+        <div className="vehicle-main"><strong>{vehicle.plate_number}</strong><small>{vehicle.vehicle_type}{vehicle.capacity_tons ? ` · ${vehicle.capacity_tons} t` : ''}</small></div>
+        <div className="vehicle-owner"><UserRound size={15} /><span><strong>{vehicle.vehicle_owners?.full_name}</strong><small>{text.ownerCount}</small></span></div>
+        <span className={`status-pill ${vehicle.status}`}>{text[vehicle.status]}</span>
+      </article>) : <div className="registry-empty"><Truck size={34} /><strong>{text.noVehicles}</strong></div>}
+    </div>
+
+    <div className="fleet-drivers"><h3><UserRound size={18} />{text.drivers}</h3>{drivers.length ? drivers.map(driver => <div className="driver-row" key={driver.id}><span className="driver-avatar"><UserRound size={18} /></span><span><strong>{driver.full_name}</strong><small>{driver.phone}</small></span><span>{driver.license_number || '—'}</span></div>) : <div className="registry-empty"><UserRound size={30} /><strong>{text.noDrivers}</strong></div>}</div>
+
+    {dialog && <div className="registry-modal" role="dialog" aria-modal="true"><div className="registry-form-card">
+      <div className="registry-form-head"><span className="module-card-icon green">{dialog === 'vehicle' ? <Truck size={27} /> : <UserRound size={27} />}</span><h2>{dialog === 'owner' ? text.owner : dialog === 'driver' ? text.driver : text.vehicle}</h2></div>
+      {dialog === 'owner' ? <form onSubmit={submitOwner} className="registry-form">
+        <Input label={text.fullName} required value={ownerForm.full_name} onChange={value => setOwnerForm({ ...ownerForm, full_name: value })} />
+        <Input label={text.fatherName} value={ownerForm.father_name} onChange={value => setOwnerForm({ ...ownerForm, father_name: value })} />
+        <Input label={text.phone} required value={ownerForm.phone} onChange={value => setOwnerForm({ ...ownerForm, phone: value })} />
+        <Input label={text.nationalId} value={ownerForm.national_id} onChange={value => setOwnerForm({ ...ownerForm, national_id: value })} />
+        <Input label={text.address} value={ownerForm.address} onChange={value => setOwnerForm({ ...ownerForm, address: value })} wide />
+        <Input label={language === 'fa' ? 'ولایت محل سکونت' : 'Province of residence'} value={ownerForm.province || ''} onChange={value => setOwnerForm({ ...ownerForm, province: value })} />
+        <Input label={text.notes} value={ownerForm.notes} onChange={value => setOwnerForm({ ...ownerForm, notes: value })} wide />
+        <label className="wide registry-check"><input type="checkbox" checked={ownerForm.owner_is_driver} onChange={event => setOwnerForm({ ...ownerForm, owner_is_driver: event.target.checked })} /><span>{text.ownerIsDriver}</span></label>
+        {ownerForm.owner_is_driver && <><Input label={text.license} value={ownerForm.license_number} onChange={value => setOwnerForm({ ...ownerForm, license_number: value })} /><Input label={text.licenseExpiry} type="date" value={ownerForm.license_expiry} onChange={value => setOwnerForm({ ...ownerForm, license_expiry: value })} /></>}
+        {documentFields('owner')}
+        <FormActions text={text} onCancel={() => setDialog(null)} submit={text.saveOwner} />
+      </form> : dialog === 'driver' ? <form onSubmit={submitDriver} className="registry-form">
+        <Input label={text.driverName} required value={driverForm.full_name} onChange={value => setDriverForm({ ...driverForm, full_name: value })} />
+        <Input label={text.fatherName} value={driverForm.father_name} onChange={value => setDriverForm({ ...driverForm, father_name: value })} />
+        <Input label={text.phone} required value={driverForm.phone} onChange={value => setDriverForm({ ...driverForm, phone: value })} />
+        <Input label={text.nationalId} value={driverForm.national_id} onChange={value => setDriverForm({ ...driverForm, national_id: value })} />
+        <Input label={text.license} value={driverForm.license_number} onChange={value => setDriverForm({ ...driverForm, license_number: value })} />
+        <Input label={text.licenseExpiry} type="date" value={driverForm.license_expiry} onChange={value => setDriverForm({ ...driverForm, license_expiry: value })} />
+        <Input label={text.address} value={driverForm.address} onChange={value => setDriverForm({ ...driverForm, address: value })} wide />
+        {documentFields('driver')}
+        <FormActions text={text} onCancel={() => setDialog(null)} submit={text.saveDriver} />
+      </form> : <form onSubmit={submitVehicle} className="registry-form">
+        <label><span>{text.selectOwner} *</span><select required value={vehicleForm.owner_id} onChange={event => setVehicleForm({ ...vehicleForm, owner_id: event.target.value })}><option value="">—</option>{owners.map(owner => <option key={owner.id} value={owner.id}>{owner.full_name} · {owner.phone}</option>)}</select></label>
+        <Input label={text.plate} required value={vehicleForm.plate_number} onChange={value => setVehicleForm({ ...vehicleForm, plate_number: value })} />
+        <Input label={language === 'fa' ? 'نمبر پلیت خارجی (اختیاری)' : 'Foreign plate number (optional)'} value={vehicleForm.foreign_plate_number || ''} onChange={value => setVehicleForm({ ...vehicleForm, foreign_plate_number: value })} />
+        <Input label={language === 'fa' ? 'نمبر شاسی' : 'VIN / Chassis number'} value={vehicleForm.vin_number || ''} onChange={value => setVehicleForm({ ...vehicleForm, vin_number: value })} />
+        <Input label={text.type} required value={vehicleForm.vehicle_type} onChange={value => setVehicleForm({ ...vehicleForm, vehicle_type: value })} />
+        <Input label={text.capacity} type="number" value={vehicleForm.capacity_tons} onChange={value => setVehicleForm({ ...vehicleForm, capacity_tons: value })} />
+        <Input label={text.model} type="number" value={vehicleForm.model_year} onChange={value => setVehicleForm({ ...vehicleForm, model_year: value })} />
+        <Input label={text.color} value={vehicleForm.color} onChange={value => setVehicleForm({ ...vehicleForm, color: value })} />
+        <label><span>{text.status}</span><select value={vehicleForm.status} onChange={event => setVehicleForm({ ...vehicleForm, status: event.target.value })}>{filters.slice(1).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
+        <Input label={text.permit} value={vehicleForm.permit_number} onChange={value => setVehicleForm({ ...vehicleForm, permit_number: value })} />
+        <Input label={text.permitExpiry} type="date" value={vehicleForm.permit_expiry} onChange={value => setVehicleForm({ ...vehicleForm, permit_expiry: value })} />
+        <Input label={text.notes} value={vehicleForm.notes} onChange={value => setVehicleForm({ ...vehicleForm, notes: value })} wide />
+        {documentFields('vehicle')}
+        <FormActions text={text} onCancel={() => setDialog(null)} submit={text.saveVehicle} />
+      </form>}
+    </div></div>}
+  </div>
+}
+
+function Input({ label, required, type = 'text', value, onChange, wide }) {
+  return <label className={wide ? 'wide' : ''}><span>{label}{required ? ' *' : ''}</span><input required={required} type={type} value={value} onChange={event => onChange(event.target.value)} /></label>
+}
+
+function FormActions({ text, onCancel, submit }) {
+  return <div className="registry-form-actions"><button type="button" onClick={onCancel}>{text.cancel}</button><button type="submit" className="registry-primary">{submit}</button></div>
 }

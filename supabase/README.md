@@ -1,12 +1,11 @@
 # Pedram Transportation Supabase setup
 
-Fleet/booking/notification database-update errors: follow
-[FIX_DATABASE_SETUP.md](FIX_DATABASE_SETUP.md) and run the read-only
-[CHECK_SETUP.sql](CHECK_SETUP.sql) in the SQL Editor to identify pending updates.
-
-For the pending operations hardening release, read [LOCAL_REVIEW.md](../LOCAL_REVIEW.md)
-before applying `202611010003_operations_security.sql`. Apply only pending migrations.
-The updated branch creation Edge Function and frontend must accompany that migration.
+The `202611020001_revert_noman_operations.sql` migration restores the database
+access and booking RPC expected by the 1 November frontend. The previously
+applied `202611010003` and `202611010004` files remain in migration history so
+existing and fresh databases follow the same ordered path. Apply the rollback
+migration with this frontend and the earlier branch creation Edge Function.
+It retains newer columns and records to avoid deleting business data.
 
 1. Apply every migration in filename order, or run `supabase db push` from a linked Supabase CLI project.
 2. Deploy the current branch creation function after applying migrations:

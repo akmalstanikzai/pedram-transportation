@@ -4,22 +4,16 @@ A bilingual English/Dari management application for Pedram Transportation Compan
 
 Switching language translates labels and changes layout direction; displayed numbers continue to use English digits (0–9), including money amounts and totals.
 
-Project documentation updated: **2 November 2026**. This describes the current source code; live Supabase must have the corresponding migrations and Edge Function.
+Project documentation updated: **2 November 2026**. This source restores the 1 November frontend. Live Supabase also needs `202611020001_revert_noman_operations.sql` and the matching earlier Edge Function.
 
 ## Current features
-
-Operations hardening and the new sidebar workspace are documented in
-[Local review and backend release notes](LOCAL_REVIEW.md). The matching Supabase
-migrations and Edge Function must accompany this frontend. Use
-[the read-only setup check](supabase/CHECK_SETUP.sql) to confirm the database's
-current state; publishing this repository does not deploy Supabase changes.
 
 | Module | Current implementation |
 | --- | --- |
 | Login | Company branding, email or username sign-in, English/Dari switch, and right-to-left Dari layout. |
-| Branches | President creates, edits, archives/restores branches, assigns managers and enables/disables manager accounts. |
-| Fleet | Separate owner, vehicle and driver lists with registration, details, editing, archival and document management. Drivers remain independent of vehicles. |
-| Bookings | Contact snapshots, route/cargo, scheduling, independent vehicle/driver selection, editing and status/cancellation workflows. No money fields in the booking form. |
+| Branches | President creates a branch, records its manager's details, and assigns email/username and password in the same form. |
+| Fleet | Separate owner, vehicle, and driver registration, plus categorized document uploads. Drivers are selected independently of vehicles. |
+| Bookings | Trader, sender, receiver, goods, route, and independently selected vehicle/driver details. No money fields in the booking form. |
 | Cashbook / روزنامچه | Simple Money In / آمد and Money Out / رفت records for the admin account and branches, with separate tables and automatic totals. |
 
 Trip Plans, Trader Accounts, Customs, Finance, and Reports are navigation placeholders. The separate Trips page has been removed from the President portal. Financial recording currently takes place in Cashbook, rather than the Finance placeholder.
@@ -30,10 +24,7 @@ The database defines five roles: President, Vice-president, Departmental Manager
 
 - **President:** accesses the implemented President modules and views cashbook records for the admin account, one branch, or all accounts.
 - **Branch Manager:** accesses the cashbook for their own assigned branch. Branch access is enforced in the database.
-- **Vice-president:** global fleet and booking access with read-only branch information.
-- **Branch Manager (after the operations migration):** own-branch fleet, bookings and existing cashbook.
-- **Driver (when linked by the President):** read-only assigned bookings.
-- **Departmental Manager:** staff landing page; operational access requires a separately defined department policy.
+- **Other roles:** exist in the role model, but their working portals have not yet been implemented.
 
 New authenticated users receive the least-privileged `driver` role. The first President must be assigned through a trusted Supabase admin session; the browser cannot assign roles.
 
@@ -82,7 +73,7 @@ Booking payments and account settlement are **not part of the current simplified
 - **Vehicle document categories:** photos, جواز سیر, کارت, کتابچه, and international certificate.
 - **Driver document categories:** Tazkira/CNIC, driving licence, health card, and contract.
 
-Uploads use the private Supabase Storage bucket `fleet-documents`. Registration includes document icons, type-specific guidance, file selection and optional expiry dates. **Save and upload documents** saves the record and uploads the selected files; interrupted uploads retry only remaining files. The **Documents** action manages existing files, downloads, expiry and removal. PDF, PNG, JPG/JPEG, WebP, HEIC/HEIF and TIFF are accepted, with a 20 MiB per-file limit. The operations migration adds metadata and recoverable upload/removal states.
+Uploads use the private Supabase Storage bucket `fleet-documents`. The file picker accepts PDF, PNG, JPG/JPEG, WebP, HEIC/HEIF, and TIFF. The bucket migration sets a 20 MB per-file limit. A document browsing/download interface is not yet implemented.
 
 ## Local development
 
