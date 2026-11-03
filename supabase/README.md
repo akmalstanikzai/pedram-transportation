@@ -1,5 +1,7 @@
 # Pedram Transportation Supabase setup
 
+Apply `202611030001_vehicle_model_year.sql` after the migrations below for unrestricted digit-only vehicle model years. It preserves existing values, removes the 1950–2100 range, stores year labels as text to preserve leading zeroes/precision, and updates only the model-year conversion in the installed Fleet save function. The script is safe to rerun. No Edge Function changes are required.
+
 The current release requires `202611020002_simple_record_workflows.sql` after
 the existing ordered migrations, including `202611020001_revert_noman_operations.sql`.
 The earlier forward and rollback files remain historical steps. The latest

@@ -261,4 +261,22 @@ assert.deepEqual((await db.query('select to_jsonb(b) data from public.bookings b
 assert.equal((await db.query("select count(*)::int n from pg_trigger where tgname='bookings_reset_driver_reports' and tgrelid='public.bookings'::regclass")).rows[0].n,1)
 assert.ok((await db.query("select to_regprocedure('public.get_driver_portal()') restored")).rows[0].restored)
 console.log('Driver portal migration retries passed: existing columns, functions, data preservation and partial-install recovery.')
+// Model years have no calendar range or numeric precision/leading-zero loss.
+await db.exec('set role authenticated')
+await db.query("select set_config('request.jwt.claim.sub',$1,false)",[president])
+const yearVehicle=await call('save_fleet_record',['vehicle',null,uid(),{...vehicleData,plate_number:'YEAR123',model_year:'001404'},null])
+assert.equal((await row('vehicles',yearVehicle)).model_year,'001404','creation preserves exact digits')
+for(const year of ['1404','1890','2200','0','123456789012345678901234567890','']){
+ const current=await row('vehicles',yearVehicle)
+ await call('save_fleet_record',['vehicle',yearVehicle,uid(),{...current,model_year:year},current.updated_at])
+ assert.equal((await row('vehicles',yearVehicle)).model_year,year||null)
+}
+for(const year of ['20ab','2020.5','-1']){
+ const current=await row('vehicles',yearVehicle)
+ await assert.rejects(call('save_fleet_record',['vehicle',yearVehicle,uid(),{...current,model_year:year},current.updated_at]),/vehicles_model_year_check/)
+}
+await db.exec('reset role')
+const yearSql=await readFile(new URL('../supabase/migrations/202611030001_vehicle_model_year.sql',import.meta.url),'utf8')
+await db.exec(yearSql)
+console.log('Vehicle model year passed: create/edit, unrestricted digits, precision, leading zeroes, optional blank, validation and migration replay.')
 await db.close()

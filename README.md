@@ -8,6 +8,8 @@ Project documentation updated: **3 November 2026**. The current source includes 
 
 ## Current features
 
+Vehicle model years accept digits without a calendar-year range, including leading zeroes and long values. Apply `202611030001_vehicle_model_year.sql` after the driver portal migration to remove the old 1950–2100 restriction and update the Fleet save API. Existing model years are preserved. No Edge Function redeployment is needed for this change.
+
 | Module | Current implementation |
 | --- | --- |-
 | Login | Company branding, email or username sign-in, English/Dari switch, and right-to-left Dari layout. |
