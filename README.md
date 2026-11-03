@@ -4,6 +4,8 @@ A bilingual English/Dari management application for Pedram Transportation Compan
 
 Switching language translates labels and changes layout direction; displayed numbers continue to use English digits (0–9), including money amounts and totals.
 
+The Dari interface uses [Vazirmatn](https://github.com/rastikerdar/vazirmatn), bundled locally through `@fontsource-variable/vazirmatn` with variable weights for body text, forms, headings, tables and dialogs. The standard font variant preserves English digits; no Farsi-digits substitution is used. English continues to use DM Sans and Space Grotesk. The font's SIL Open Font License and attribution are included in `public/fonts/vazirmatn-OFL.txt`. Deploy the updated frontend to publish typography changes; no database or Edge Function changes are needed.
+
 Project documentation updated: **3 November 2026**. The current source includes record management, branch password controls and a focused driver portal. Apply the ordered migrations through `202611020005_driver_portal.sql` and use the current account Edge Functions. Source changes do not automatically update live Supabase.
 
 ## Current features
