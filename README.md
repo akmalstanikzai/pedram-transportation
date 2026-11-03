@@ -9,7 +9,7 @@ Project documentation updated: **3 November 2026**. The current source includes 
 ## Current features
 
 | Module | Current implementation |
-| --- | --- |
+| --- | --- |-
 | Login | Company branding, email or username sign-in, English/Dari switch, and right-to-left Dari layout. |
 | Branches | Create, edit, view, archive/restore, and enable/disable the manager's login. Assign credentials when creating a branch; use the key icon in the Password column to view its login and set a new password. |
 | Fleet | Independent owner, vehicle and driver records, with edit, detail, status, archive/restore, documents and driver login management. |
