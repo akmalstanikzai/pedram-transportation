@@ -9,7 +9,7 @@ import {
 import Brand from '../components/Brand'
 import Icon from '../components/Icon'
 import { getTranslation } from '../lib/i18n'
-import { branchModuleIds } from '../lib/roles'
+import { canAccessModule } from '../lib/roles'
 import { LanguageSwitch } from './LoginPage'
 import VehiclesPage from './VehiclesPage'
 import BranchesPage from './BranchesPage'
@@ -36,8 +36,15 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
   const text = getTranslation(language)
   const role = profile?.role || 'driver'
   const displayName = profile?.full_name || session?.user?.email?.split('@')[0] || 'User'
-  const [activeModule, setActiveModule] = useState(getModuleFromHash)
+  const [requestedModule, setActiveModule] = useState(getModuleFromHash)
+  const activeModule = requestedModule && canAccessModule(role, requestedModule.id) ? requestedModule : null
   const ActiveModuleIcon = activeModule?.icon
+
+  useEffect(() => {
+    if (requestedModule && !canAccessModule(role, requestedModule.id)) {
+      window.history.replaceState('', document.title, `${window.location.pathname}${window.location.search}`)
+    }
+  }, [role, requestedModule])
 
   useEffect(() => {
     const updatePage = () => setActiveModule(getModuleFromHash())
@@ -50,6 +57,7 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
   }, [])
 
   function openModule(module) {
+    if (!canAccessModule(role, module.id)) return
     window.history.pushState('', document.title, `#/${module.id}`)
     setActiveModule(module)
   }
@@ -70,7 +78,7 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
         </div>
       </header>
 
-      {activeModule && (role === 'president' || (role === 'branch_manager' && branchModuleIds.includes(activeModule.id))) ? (
+      {activeModule ? (
         <section className="module-page">
           <button className="module-back" onClick={closeModule}><Icon name="back" size={17} /> {role === 'president' ? text.presidentDashboard : text.roles.branch_manager}</button>
           {activeModule.id === 'vehicles' && <h1 className="fleet-page-title">{text[activeModule.titleKey]}</h1>}
@@ -79,7 +87,7 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
               <div className={`module-icon ${activeModule.color}`}><ActiveModuleIcon size={38} strokeWidth={1.8} /></div>
               <div><span className="section-label">{text.managementModule}</span><h1>{text[activeModule.titleKey]}</h1><p>{text[activeModule.pageKey]}</p></div>
             </div>}
-            {activeModule.id === 'traders' ? <TradersPage language={language} profile={profile} /> : activeModule.id === 'cashbook' ? <CashbookPage language={language} profile={profile} /> : activeModule.id === 'branches' ? <BranchesPage language={language} /> : activeModule.id === 'vehicles' ? <VehiclesPage language={language} profile={profile} /> : activeModule.id === 'bookings' ? <BookingsPage language={language} profile={profile} /> : <div className="empty-state">
+            {activeModule.id === 'traders' ? <TradersPage language={language} profile={profile} /> : activeModule.id === 'cashbook' ? <CashbookPage language={language} profile={profile} /> : activeModule.id === 'branches' ? <BranchesPage language={language} profile={profile} /> : activeModule.id === 'vehicles' ? <VehiclesPage language={language} profile={profile} /> : activeModule.id === 'bookings' ? <BookingsPage language={language} profile={profile} /> : <div className="empty-state">
               <div className="empty-state-mark"><Icon name="layers" size={27} /></div>
               <h2>{text.readyTitle}</h2>
               <p>{text.readyText}</p>
@@ -90,7 +98,7 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
         <section className="dashboard-content">
           {['president', 'branch_manager'].includes(role) ? (
             <div className="module-grid">
-              {moduleDefinitions.filter(module => role === 'president' || branchModuleIds.includes(module.id)).map(module => {
+              {moduleDefinitions.filter(module => canAccessModule(role, module.id)).map(module => {
                 const ModuleIcon = module.icon
                 return (
                   <button className="module-card" key={module.id} onClick={() => openModule(module)}>

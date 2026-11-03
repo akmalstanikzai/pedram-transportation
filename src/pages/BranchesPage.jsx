@@ -38,7 +38,12 @@ const initialForm = {
   managerName: '', fatherName: '', managerPhone: '', nationalId: '', managerAddress: '', login: '', password: '', confirm: '',
 }
 
-export default function BranchesPage({ language }) {
+export default function BranchesPage({ language, profile }) {
+  if (profile?.role !== 'president' || profile.account_enabled !== true) return null
+  return <BranchRegistry language={language} />
+}
+
+function BranchRegistry({ language }) {
   const text = labels[language] || labels.en
   const [branches, setBranches] = useState([])
   const [form, setForm] = useState(initialForm)

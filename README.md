@@ -28,6 +28,8 @@ The database defines five roles: President, Vice-president, Departmental Manager
 
 - **President:** accesses the implemented President modules and views cashbook records for the admin account, one branch, or all accounts.
 - **Branch Manager:** accesses Cashbook, Fleet, Bookings and Traders for their assigned branch. They can register and manage branch-owned records, create and process their branch's bookings, and maintain their branch's trader fares and receipts. Shared head-office directory profiles can be viewed and selected for bookings, but cannot be edited, archived or have their private documents opened by branch staff. Other branches' records and accounts remain hidden.
+
+Branches is President-only in the module menu, navigation guard and Branches component. A branch login opening `#/branches` is returned to its allowed module menu. If a branch login still sees President controls, check the role displayed in the header and run the read-only `supabase/check_branch_account_roles.sql` in SQL Editor to inspect the linked manager's role and branch. Do not hide an incorrect President role merely with styling; correct the account assignment after identifying the affected user. This UI restriction requires a frontend deployment, with no new migration.
 - **Driver:** a linked login sees only that driver's assigned jobs, their licence information and the minimum vehicle/contact details needed for each job. Drivers can accept ready jobs and report delivery of on-road jobs. The President can create a driver login or link an existing unused Driver-role account from Fleet.
 - **Vice-president / Departmental Manager:** exist in the role model, but their working portals have not yet been implemented.
 
@@ -65,6 +67,8 @@ The `cashbook_simple_post` database function checks account access and valid amo
 See [Cashbook setup and behavior](supabase/CASHBOOK.md) for additional details.
 
 ## Booking workflow
+
+The President's Bookings page has a Branch dropdown below its title, styled like the Cashbook account filter. Choose All branches (including head office), Head office, or a named branch. It works together with search and Archive, and retains archived branches for historical records. Branch managers continue to see only their own branch bookings and do not receive this cross-branch filter. This is a frontend change; no SQL migration or Edge Function redeployment is required.
 
 The New Booking form is arranged in this order:
 
