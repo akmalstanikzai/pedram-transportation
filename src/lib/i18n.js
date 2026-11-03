@@ -2,6 +2,7 @@ export const translations = {
   en: {
     pedram: 'PEDRAM',
     companyName: 'Pedram International Transport',
+    fullCompanyName: 'Pedram International Transportation Company',
     email: 'Email or username',
     loginPlaceholder: 'Enter email or username',
     emailPlaceholder: 'Enter your email',
@@ -66,6 +67,7 @@ export const translations = {
   fa: {
     pedram: 'پدرام',
     companyName: 'شرکت ترانسپورتی بین‌المللی پدرام',
+    fullCompanyName: 'شرکت ترانسپورتی بین‌المللی پدرام',
     email: 'ایمیل یا نام کاربری',
     loginPlaceholder: 'ایمیل یا نام کاربری را وارد کنید',
     emailPlaceholder: 'ایمیل خود را وارد کنید',
