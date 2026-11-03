@@ -639,3 +639,69 @@ html[dir='rtl'] .role-title { font-family: Tahoma, 'DM Sans', sans-serif; letter
 /* Keep the boxed fields without a focus shadow. */
 .auth-card .input-wrap { padding: 0 13px; border: 1px solid #dae2e8; border-radius: 9px; background: #fbfcfd; }
 .auth-card .input-wrap:focus-within { border-color: #4f9876; box-shadow: none; background: #fff; }
+
+.branch-password-modal { width: min(480px, 100%); }
+.branch-password-form .branch-password-name { display: flex; align-items: center; gap: 10px; color: var(--navy); font-size: 18px; }
+.branch-password-input { display: flex; align-items: center; position: relative; }
+.branch-password-input input { padding-right: 46px; }
+.branch-password-input button { display: grid; place-items: center; position: absolute; right: 4px; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--navy); }
+
+/* Driver portal: readable route, large touch targets, and two job actions. */
+.driver-portal { width: min(100%, 840px); margin-inline: auto; padding-bottom: 32px; }
+.driver-page-heading, .driver-job-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.driver-page-heading { margin-bottom: 22px; flex-wrap: wrap; }
+.driver-page-heading h1 { display: flex; align-items: center; gap: 10px; margin: 0; color: var(--navy); font-size: 25px; }
+.driver-profile-button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: white; color: var(--navy); font-weight: 700; }
+.driver-portal .record-icon-button { width: 44px; height: 44px; }
+.driver-licence-warning { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; padding: 13px 16px; border-inline-start: 3px solid #bb7c20; background: #fff4df; color: #80500d; border-radius: 6px; font-size: 14px; }
+.driver-tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
+.driver-tabs button { display: flex; align-items: center; gap: 9px; min-height: 48px; padding: 8px 5px 13px; border: 0; border-bottom: 3px solid transparent; background: none; color: #657888; font-size: 15px; font-weight: 700; }
+.driver-tabs button[aria-pressed='true'] { color: var(--green); border-bottom-color: var(--green); }
+.driver-job-list { display: grid; gap: 20px; }
+.driver-job { overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: white; }
+.driver-job-heading { padding: 17px 22px; background: #f8fafb; border-bottom: 1px solid var(--line); }
+.driver-job-heading > strong { display: flex; align-items: center; gap: 10px; color: var(--navy); font-size: 17px; }
+.driver-job-heading .status-pill { font-size: 12px; }
+.driver-route { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 18px; padding: 24px 22px; }
+.driver-route small { display: flex; align-items: center; gap: 6px; color: #657888; font-size: 12px; }
+.driver-route h2 { margin: 8px 0 0; color: var(--navy); font-size: clamp(20px, 3vw, 29px); overflow-wrap: anywhere; }
+.driver-route-arrow { color: #8ba2af; }
+html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
+.driver-job-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; padding: 0 22px 24px; }
+.driver-job-facts > div { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+.driver-job-facts > div > svg { flex-shrink: 0; color: #328078; margin-top: 3px; }
+.driver-job-facts span { display: grid; gap: 5px; min-width: 0; overflow-wrap: anywhere; font-size: 14px; }
+.driver-job-facts small { color: #657888; font-size: 12px; line-height: 1.5; }
+.driver-dispatch-call { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; color: var(--green); font-weight: 700; text-decoration: none; }
+.driver-contacts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--line); }
+.driver-contact { padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 7px; }
+.driver-contact + .driver-contact { border-inline-start: 1px solid var(--line); }
+.driver-contact h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; color: #657888; font-size: 13px; }
+.driver-contact > strong { color: var(--ink); font-size: 16px; overflow-wrap: anywhere; }
+.driver-contact > bdi { color: #475e6d; font-size: 14px; }
+.driver-contact p { margin: 0 0 7px; color: #657888; line-height: 1.7; font-size: 13px; overflow-wrap: anywhere; }
+.driver-contact-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: auto; }
+.driver-contact-actions a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 13px; background: #edf6f3; border-radius: 9px; color: var(--green); text-decoration: none; font-size: 14px; font-weight: 700; }
+.driver-contact-actions a + a { color: #256c98; background: #edf4fa; }
+.driver-job-footer { display: flex; align-items: center; justify-content: flex-end; padding: 16px 22px; border-top: 1px solid var(--line); }
+.driver-job-footer .registry-primary { min-height: 48px; min-width: 160px; font-size: 15px; }
+.driver-report, .booking-record p.driver-booking-report { display: flex; align-items: center; gap: 8px; color: var(--green); font-size: 14px; font-weight: 700; line-height: 1.7; }
+.driver-report svg, .driver-booking-report svg { flex-shrink: 0; }
+.driver-empty { display: flex; min-height: 200px; align-items: center; justify-content: center; flex-direction: column; gap: 16px; color: #657888; text-align: center; padding: 20px; line-height: 1.7; }
+.driver-history-note { color: #657888; font-size: 13px; }
+.driver-licence-details { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 0; padding: 24px; }
+.driver-licence-details dt { display: flex; align-items: center; gap: 8px; color: #657888; font-size: 14px; }
+.driver-licence-details dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; font-weight: 700; }
+.driver-portal :is(button, a):focus-visible { outline: 3px solid #429cbb; outline-offset: 3px; }
+@media (max-width: 520px) {
+  .driver-page-heading h1 { font-size: 22px; }
+  .driver-page-heading { gap: 12px; }
+  .driver-job-heading { padding: 14px 16px; }
+  .driver-route { padding: 21px 16px; gap: 12px; }
+  .driver-job-facts { grid-template-columns: 1fr; padding: 0 16px 20px; gap: 17px; }
+  .driver-contacts { grid-template-columns: 1fr; }
+  .driver-contact { padding: 18px 16px; }
+  .driver-contact + .driver-contact { border-inline-start: 0; border-top: 1px solid var(--line); }
+  .driver-job-footer { padding: 14px 16px; }
+  .driver-job-footer .registry-primary { width: 100%; }
+}

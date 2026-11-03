@@ -4,6 +4,7 @@ import { FunctionsHttpError } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { rpc, explain } from '../lib/operations'
 import { ConfirmArchive, IconButton, Modal, RecordTools } from '../components/RecordTools'
+import BranchPassword from '../components/BranchPassword'
 
 const labels = {
   en: {
@@ -15,6 +16,7 @@ const labels = {
     login: 'Email or username', password: 'Password', confirm: 'Confirm password',
     create: 'Create branch and account', cancel: 'Cancel', required: 'Complete all required fields.', mismatch: 'Passwords do not match.',
     shortPassword: 'Password must contain at least 8 characters.', success: 'Branch and manager account created.',
+    passwordSaved: 'Password saved. The branch manager can sign in with the new password.', passwordSavedDisabled: 'Password saved. Enable the login using the power icon to allow sign-in.',
     loadError: 'The branch database is not ready. Apply and deploy the latest Supabase changes.', total: 'Branches', managers: 'Managers',
   },
   fa: {
@@ -26,6 +28,7 @@ const labels = {
     login: 'ایمیل یا نام کاربری', password: 'رمز عبور', confirm: 'تکرار رمز عبور', create: 'ایجاد شعبه و حساب',
     cancel: 'انصراف', required: 'خانه‌های ضروری را تکمیل کنید.', mismatch: 'رمزهای عبور یکسان نیست.',
     shortPassword: 'رمز عبور باید حداقل 8 حرف داشته باشد.', success: 'شعبه و حساب مدیر ایجاد شد.',
+    passwordSaved: 'رمز عبور ثبت شد. مدیر شعبه می‌تواند با رمز جدید وارد شود.', passwordSavedDisabled: 'رمز عبور ثبت شد. برای ورود، حساب را با آیکن روشن/خاموش فعال کنید.',
     loadError: 'دیتابیس شعبات آماده نیست. تغییرات جدید Supabase را اجرا و نشر کنید.', total: 'شعبات', managers: 'مدیران',
   },
 }
@@ -47,6 +50,7 @@ export default function BranchesPage({ language }) {
   const [details,setDetails]=useState(null)
   const [deletion,setDeletion]=useState(null)
   const [archived,setArchived]=useState(false)
+  const [passwordBranch,setPasswordBranch]=useState(null)
   const request=useRef(null)
 
   const loadBranches = useCallback(async () => {
@@ -103,17 +107,18 @@ export default function BranchesPage({ language }) {
 
   return <div className="registry-page branch-registry">
     <div className="registry-actions"><button className="registry-primary" onClick={() => { setMessage(null); setEditing(null);setForm(initialForm);request.current=null;setOpen(true) }}><Plus size={18} />{text.add}</button><button className="registry-secondary" aria-pressed={archived} onClick={()=>setArchived(!archived)}><Archive size={18}/>{language==='fa'?'بایگانی':'Archive'}</button></div>
-    {message && <div className={`registry-notice ${message.type}`}>{message.text}</div>}
-    <div className="branch-table-wrap"><table className="branch-table"><thead><tr><th>{text.name}</th><th>{text.location}</th><th>{text.manager}</th><th>{text.branchPhone}</th><th>{text.username}</th><th>{language==='fa'?'حساب':'Account'}</th><th>{language==='fa'?'عملیات':'Actions'}</th></tr></thead><tbody>
-      {loading ? <tr><td colSpan="7" className="branch-table-empty"><span className="spinner dark" /></td></tr> : branches.filter(b=>!!b.archived_at===archived).length ? branches.filter(b=>!!b.archived_at===archived).map(branch => <tr key={branch.id}>
+    {message && <div className={`registry-notice ${message.type}`}>{message.code?text[message.code]:message.text}</div>}
+    <div className="branch-table-wrap"><table className="branch-table"><thead><tr><th>{text.name}</th><th>{text.location}</th><th>{text.manager}</th><th>{text.branchPhone}</th><th>{text.username}</th><th>{text.password}</th><th>{language==='fa'?'حساب':'Account'}</th><th>{language==='fa'?'عملیات':'Actions'}</th></tr></thead><tbody>
+      {loading ? <tr><td colSpan="8" className="branch-table-empty"><span className="spinner dark" /></td></tr> : branches.filter(b=>!!b.archived_at===archived).length ? branches.filter(b=>!!b.archived_at===archived).map(branch => <tr key={branch.id}>
         <td><span className="branch-name-cell"><span className="branch-table-icon"><Building2 size={18} /></span><strong>{branch.name}</strong></span></td>
         <td>{branch.city}, {branch.province}</td>
         <td>{branch.manager?.full_name || '—'}</td>
         <td>{branch.phone || branch.manager?.phone || '—'}</td>
         <td>{branch.manager?.username || '—'}</td>
+        <td><IconButton icon={KeyRound} label={language==='fa'?`تغییر رمز عبور · ${branch.name}`:`Change password · ${branch.name}`} disabled={saving||!!branch.archived_at||!branch.manager_user_id} onClick={()=>{setMessage(null);setPasswordBranch(branch)}}/></td>
         <td><IconButton icon={Power} label={branch.manager?.account_enabled?(language==='fa'?'غیرفعال کردن حساب':'Disable login'):(language==='fa'?'فعال کردن حساب':'Enable login')} disabled={saving||!!branch.archived_at||!branch.manager_user_id} onClick={async()=>{setSaving(true);try{await rpc('set_account_enabled',{p_kind:'branch',p_id:branch.id,p_enabled:!branch.manager?.account_enabled});await loadBranches()}catch(e){setMessage({type:'error',text:explain(e,language)})}finally{setSaving(false)}}}/><small>{branch.manager?.account_enabled?(language==='fa'?'فعال':'Enabled'):(language==='fa'?'غیرفعال':'Disabled')}</small></td>
         <td><RecordTools language={language} disabled={saving} archived={branch.archived_at} onView={()=>setDetails(branch)} onEdit={()=>edit(branch)} onArchive={()=>{setMessage(null);setDeletion(branch)}}/></td>
-      </tr>) : <tr><td colSpan="7" className="branch-table-empty"><Building2 size={28} /><strong>{text.none}</strong></td></tr>}
+      </tr>) : <tr><td colSpan="8" className="branch-table-empty"><Building2 size={28} /><strong>{text.none}</strong></td></tr>}
     </tbody></table></div>
 
     {open && <div className="registry-modal" role="dialog" aria-modal="true"><div className="registry-form-card branch-form-card">
@@ -144,6 +149,7 @@ export default function BranchesPage({ language }) {
     </div></div>}
     {details&&<Modal title={details.name} onClose={()=>setDetails(null)}><dl className="record-details record-modal-body">{[[text.province,details.province],[text.city,details.city],[text.address,details.address],[text.branchPhone,details.phone],[text.managerName,details.manager?.full_name],[text.fatherName,details.manager?.father_name],[text.managerPhone,details.manager?.phone],[text.nationalId,details.manager?.national_id],[text.managerAddress,details.manager?.address]].map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value||'—'}</dd></div>)}</dl></Modal>}
     {deletion&&<ConfirmArchive language={language} busy={saving} error={message?.text} restore={!!deletion.archived_at} onClose={()=>setDeletion(null)} onConfirm={archiveBranch}/>}
+    {passwordBranch&&<BranchPassword key={passwordBranch.id} branch={passwordBranch} language={language} onClose={()=>setPasswordBranch(null)} onSaved={()=>{setPasswordBranch(null);setMessage({type:'success',code:passwordBranch.manager?.account_enabled?'passwordSaved':'passwordSavedDisabled'})}}/>}
   </div>
 }
 

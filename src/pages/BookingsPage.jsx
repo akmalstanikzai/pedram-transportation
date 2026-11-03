@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Archive, CalendarDays, CheckCircle2, ClipboardList, MapPin, Package, Play, Plus, Search, Send, Truck, UserRound, Users, X, XCircle } from 'lucide-react'
+import { Archive, BadgeCheck, CalendarDays, CheckCheck, CheckCircle2, ClipboardList, MapPin, Package, Play, Plus, RefreshCw, Search, Send, Truck, UserRound, Users, X, XCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { allRows } from '../lib/cashbook'
 import { bookingColumns, rpc, explain } from '../lib/operations'
@@ -30,6 +30,13 @@ export default function BookingsPage({ language, profile }) {
   const request=useRef(null)
   const load=useCallback(async()=>{const [bookings,traders,vehicles,drivers,branches]=await Promise.all([allRows(supabase,'bookings',selection),allRows(supabase,'traders'),allRows(supabase,'vehicles','*, vehicle_owners(full_name,phone)'),allRows(supabase,'drivers'),allRows(supabase,'branches')]);setRows(bookings.sort((a,b)=>b.created_at.localeCompare(a.created_at)));setTraders(traders);setVehicles(vehicles);setDrivers(drivers);setBranches(branches);setReady(true)},[])
   useEffect(()=>{void Promise.resolve().then(load).catch(e=>setMessage(explain(e,language)))},[load,language])
+  const refreshBookings=useCallback(async()=>{const bookings=await allRows(supabase,'bookings',selection);setRows(bookings.sort((a,b)=>b.created_at.localeCompare(a.created_at)))},[])
+  useEffect(()=>{
+    const update=()=>{if(!document.hidden&&!busy&&!open)void refreshBookings().catch(e=>setMessage(explain(e,language)))}
+    const timer=window.setInterval(update,30000)
+    window.addEventListener('focus',update)
+    return()=>{clearInterval(timer);window.removeEventListener('focus',update)}
+  },[refreshBookings,busy,open,language])
   const statuses={confirmed:t('Confirmed','تأییدشده'),in_transit:t('On road','در راه'),completed:t('Completed','تکمیل‌شده'),cancelled:t('Cancelled','لغوشده')}
   function edit(row){setEditing(row);request.current=null;setForm(Object.fromEntries(Object.keys(blank).map(key=>[key,row[key]??blank[key]])));setMessage('');setOpen(true)}
   async function changeStatus(row,status){if(busy)return;setBusy(true);setMessage('');try{await rpc('change_booking_status',{p_id:row.id,p_status:status,p_request:crypto.randomUUID(),p_expected:row.updated_at});setCancelRow(null);await load()}catch(e){setMessage(explain(e,language))}finally{setBusy(false)}}
@@ -63,13 +70,14 @@ export default function BookingsPage({ language, profile }) {
     finally { setBusy(false) }
   }
   return <div className="registry-page">
-    <div className="booking-page-header"><h1>{t('Bookings','بوکینگ‌ها')}</h1><button className="registry-primary" disabled={!ready||(branchManager&&!profile?.branch_id)} onClick={() => { setEditing(null);request.current=null;setForm({ ...blank, branch_id:branchManager?profile.branch_id:'',booking_date: today(),departure_date:today(),arrival_date:today() }); setMessage(''); setOpen(true) }}><Plus size={18} />{t('New booking','بوکینگ جدید')}</button></div>
+    <div className="booking-page-header"><h1>{t('Bookings','بوکینگ‌ها')}</h1><div className="record-tools"><IconButton icon={RefreshCw} label={t('Refresh','تازه‌سازی')} disabled={busy} onClick={()=>{setMessage('');void refreshBookings().catch(e=>setMessage(explain(e,language)))}}/><button className="registry-primary" disabled={!ready||(branchManager&&!profile?.branch_id)} onClick={() => { setEditing(null);request.current=null;setForm({ ...blank, branch_id:branchManager?profile.branch_id:'',booking_date: today(),departure_date:today(),arrival_date:today() }); setMessage(''); setOpen(true) }}><Plus size={18} />{t('New booking','بوکینگ جدید')}</button></div></div>
     {message && !open && <div role="alert" className="registry-notice error">{message}</div>}
     <label className="registry-search"><Search size={17} /><input aria-label={t('Search bookings','جستجوی بوکینگ‌ها')} placeholder={t('Search booking, trader or route','جستجوی بوکینگ، تاجر یا مسیر')} value={query} onChange={e => setQuery(e.target.value)} /></label>
     <button className="registry-secondary" aria-pressed={archived} onClick={()=>setArchived(!archived)}><Archive size={18}/>{t('Archive','بایگانی')}</button>
     <div className="booking-list">{rows.filter(r => !!r.archived_at===archived&&`${r.booking_number} ${r.trader_first_name || r.traders?.full_name} ${r.trader_last_name || ''} ${r.origin} ${r.destination}`.toLowerCase().includes(query.toLowerCase())).map(r => <article className="booking-record" key={r.id}>
       <h3><ClipboardList size={20} />#{r.booking_number} · {r.trader_first_name ? `${r.trader_first_name} ${r.trader_last_name || ''}` : r.traders?.full_name}</h3>
       <div className="booking-record-actions"><span className={`status-pill ${r.status}`}>{statuses[r.status]}</span><RecordTools language={language} disabled={busy} archived={r.archived_at} onView={()=>setDetail(r)} onEdit={r.status==='confirmed'?()=>edit(r):undefined} onArchive={()=>{setMessage('');setDeletion(r)}}/>{!r.archived_at&&<div className="record-tools">{r.status==='confirmed'&&<IconButton icon={Play} disabled={busy} label={t('Start journey','شروع سفر')} onClick={()=>changeStatus(r,'in_transit')}/>} {r.status==='in_transit'&&<IconButton icon={CheckCircle2} disabled={busy} label={t('Complete journey','تکمیل سفر')} onClick={()=>changeStatus(r,'completed')}/>} {['confirmed','in_transit'].includes(r.status)&&<IconButton icon={XCircle} disabled={busy} label={t('Cancel booking','لغو بوکینگ')} onClick={()=>{setMessage('');setCancelRow(r)}}/>}</div>}</div>
+      {!r.archived_at&&['confirmed','in_transit'].includes(r.status)&&(r.driver_delivered_at?<p className="driver-booking-report"><CheckCheck size={20}/>{t('Driver reported delivery · confirm completion','راننده تحویل بار را گزارش داد · تکمیل سفر را تأیید کنید')}</p>:r.driver_accepted_at?<p className="driver-booking-report"><BadgeCheck size={20}/>{t('Driver accepted','راننده برنامه را پذیرفت')}</p>:null)}
       <p><strong>{t('Date','تاریخ')}:</strong> {r.booking_date || '—'} · {r.service_type === 'managed' ? t('Company-managed transport','انتقال توسط شرکت') : t('Vehicle arrangement','معرفی واسطه')}</p>
       <p>{r.origin} → {r.destination} · {r.goods}{r.weight_tons ? ` · ${r.weight_tons} ${t('tons','تن')}` : ''}{r.volume_m3 ? ` · ${r.volume_m3} m³` : ''}{!r.weight_tons && !r.volume_m3 && r.quantity ? ` · ${r.quantity}` : ''}</p>
       <p>{t('Sender','فرستنده')}: {r.sender_name || '—'} · {t('Receiver','گیرنده')}: {r.receiver_name || '—'}</p><p>{r.vehicles?.plate_number || '—'} · {r.drivers?.full_name || '—'}</p>

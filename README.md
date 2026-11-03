@@ -4,18 +4,19 @@ A bilingual English/Dari management application for Pedram Transportation Compan
 
 Switching language translates labels and changes layout direction; displayed numbers continue to use English digits (0–9), including money amounts and totals.
 
-Project documentation updated: **2 November 2026**. The current source adds simple record management after the earlier rollback. Apply `202611020002_simple_record_workflows.sql` after the existing migration history, then deploy both account Edge Functions. Source changes do not automatically update live Supabase.
+Project documentation updated: **3 November 2026**. The current source includes record management, branch password controls and a focused driver portal. Apply the ordered migrations through `202611020005_driver_portal.sql` and use the current account Edge Functions. Source changes do not automatically update live Supabase.
 
 ## Current features
 
 | Module | Current implementation |
 | --- | --- |
 | Login | Company branding, email or username sign-in, English/Dari switch, and right-to-left Dari layout. |
-| Branches | Create, edit, view, archive/restore, and enable/disable the manager's login. New manager credentials are assigned in the registration form. |
+| Branches | Create, edit, view, archive/restore, and enable/disable the manager's login. Assign credentials when creating a branch; use the key icon in the Password column to view its login and set a new password. |
 | Fleet | Independent owner, vehicle and driver records, with edit, detail, status, archive/restore, documents and driver login management. |
 | Traders | Create, edit and archive/restore traders; open their profile and account together. Record fares and receipts, and see money owed, credit and payment history by currency. |
 | Bookings | Create, edit, view, cancel, start, complete and archive/restore. Capacity, expiry, schedule conflict and duplicate-request checks. No money fields. |
 | Cashbook / روزنامچه | Simple Money In / آمد and Money Out / رفت records for the admin account and branches, with separate tables and automatic totals. |
+| Driver portal | Icon-led assigned jobs, route/maps, dates, load, assigned vehicle, sender/receiver/branch calls, licence expiry, job acceptance and delivery reporting. Recent history is separate. |
 
 The President menu contains only working pages: Cashbook, Branches, Fleet, Bookings, and Traders. Empty Trip Plans, Customs, Finance and Reports pages have been removed, along with the duplicate Trader Accounts page. Old Trader Accounts links resolve to Traders. No business records were deleted when removing these menu items.
 
@@ -25,7 +26,7 @@ The database defines five roles: President, Vice-president, Departmental Manager
 
 - **President:** accesses the implemented President modules and views cashbook records for the admin account, one branch, or all accounts.
 - **Branch Manager:** accesses Cashbook, Fleet, Bookings and Traders for their assigned branch. They can register and manage branch-owned records, create and process their branch's bookings, and maintain their branch's trader fares and receipts. Shared head-office directory profiles can be viewed and selected for bookings, but cannot be edited, archived or have their private documents opened by branch staff. Other branches' records and accounts remain hidden.
-- **Driver:** a linked login sees only that driver's assigned booking details, with no financial information. The President can create a driver login or link an existing unused Driver-role account from Fleet.
+- **Driver:** a linked login sees only that driver's assigned jobs, their licence information and the minimum vehicle/contact details needed for each job. Drivers can accept ready jobs and report delivery of on-road jobs. The President can create a driver login or link an existing unused Driver-role account from Fleet.
 - **Vice-president / Departmental Manager:** exist in the role model, but their working portals have not yet been implemented.
 
 Disabled accounts cannot use the new operational APIs. The app rechecks account status on focus and every 30 seconds. Branch archiving disables its manager's login; driver archiving or setting the driver inactive disables that driver's login. Restoring a record does not automatically re-enable the account.
@@ -33,6 +34,14 @@ Disabled accounts cannot use the new operational APIs. The app rechecks account 
 New authenticated users receive the least-privileged `driver` role. The first President must be assigned through a trusted Supabase admin session; the browser cannot assign roles.
 
 Branch selection is automatic in the branch portal; changing a request in the browser cannot assign work or money to another branch. Only the President manages branches and creates, links or enables/disables login accounts. The President keeps all five working pages and a full view across branches. Branch trader statements show only that branch's charges and receipts, even when the trader profile is shared with head office.
+
+## Branch passwords
+
+In **President → Branches → Add Branch**, enter the manager's email/username, password and confirmation. The manager signs in on the normal login page using those credentials.
+
+For an existing branch, click the **key icon in the Password column**, enter a new password (at least 8 characters), repeat it, and select **Save password**. The dialog shows the correct username or email for that manager. Password changes do not enable a disabled login; use the existing power icon to enable it if needed. Archived branches must be restored first.
+
+The new self-contained **`manage-branch-account` Edge Function** checks that the caller is an enabled President and that the target account is the selected branch's registered Branch Manager. It updates the password through the server-only Supabase Auth admin API; passwords are never saved in branch/profile tables or returned by the API. No SQL migration is needed for password changes. Deploy this new function before using the key button; the existing create functions remain unchanged.
 
 ## Cashbook / روزنامچه
 
@@ -72,6 +81,30 @@ Trader details are saved with the booking without overwriting an existing trader
 Bookings follow **Confirmed → On road → Completed**, or **Cancelled**. Only confirmed bookings are editable. Departure and arrival reserve both resources for whole calendar days, inclusively; two jobs cannot share a vehicle or driver on an overlapping day. Confirming requires an active owner, available vehicle and available driver, enough recorded weight/volume capacity, and no entered permit/licence expiry before the expected end. Expiry is rechecked when starting the journey. Register missing capacity values in Fleet first.
 
 Delete moves records to a recoverable Archive. Active work must be completed or cancelled before archiving a resource; a confirmed booking is cancelled when archived. An on-road booking must be cancelled or completed first. Restoring a cancelled/completed booking preserves its status and does not reserve resources again. Linked historical and financial records remain intact.
+
+## Driver portal
+
+Keep one working **Jobs / برنامه‌ها** screen with large Lucide icons and short English/Dari labels. It shows the route, departure/arrival dates, goods and weight/volume, the vehicle assigned to that particular booking, and sender/receiver details. Call buttons use the phone's dialler; map buttons search the entered address and city in Google Maps. They do not provide live tracking or verified GPS coordinates. The office call uses the branch phone, falling back to its manager's phone; it is hidden when no valid number is registered.
+
+1. President creates/links the driver's login in **Fleet → Drivers → Login account**. Register the licence number and expiry there too.
+2. Branch or President assigns a vehicle and driver separately in **Bookings**. That job appears automatically in the driver's portal.
+3. Driver taps **Accept job / پذیرفتن برنامه**. Staff see the acceptance on the existing booking. Editing assignment details clears acceptance so the driver must review the changed job.
+4. Staff start the journey. When the receiver has received the goods, the driver taps **Delivered / بار تحویل شد** and confirms.
+5. The booking displays the delivery report to staff, who verify it and mark the journey complete. A driver report alone does not complete a booking, cancel it, or release the vehicle's reserved schedule.
+
+Both portals refresh job information on focus and every 30 seconds while visible; a refresh icon is also available. **History / سابقه** shows the latest 20 completed/cancelled jobs. **My licence / لایسنس من** shows the driver's own basic details; missing, expired or soon-expiring licence dates are flagged. Licence changes remain in Fleet. Numbers remain English in both languages.
+
+The `get_driver_portal` API returns a limited operational projection for the authenticated driver's linked record. It omits trader accounts, fare/commission values and ID scans. `driver_booking_action` checks assignment ownership, active account, booking status and the version the driver saw. Repeated acceptance/delivery requests do not create duplicate reports. Drivers have no direct booking write access. No road-expense or payment workflow is added to this portal.
+
+Apply **`202611020005_driver_portal.sql`** after the branch portal migration before using this version of the frontend. It adds two nullable report timestamps and the driver APIs; it preserves existing bookings. No additional Edge Function deployment is needed.
+
+### If the driver portal says “Contact the office to link your driver record”
+
+The signed-in account has no linked active Fleet driver record. Creating an Auth user or giving it the Driver role alone does not create that link; matching names do not link accounts automatically.
+
+As President, open **Fleet → Drivers**, register or locate the actual driver, and click that driver's **key icon**. Choose **Create login** with a new username/email and password, or expand **Link an existing driver login** and select the driver's unused eligible account. Existing-account choices must be enabled Driver-role accounts in the same branch scope and not already linked to another driver. If the driver is already using an eligible account, link that account rather than creating a second login. The record's `user_id` stores the link to the Auth/profile ID.
+
+The driver then signs in using that connected account and refreshes the portal. To display jobs, select the same driver record when creating a booking. A connected driver with no assignments sees **No jobs assigned yet**, which is different from a missing account link. Inactive/archived driver records cannot use the portal; restore/activate the record and enable its login as needed.
 
 Trader profiles and accounts are managed together in **Traders**. Use the account/wallet icon to open the profile, fares, receipts and remaining balance. Add a fare (optionally linked to a booking), then use Receive payment. A receipt is saved once in the selected admin/branch cashbook and appears in the trader statement automatically. Cashbook entries can also optionally link a trader; outgoing linked entries reduce net payments, for example for refunds. Entries without a trader link cannot be attributed from their description alone.
 
@@ -122,11 +155,12 @@ Open the local URL printed by Vite, normally `http://localhost:5173`. Restart Vi
 
 1. Apply the SQL files in [supabase/migrations](supabase/migrations) in filename order. For an existing database, apply only pending migrations. With an installed, authenticated, initialized and linked Supabase CLI project, `supabase db push` is an alternative to SQL Editor.
 2. Apply both cashbook migrations: `202611010001_branch_cashbooks.sql`, then `202611010002_simplify_cashbook.sql`. The second migration removes the earlier transfer API and enables the current simplified admin/branch ledgers. Do not stop at the first migration.
-3. Apply the later migrations in order, including the historical operations migrations and rollback, then **`202611020002_simple_record_workflows.sql`**, **`202611020003_combined_trader_accounts.sql`**, and **`202611020004_branch_portal.sql`**. They provide the record APIs, combined trader ledger and branch portal permissions without restoring removed workspace widgets or transfer UI. Deploy both account Edge Functions using your project reference:
+3. Apply the later migrations in order, including the historical operations migrations and rollback, then **`202611020002_simple_record_workflows.sql`**, **`202611020003_combined_trader_accounts.sql`**, **`202611020004_branch_portal.sql`**, and **`202611020005_driver_portal.sql`**. They provide the record APIs, combined trader ledger, branch permissions and driver portal without restoring removed workspace widgets or transfer UI. Deploy the account Edge Functions using your project reference:
 
    ```powershell
    supabase functions deploy create-branch-with-manager --project-ref YOUR_PROJECT_REF --use-api
    supabase functions deploy create-driver-account --project-ref YOUR_PROJECT_REF --use-api
+   supabase functions deploy manage-branch-account --project-ref YOUR_PROJECT_REF --use-api
    ```
 
 4. Create the initial user in Supabase Authentication. Its profile is created automatically. From a trusted admin SQL session, assign that user's UUID to the President role:
@@ -143,9 +177,9 @@ Username sign-in maps to an internal `username@users.pedram.local` authenticatio
 
 The removed `202610310002_booking_payments.sql` is not needed for a fresh setup. Its rollback migration, `202610310003_rollback_booking_payments.sql`, remains in the migration history and safely handles an absent legacy payment table/function.
 
-Keep both Edge Functions and database schema in sync. The functions use server-side service-role access, verify the active President, and use request-tagged Auth metadata to recover account creation after a network interruption. They never reuse an unrelated account just because an email matches. Applying a local migration file does not itself update the hosted database, and editing an Edge Function locally does not deploy it.
+Keep the account Edge Functions and database schema in sync. The creation functions use server-side service-role access, verify the active President, and use request-tagged Auth metadata to recover account creation after a network interruption. They never reuse an unrelated account just because an email matches. `manage-branch-account` provides the separate President-only password workflow. Applying a local migration file does not itself update the hosted database, and editing an Edge Function locally does not deploy it.
 
-For Dashboard editor deployments, paste each function's complete `index.ts` file into that function. Both entrypoints are self-contained and do not import a local `_shared` file. The shared source is retained only as a consistency reference. See [Dashboard deployment instructions](supabase/README.md#deploy-through-the-dashboard-editor).
+For Dashboard editor deployments, paste each function's complete `index.ts` file into that function. All three entrypoints are self-contained and do not import a local `_shared` file. The shared provisioning source is retained only as a consistency reference for the two creation functions. See [Dashboard deployment instructions](supabase/README.md#deploy-through-the-dashboard-editor).
 
 See [Supabase setup notes](supabase/README.md).
 
@@ -155,6 +189,7 @@ See [Supabase setup notes](supabase/README.md).
 npm run build
 npm run lint
 node --test tests/cashbook.test.js
+node --test tests/branch-account-function.test.js
 ```
 
 `npm run build` generates `dist/`. Use `npm run preview` to serve the production build locally. The Node tests check admin/branch totals, currency separation, earlier balances, and deficits.
@@ -174,7 +209,7 @@ node tests/record-workflows-database.mjs
 node tests/rollback-database.mjs
 ```
 
-The workflow suite applies the real migration history and tests lifecycle actions, stale edits, trader duplicates, booking request replay, capacity/expiry/conflicts, document metadata and recovery, and linked/disabled accounts. The rollback suite remains pinned to its historical migration boundary.
+The workflow suite applies the real migration history and tests lifecycle actions, stale edits, trader duplicates, booking request replay, capacity/expiry/conflicts, document metadata and recovery, linked/disabled accounts, driver-only assignment access, report retries, fresh acceptance after edits, and staff-verified delivery. The rollback suite remains pinned to its historical migration boundary.
 
 ## Main project files
 
