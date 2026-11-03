@@ -104,6 +104,14 @@ The signed-in account has no linked active Fleet driver record. Creating an Auth
 
 As President, open **Fleet → Drivers**, register or locate the actual driver, and click that driver's **key icon**. Choose **Create login** with a new username/email and password, or expand **Link an existing driver login** and select the driver's unused eligible account. Existing-account choices must be enabled Driver-role accounts in the same branch scope and not already linked to another driver. If the driver is already using an eligible account, link that account rather than creating a second login. The record's `user_id` stores the link to the Auth/profile ID.
 
+For an already linked driver, the same key icon shows the current sign-in name and **New password / Confirm password / Save password**. Only the President can change it. The existing account, assignments and enabled/disabled state are preserved. The next password sign-in uses the newly assigned password; this is not a forced logout of an already open session. Passwords are updated through Supabase Auth and are not stored in Fleet tables. Redeploy the latest **create-driver-account** Edge Function to enable its new `details` and `password` actions. No new SQL migration is needed for password changes, and no additional function name is introduced.
+
+### Assign a job and vehicle
+
+No separate task or trip-plan page is required. Use **Bookings → New booking** in the President or Branch portal: enter the booking, route, dates and load, select a registered vehicle, then select a registered driver independently, and save. The saved booking is the driver's job. If that driver's Fleet record has a linked enabled login, it appears in **Driver portal → Jobs**, including the vehicle selected for that booking. The two assignments are not a permanent driver/vehicle pairing. Bookings warns when the chosen driver has no linked login.
+
+To change an assignment, edit a **Confirmed** booking, choose another eligible driver and/or vehicle, and save. The former driver loses access to the job, and the new driver sees it on refresh. Changing assignment details clears earlier acceptance. On-road bookings are locked against editing. Existing capacity, licence/permit expiry, date overlap and branch-scope checks apply. Staff start/complete the journey; the driver accepts the job and reports delivery. Jobs refresh on focus or every 30 seconds while visible, with a manual refresh icon available.
+
 The driver then signs in using that connected account and refreshes the portal. To display jobs, select the same driver record when creating a booking. A connected driver with no assignments sees **No jobs assigned yet**, which is different from a missing account link. Inactive/archived driver records cannot use the portal; restore/activate the record and enable its login as needed.
 
 Trader profiles and accounts are managed together in **Traders**. Use the account/wallet icon to open the profile, fares, receipts and remaining balance. Add a fare (optionally linked to a booking), then use Receive payment. A receipt is saved once in the selected admin/branch cashbook and appears in the trader statement automatically. Cashbook entries can also optionally link a trader; outgoing linked entries reduce net payments, for example for refunds. Entries without a trader link cannot be attributed from their description alone.
@@ -190,6 +198,7 @@ npm run build
 npm run lint
 node --test tests/cashbook.test.js
 node --test tests/branch-account-function.test.js
+node --test tests/driver-password-function.test.js
 ```
 
 `npm run build` generates `dist/`. Use `npm run preview` to serve the production build locally. The Node tests check admin/branch totals, currency separation, earlier balances, and deficits.

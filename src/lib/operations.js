@@ -2,6 +2,10 @@ import { supabase } from './supabase'
 export const bookingColumns='id,booking_number,trader_id,vehicle_id,driver_id,service_type,origin,destination,goods,quantity,departure_date,created_by,created_at,booking_date,trader_first_name,trader_last_name,trader_address,trader_phone,sender_is_trader,sender_name,sender_phone,sender_address,receiver_name,receiver_phone,receiver_address,weight_tons,volume_m3,branch_id,status,arrival_date,updated_at,archived_at,driver_accepted_at,driver_delivered_at'
 export async function rpc(name,args){const {data,error}=await supabase.rpc(name,args);if(error)throw error;return data}
 const messages={
+ DRIVER_FUNCTION_MISSING:['Deploy create-driver-account in this app’s Supabase project, then reopen this form.','تابع create-driver-account را در پروژه Supabase این سیستم نشر کنید و فورم را دوباره باز کنید.'],
+ DRIVER_FUNCTION_UNREACHABLE:['Cannot reach create-driver-account. Check its deployment and your connection.','اتصال به create-driver-account برقرار نشد. نشر تابع و اتصال انترنت را بررسی کنید.'],
+ DRIVER_FUNCTION_UPDATE_REQUIRED:['Redeploy the latest create-driver-account function to enable driver password changes.','برای تغییر رمز عبور راننده، نسخه جدید تابع create-driver-account را نشر کنید.'],
+ DRIVER_UNAVAILABLE:['This driver is unavailable. Refresh the list or restore the archived driver.','این راننده در دسترس نیست. فهرست را تازه‌سازی کنید یا راننده بایگانی‌شده را بازیابی کنید.'],
  BRANCH_FUNCTION_MISSING:['Deploy the Edge Function named manage-branch-account in this app’s Supabase project, then reopen this form.','تابع manage-branch-account را در پروژه Supabase این سیستم نشر کنید و فورم را دوباره باز کنید.'],
  BRANCH_FUNCTION_UNREACHABLE:['Cannot reach manage-branch-account. Check that it is deployed in this app’s Supabase project and that your connection is working.','اتصال به manage-branch-account برقرار نشد. نشر تابع در پروژه Supabase این سیستم و اتصال انترنت را بررسی کنید.'],
  BRANCH_SESSION_INVALID:['Your login could not be verified. Sign out, sign in as President, then try again.','حساب ورود تأیید نشد. خارج شوید و با حساب رئیس دوباره وارد شوید.'],

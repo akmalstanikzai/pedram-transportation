@@ -413,7 +413,7 @@ html[dir='rtl'] .brand strong { font-family: 'DM Sans', sans-serif; letter-spaci
 .registry-form input:focus, .registry-form select:focus { border-color: #6ca88e; background: #fff; }
 .registry-form .wide, .registry-form-actions { grid-column: 1 / -1; }
 .registry-form-actions { display: flex; justify-content: flex-end; gap: 9px; padding-top: 8px; }
-.registry-form-actions > button:first-child { min-height: 42px; padding: 0 16px; border: 1px solid var(--line); border-radius: 9px; color: #667581; background: #fff; font-size: 12px; font-weight: 750; }
+.registry-form-actions > button:first-child:not(.registry-primary) { min-height: 42px; padding: 0 16px; border: 1px solid var(--line); border-radius: 9px; color: #667581; background: #fff; font-size: 12px; font-weight: 750; }
 .registry-check { min-height: 42px; display: flex; align-items: center; gap: 9px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: #f8fafb; }
 .record-tools { display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; }
 .record-icon-button { width: 36px; height: 36px; display: inline-grid; place-items: center; border: 1px solid #dbe4e8; border-radius: 8px; background: white; color: #31546b; cursor: pointer; }
@@ -641,6 +641,8 @@ html[dir='rtl'] .role-title { font-family: Tahoma, 'DM Sans', sans-serif; letter
 .auth-card .input-wrap:focus-within { border-color: #4f9876; box-shadow: none; background: #fff; }
 
 .branch-password-modal { width: min(480px, 100%); }
+.driver-password-form { padding: 16px 0 20px; }
+.driver-account > h3 { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; color: var(--navy); font-size: 18px; }
 .branch-password-form .branch-password-name { display: flex; align-items: center; gap: 10px; color: var(--navy); font-size: 18px; }
 .branch-password-input { display: flex; align-items: center; position: relative; }
 .branch-password-input input { padding-right: 46px; }

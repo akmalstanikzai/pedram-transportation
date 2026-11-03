@@ -11,6 +11,24 @@ export async function provision(kind:'branch'|'driver',request:Request){
   const {data:actor}=await admin.from('profiles').select('role,account_enabled').eq('id',user.id).single()
   if(actor?.role!=='president'||!actor.account_enabled)throw new Error('ACCESS_DENIED')
   const body=await request.json(),id=body.request_id
+  // Manage only the Auth account already linked to the selected Fleet driver.
+  if(kind==='driver'&&body.action!==undefined){
+   if(!['details','password'].includes(body.action)||typeof body.driver_id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.driver_id))throw new Error('REQUIRED_FIELDS')
+   const {data:driver,error:driverError}=await admin.from('drivers').select('id,user_id,branch_id,archived_at').eq('id',body.driver_id).single()
+   if(driverError||!driver||driver.archived_at)throw new Error('DRIVER_UNAVAILABLE')
+   if(!driver.user_id)throw new Error('ACCOUNT_MISSING')
+   const {data:profile,error:profileError}=await admin.from('profiles').select('id,role,branch_id,username').eq('id',driver.user_id).single()
+   if(profileError||profile?.role!=='driver'||profile.branch_id!==driver.branch_id||profile.id===user.id)throw new Error('ACCESS_DENIED')
+   if(body.action==='details'){
+    const {data,error}=await admin.auth.admin.getUserById(profile.id)
+    if(error||!data.user)throw new Error('ACCOUNT_MISSING')
+    return new Response(JSON.stringify({login:profile.username||data.user.email||''}),{headers})
+   }
+   if(typeof body.password!=='string'||body.password.length<8)throw new Error('PASSWORD_TOO_SHORT')
+   const {error}=await admin.auth.admin.updateUserById(profile.id,{password:body.password})
+   if(error&&error.code!=='same_password')throw new Error('PASSWORD_REJECTED')
+   return new Response(JSON.stringify({success:true}),{headers})
+  }
   if(typeof id!=='string'||!/^[0-9a-f-]{36}$/i.test(id))throw new Error('REQUEST_CONFLICT')
   const credentials=kind==='branch'?body.credentials:body
   const login=String(credentials?.login||'').trim().toLowerCase(),password=credentials?.password

@@ -10,3 +10,7 @@ test('authentication and business errors remain distinguishable', async () => {
   assert.equal((await branchAccountError(null, {context:new Response(JSON.stringify({message:'Invalid JWT'}),{status:401})})).message, 'BRANCH_SESSION_INVALID')
   assert.equal((await branchAccountError(null, {context:new Response(JSON.stringify({error:'ACCOUNT_MISSING'}),{status:400})})).message, 'ACCOUNT_MISSING')
 })
+test('driver function failures identify the correct deployment',async()=>{
+ assert.equal((await branchAccountError(null,{name:'FunctionsFetchError'},'driver')).message,'DRIVER_FUNCTION_UNREACHABLE')
+ assert.equal((await branchAccountError(null,{context:new Response('{}',{status:404})},'driver')).message,'DRIVER_FUNCTION_MISSING')
+})
