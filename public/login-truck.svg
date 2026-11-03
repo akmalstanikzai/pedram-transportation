@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 210" fill="none">
+ <defs><linearGradient id="cargo" x1="35" y1="40" x2="290" y2="140" gradientUnits="userSpaceOnUse"><stop stop-color="#e3eedc"/><stop offset="1" stop-color="#a9cdb8"/></linearGradient><linearGradient id="cab" x1="299" y1="58" x2="379" y2="146" gradientUnits="userSpaceOnUse"><stop stop-color="#fffdf0"/><stop offset="1" stop-color="#d2e2cf"/></linearGradient></defs>
+ <ellipse cx="219" cy="184" rx="188" ry="13" fill="#082c24" opacity=".25"/>
+ <path d="M23 183h395" stroke="#acd4bc" stroke-opacity=".35" stroke-linecap="round"/>
+ <rect x="39" y="139" width="327" height="15" rx="4" fill="#0b382e"/><rect x="43" y="147" width="237" height="10" rx="3" fill="#295546"/>
+ <path d="M39 39h244v101H39z" fill="url(#cargo)" stroke="#eaf3de" stroke-width="2"/><path d="m283 39 13 9v92h-13Z" fill="#82b49b"/><path d="M39 39h244l13 9H51Z" fill="#f0f5e4"/>
+ <path d="M56 53v74m16-74v74m16-74v74m16-74v74m16-74v74m16-74v74m16-74v74m16-74v74m16-74v74m16-74v74m16-74v74m16-74v74m16-74v74m16-74v74" stroke="#78a98f" stroke-opacity=".6" stroke-width="3"/>
+ <path d="M39 136h244" stroke="#d48b72" stroke-width="5"/><path d="M302 63h45c11 0 16 4 22 14l26 35v36h-93Z" fill="url(#cab)" stroke="#edf4e3" stroke-width="1.5"/>
+ <path d="M316 75h29c7 0 10 2 14 9l18 24h-61Z" fill="#285b53"/><path d="m347 77 18 28h-16l-18-28Z" fill="#4b8170"/><path d="M315 117h59m-59 7h21m-23 12h16" stroke="#93b6a0" stroke-width="2" stroke-linecap="round"/>
+ <rect x="302" y="63" width="9" height="74" rx="2" fill="#bbd4bd"/><path d="M395 112h12v35h-12Z" fill="#adc8b1"/><rect x="391" y="119" width="15" height="7" rx="2" fill="#f8e5ad"/>
+ <path d="M330 151a25 25 0 0 1 50 0" fill="#173e32"/><path d="M61 153a24 24 0 0 1 48 0m-10 0a24 24 0 0 1 48 0" fill="#173e32"/>
+ <g fill="#18382f" stroke="#436453" stroke-width="3"><circle cx="84" cy="157" r="21"/><circle cx="123" cy="157" r="21"/><circle cx="355" cy="157" r="21"/></g>
+ <g fill="#c3d4bc" stroke="#e4ebd6" stroke-width="2"><circle cx="84" cy="157" r="10"/><circle cx="123" cy="157" r="10"/><circle cx="355" cy="157" r="10"/></g>
+ <g fill="#5c7e66"><circle cx="84" cy="157" r="3"/><circle cx="123" cy="157" r="3"/><circle cx="355" cy="157" r="3"/></g>
+ <rect x="181" y="151" width="62" height="12" rx="3" fill="#54735b"/><rect x="382" y="142" width="29" height="9" rx="3" fill="#486c56"/><rect x="42" y="142" width="7" height="6" rx="1" fill="#d7957d"/>
+</svg>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 210" fill="none">
+ <defs><linearGradient id="body" x1="100" y1="20" x2="210" y2="160" gradientUnits="userSpaceOnUse"><stop stop-color="#fffef5"/><stop offset="1" stop-color="#b8d9cd"/></linearGradient><filter id="shadow" x="-40%" y="-60%" width="180%" height="220%"><feDropShadow dx="0" dy="12" stdDeviation="9" flood-color="#062c23" flood-opacity=".25"/></filter></defs>
+ <path d="M14 177c55-2 72-33 88-69" stroke="#c4e6d0" stroke-opacity=".5" stroke-dasharray="4 8" stroke-linecap="round"/>
+ <g transform="translate(162 103) rotate(-27)" filter="url(#shadow)">
+  <path d="M-118 0c8-12 36-15 61-15h52l-38-66h22l81 66 54 4c17 1 29 6 29 11s-12 10-29 11l-54 4-81 66h-22l38-66h-52l-30 27h-21l14-31c-14-2-23-5-24-11Z" fill="url(#body)" stroke="#f0fff5" stroke-width="1.2"/>
+  <path d="m-21-78 55 63M-21 78l55-63" stroke="#89b8ab" stroke-width="2"/>
+  <path d="M-89-8h174M-86 8h171" stroke="#6b9e91" stroke-opacity=".55"/>
+  <path d="m96-7 10 2 5 5-5 5-10 2" fill="#2a6657"/>
+  <path d="M-66-14-90-42h-17l11 30" fill="#82b7a7" stroke="#d7eee1"/>
+  <rect x="9" y="-39" width="28" height="10" rx="5" fill="#d4e8dc" stroke="#7ba496"/><rect x="9" y="29" width="28" height="10" rx="5" fill="#d4e8dc" stroke="#7ba496"/>
+  <path d="M-67 0h132" stroke="#ce6a63" stroke-width="2.5" stroke-linecap="round"/>
+ </g>
+</svg>

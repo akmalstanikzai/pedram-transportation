@@ -12,7 +12,7 @@ Vehicle model years accept digits without a calendar-year range, including leadi
 
 | Module | Current implementation |
 | --- | --- |-
-| Login | Company branding, email or username sign-in, English/Dari switch, and right-to-left Dari layout. |
+| Login | Split-screen layout with company branding, emerald transport artwork (aircraft, containers and cargo truck), email or username sign-in, English/Dari switch, and right-to-left Dari layout. Artwork adapts to phone screens; the sign-in form keeps its established placement. |
 | Branches | Create, edit, view, archive/restore, and enable/disable the manager's login. Assign credentials when creating a branch; use the key icon in the Password column to view its login and set a new password. |
 | Fleet | Independent owner, vehicle and driver records, with edit, detail, status, archive/restore, documents and driver login management. |
 | Traders | Create, edit and archive/restore traders; open their profile and account together. Record fares and receipts, and see money owed, credit and payment history by currency. |
