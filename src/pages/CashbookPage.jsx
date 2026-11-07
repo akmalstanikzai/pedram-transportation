@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { ArrowDownLeft, ArrowUpRight, RefreshCw, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { allRows, cents, currencies, kabulToday, simpleLedger } from '../lib/cashbook'
+import SolarHijriDateInput from '../components/SolarHijriDateInput'
+import { formatSolarHijri } from '../lib/solarHijri'
 
 export default function CashbookPage({ language, profile }) {
   const t=(en,fa)=>language==='fa'?fa:en
@@ -68,7 +70,7 @@ export default function CashbookPage({ language, profile }) {
     {error&&<p className="registry-notice error" role="alert">{error}</p>}
     {direction&&<form className="simple-cashbook-form" onSubmit={save}><div className="simple-cashbook-form-heading"><h2>{direction==='in'?t('Money In','آمد'):t('Money Out','رفت')}</h2><button type="button" aria-label={t('Close','بستن')} disabled={busy} onClick={()=>{setDirection('');setError('')}}><X size={18}/></button></div><fieldset disabled={busy||uncertain}>
       {president&&<label><span>{t('Account','حساب')} *</span><select required value={form.scope} onChange={e=>setForm({...form,scope:e.target.value,trader_id:''})}>{accountOptions}</select></label>}
-      <label><span>{t('Date','تاریخ')} *</span><input required type="date" max={kabulToday()} value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></label>
+      <label><span>{t('Date','تاریخ')} *</span><SolarHijriDateInput required max={kabulToday()} language={language} value={form.date} onChange={date=>setForm({...form,date})} ariaLabel={t('Date','تاریخ')}/></label>
       <label className="simple-cashbook-description"><span>{t('Name / description','نام / شرح معامله')} *</span><input required autoFocus value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label>
       <label><span>{t('Amount','مبلغ')} ({currency}) *</span><input required type="number" min="0.01" max="999999999999.99" step="0.01" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})}/></label>
       {traders.length>0&&<details className="simple-cashbook-description"><summary>{t('Link to a trader (optional)','وصل به حساب تاجر (اختیاری)')}</summary><label><span>{t('Trader','تاجر')}</span><select value={form.trader_id||''} onChange={e=>setForm({...form,trader_id:e.target.value})}><option value="">—</option>{traders.filter(r=>!r.archived_at&&(!r.branch_id||r.branch_id===form.scope)).map(r=><option key={r.id} value={r.id}>{r.full_name} · {r.phone}</option>)}</select></label></details>}
@@ -82,7 +84,7 @@ export default function CashbookPage({ language, profile }) {
         return <section key={flow} className={`cashbook-ledger-side ${incoming?'ledger-in':'ledger-out'}`} dir={language==='fa'?'rtl':'ltr'} aria-label={title}>
           <h2><Icon size={21}/>{title}</h2>
           <div className="simple-cashbook-list"><table><thead><tr><th scope="col">{t('Date','تاریخ')}</th><th scope="col">{t('Description','شرح معامله')}</th><th scope="col">{t('Amount','مبلغ')}</th></tr></thead><tbody>
-            {rows.map(e=><tr key={e.id}><td>{e.entry_date}</td><td>{e.opening?t('Earlier balance','موجودی قبلی'):e.description}{president&&<small className="cashbook-ledger-account">{name(e.branch_id)}</small>}</td><td className={incoming?'simple-money-in':'simple-money-out'}>{money(cents(e.amount))}</td></tr>)}
+            {rows.map(e=><tr key={e.id}><td>{formatSolarHijri(e.entry_date)}</td><td>{e.opening?t('Earlier balance','موجودی قبلی'):e.description}{president&&<small className="cashbook-ledger-account">{name(e.branch_id)}</small>}</td><td className={incoming?'simple-money-in':'simple-money-out'}>{money(cents(e.amount))}</td></tr>)}
             {!rows.length&&<tr><td colSpan={3} className="simple-cashbook-empty">{incoming?t('No money received yet.','هنوز دریافتی ثبت نشده است.'):t('No money paid yet.','هنوز پرداختی ثبت نشده است.')}</td></tr>}
           </tbody><tfoot><tr><th scope="row" colSpan={2}>{incoming?t('Total received','مجموع آمد'):t('Total paid','مجموع رفت')}</th><td className={incoming?'simple-money-in':'simple-money-out'}>{money(incoming?ledger.incoming:ledger.outgoing)}</td></tr></tfoot></table></div>
         </section>

@@ -2,6 +2,7 @@ import { Globe2, MapPin } from 'lucide-react'
 
 export default function TransportArtwork() {
   return <div className="auth-transport-art" aria-hidden="true">
+    <div className="auth-photo auth-photo-terminal"><img src="/login-freight-terminal.jpg" alt="" /></div>
     <svg className="auth-route-map" viewBox="0 0 720 900" fill="none" preserveAspectRatio="xMidYMid slice">
       <g stroke="currentColor" strokeWidth="1">
         <path d="m60 165 37-20 23 7 30-11 29 18 29-4 29 24-9 25-27 7-10 25-21 7-15 38-25 5-8-29-29-17-8-28-30-14Zm95 140 36 10 23 32 3 35 19 29-13 41-17 7-9 41-17-17-5-35-18-30 4-37-17-29Z"/>
@@ -13,9 +14,8 @@ export default function TransportArtwork() {
       <g fill="currentColor"><circle cx="217" cy="445" r="5"/><circle cx="507" cy="315" r="5"/><circle cx="445" cy="157" r="5"/><circle cx="105" cy="678" r="5"/></g>
       <g stroke="currentColor"><circle cx="217" cy="445" r="14"/><circle cx="507" cy="315" r="14"/></g>
     </svg>
-    <div className="auth-artwork auth-artwork-plane"><img src="/login-aircraft.svg" alt="" /></div>
-    <div className="auth-artwork auth-artwork-containers"><img src="/login-containers.svg" alt="" /></div>
-    <div className="auth-artwork auth-artwork-truck"><img src="/login-truck.svg" alt="" /></div>
+    <div className="auth-photo auth-photo-plane"><img src="/login-cargo-plane-sunset.jpg" alt="" /></div>
+    <div className="auth-photo auth-photo-truck"><img src="/login-road-freight.jpg" alt="" /></div>
     <span className="auth-map-marker"><MapPin size={21} strokeWidth={1.5} /></span>
     <span className="auth-globe-mark"><Globe2 size={27} strokeWidth={1.2} /></span>
   </div>

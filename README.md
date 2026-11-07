@@ -6,6 +6,8 @@ Switching language translates labels and changes layout direction; displayed num
 
 The Dari interface uses [Vazirmatn](https://github.com/rastikerdar/vazirmatn), bundled locally through `@fontsource-variable/vazirmatn` with variable weights for body text, forms, headings, tables and dialogs. The standard font variant preserves English digits; no Farsi-digits substitution is used. English continues to use DM Sans and Space Grotesk. The font's SIL Open Font License and attribution are included in `public/fonts/vazirmatn-OFL.txt`. Deploy the updated frontend to publish typography changes; no database or Edge Function changes are needed.
 
+All user-facing dates use the Solar Hijri calendar with English digits, for example `1405/08/16`. Each compact date field opens a Solar Hijri calendar: choose a day instead of typing it. Date selections save their equivalent existing ISO date internally, so booking conflicts, expiry checks, sorting, and existing Supabase records remain correct. Bookings, cashbook entries, trader accounts, vehicle permits, driver licences, and document expiries use this calendar. This is a frontend update only; no data migration is required.
+
 Project documentation updated: **3 November 2026**. The current source includes record management, branch password controls and a focused driver portal. Apply the ordered migrations through `202611020005_driver_portal.sql` and use the current account Edge Functions. Source changes do not automatically update live Supabase.
 
 ## Current features
@@ -14,7 +16,7 @@ Vehicle model years accept digits without a calendar-year range, including leadi
 
 | Module | Current implementation |
 | --- | --- |-
-| Login | Split-screen layout with company branding, emerald transport artwork (aircraft, containers and cargo truck), email or username sign-in, English/Dari switch, and right-to-left Dari layout. Artwork adapts to phone screens; the sign-in form keeps its established placement. |
+| Login | Split-screen layout with company branding and real cargo-aircraft, road-freight and container-terminal imagery, email or username sign-in, English/Dari switch, and right-to-left Dari layout. Artwork adapts to phone screens; the sign-in form keeps its established placement. |
 | Branches | Create, edit, view, archive/restore, and enable/disable the manager's login. Assign credentials when creating a branch; use the key icon in the Password column to view its login and set a new password. |
 | Fleet | Independent owner, vehicle and driver records, with edit, detail, status, archive/restore, documents and driver login management. |
 | Traders | Create, edit and archive/restore traders; open their profile and account together. Record fares and receipts, and see money owed, credit and payment history by currency. |
@@ -47,7 +49,19 @@ In **President → Branches → Add Branch**, enter the manager's email/username
 
 For an existing branch, click the **key icon in the Password column**, enter a new password (at least 8 characters), repeat it, and select **Save password**. The dialog shows the correct username or email for that manager. Password changes do not enable a disabled login; use the existing power icon to enable it if needed. Archived branches must be restored first.
 
-The new self-contained **`manage-branch-account` Edge Function** checks that the caller is an enabled President and that the target account is the selected branch's registered Branch Manager. It updates the password through the server-only Supabase Auth admin API; passwords are never saved in branch/profile tables or returned by the API. No SQL migration is needed for password changes. Deploy this new function before using the key button; the existing create functions remain unchanged.
+The self-contained **`manage-branch-account` Edge Function** checks that the caller is an enabled President and that the target account is the selected branch's registered Branch Manager. It updates the password through the server-only Supabase Auth admin API; passwords are never saved in branch/profile tables. Deploy this function before using the key button.
+
+### Protected branch password vault
+
+The President can select **View saved password** in the branch key dialog. The vault is not a branch column and is inaccessible to browser roles: it stores an AES-GCM encrypted password, its IV, the last-changing President, and a private audit event every time a password is stored or viewed. Only `manage-branch-account`, after checking an enabled President session and the branch-manager relationship, can decrypt and return it.
+
+Before using it:
+
+1. Run `supabase/migrations/202611070001_branch_password_vault.sql` once.
+2. Create a 32-byte random key, base64 encode it, and set it as the **`BRANCH_PASSWORD_VAULT_KEY`** secret for the `manage-branch-account` Edge Function. Keep this value only in Supabase secrets—never in the frontend, SQL, Git, or a branch record.
+3. Deploy the current `manage-branch-account` function and frontend.
+
+New branch creation immediately stores the assigned password in the vault. Existing passwords created before the vault cannot be recovered; use the key dialog to set a new password once, then it becomes viewable. Changing the vault secret without a planned key rotation makes existing vault records unreadable.
 
 ## Cashbook / روزنامچه
 

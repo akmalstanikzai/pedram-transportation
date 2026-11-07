@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { stripTypeScriptTypes } from 'node:module'
 import { runInNewContext } from 'node:vm'
+import { webcrypto } from 'node:crypto'
 
 const branchId = '00000000-0000-0000-0000-000000000011'
 const managerId = '00000000-0000-0000-0000-000000000022'
@@ -15,12 +16,13 @@ function setup(overrides = {}) {
   const branch = { id: branchId, manager_user_id: managerId, archived_at: null, ...overrides.branch }
   const manager = { id: managerId, role: 'branch_manager', branch_id: branchId, username: 'kabul-manager', ...overrides.manager }
   const writes = []
+  const vaultWrites = []
   const reads = []
   let handler
   const admin = {
     from(table) {
       const filters = {}
-      const query = { select: () => query, eq: (key, value) => { filters[key] = value; return query }, single: async () => {
+      const query = { select: () => query, eq: (key, value) => { filters[key] = value; return query }, upsert: async value => { vaultWrites.push({ table, value }); return { error: null } }, insert: async value => { vaultWrites.push({ table, value }); return { error: null } }, single: async () => {
         reads.push({ table, filters })
         const data = table === 'branches' ? (filters.id === branchId ? branch : null) : filters.id === presidentId ? actor : filters.id === managerId ? manager : null
         return { data, error: null }
@@ -33,8 +35,9 @@ function setup(overrides = {}) {
     } },
   }
   const caller = { auth: { getUser: async () => ({ data: { user: overrides.invalidToken ? null : { id: presidentId } }, error: null }) } }
-  runInNewContext(js, { Request, Response, Deno: { env: { get: key => key === 'SUPABASE_SERVICE_ROLE_KEY' ? 'service' : 'public' }, serve: fn => { handler = fn } }, createClient: (_url, key) => key === 'service' ? admin : caller })
-  return { writes, reads, invoke: (body, token = 'Bearer test', method = 'POST') => handler(new Request('https://example.test', { method, headers: token ? { Authorization: token } : {}, ...(method === 'POST' ? { body: JSON.stringify({ branch_id: branchId, action: 'password', password: 'New-password-42', ...body }) } : {}) })) }
+  const vaultKey = Buffer.alloc(32, 7).toString('base64')
+  runInNewContext(js, { Request, Response, TextEncoder, TextDecoder, Uint8Array, atob, btoa, crypto: webcrypto, Deno: { env: { get: key => key === 'SUPABASE_SERVICE_ROLE_KEY' ? 'service' : key === 'BRANCH_PASSWORD_VAULT_KEY' ? vaultKey : 'public' }, serve: fn => { handler = fn } }, createClient: (_url, key) => key === 'service' ? admin : caller })
+  return { writes, vaultWrites, reads, invoke: (body, token = 'Bearer test', method = 'POST') => handler(new Request('https://example.test', { method, headers: token ? { Authorization: token } : {}, ...(method === 'POST' ? { body: JSON.stringify({ branch_id: branchId, action: 'password', password: 'New-password-42', ...body }) } : {}) })) }
 }
 
 test('standalone branch account function supports preflight and rejects missing/invalid auth and other roles', async () => {
@@ -60,6 +63,7 @@ test('password update targets only the registered manager and returns no credent
   assert.equal(app.writes[0].id, managerId)
   assert.equal(app.writes[0].attributes.password, 'New-password-42')
   assert.deepEqual(Object.keys(app.writes[0].attributes), ['password'], 'no role, email, enable or branch changes')
+  assert.equal(app.vaultWrites.filter(write => write.table === 'branch_password_vault').length, 1)
 })
 
 test('login details support both username and email accounts without writing Auth', async () => {

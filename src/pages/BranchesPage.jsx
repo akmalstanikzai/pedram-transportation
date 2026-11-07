@@ -107,6 +107,11 @@ function BranchRegistry({ language }) {
       }
       return setMessage({ type: 'error', text: errorText ? explain({message:errorText},language) : text.loadError })
     }
+    const { data: vaultData, error: vaultError } = await supabase.functions.invoke('manage-branch-account', { body: { branch_id: data.branch_id, action: 'password', password: form.password } })
+    if (vaultError || vaultData?.error) {
+      const vaultCode = vaultData?.error || vaultError?.message || 'VAULT_WRITE_FAILED'
+      setForm(initialForm); setOpen(false); setMessage({ type: 'error', text: `${text.success} ${explain({message:vaultCode},language)}` }); loadBranches(); return
+    }
     setForm(initialForm); setOpen(false); setMessage({ type: 'success', text: text.success }); loadBranches()
   }
 

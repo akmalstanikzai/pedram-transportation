@@ -56,6 +56,17 @@
 
 .auth-visual::before { content: ''; position: absolute; inset: 0; background-image: linear-gradient(#d5eedc08 1px, transparent 1px), linear-gradient(90deg, #d5eedc08 1px, transparent 1px); background-size: 56px 56px; mask-image: linear-gradient(160deg, #000, transparent 75%); }
 .auth-transport-art { position: absolute; inset: 0; pointer-events: none; user-select: none; }
+.auth-photo { position: absolute; overflow: hidden; pointer-events: none; }
+.auth-photo img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.auth-photo-terminal { inset: 0; z-index: 0; opacity: .31; }
+.auth-photo-terminal::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(12, 55, 43, .9), rgba(13, 73, 54, .35) 68%, rgba(12, 57, 43, .68)), linear-gradient(0deg, rgba(11, 47, 36, .65), transparent 52%); }
+.auth-photo-terminal img { object-position: 63% center; filter: saturate(.68) contrast(1.1); }
+.auth-photo-plane { z-index: 2; width: min(27%, 225px); aspect-ratio: 1.42; top: 7%; inset-inline-end: 6%; border: 1px solid rgba(227, 244, 231, .44); border-radius: 18px; box-shadow: 0 20px 46px rgba(3, 32, 22, .36); opacity: .94; transform: rotate(4deg); }
+.auth-photo-plane::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(23, 94, 68, .08), rgba(7, 48, 35, .24)); }
+.auth-photo-plane img { filter: saturate(.8) contrast(1.08); object-position: center; }
+.auth-photo-truck { z-index: 1; width: min(38%, 330px); aspect-ratio: 1.72; bottom: 4%; inset-inline-end: 3%; border: 1px solid rgba(227, 244, 231, .42); border-radius: 18px; box-shadow: 0 20px 46px rgba(3, 32, 22, .4); opacity: .91; transform: rotate(-3deg); }
+.auth-photo-truck::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(16, 85, 61, .04), rgba(5, 42, 30, .3)); }
+.auth-photo-truck img { filter: saturate(.78) contrast(1.06); object-position: 58% center; }
 .auth-route-map { position: absolute; inset: 0; width: 100%; height: 100%; color: #d9f1df; opacity: .14; }
 .auth-artwork { position: absolute; z-index: 1; }
 .auth-artwork img { width: 100%; height: auto; display: block; }
@@ -80,7 +91,7 @@
 
 .auth-visual .visual-copy {
   position: relative;
-  z-index: 1;
+  z-index: 3;
   width: auto;
   max-width: 520px;
   margin: auto 0;
@@ -108,6 +119,27 @@ html[dir='rtl'] .auth-visual .visual-copy .auth-company-name { font-family: var(
 }
 
 .auth-language { position: absolute; top: 27px; inset-inline-end: 34px; }
+
+.solar-date-picker { position: relative; display: inline-flex; align-items: center; width: min(100%, 154px); }
+.solar-date-trigger { width: 100%; height: 42px; display: inline-flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 10px; border: 1px solid #d9e1e6; border-radius: 8px; color: var(--ink); background: #fbfcfd; font: inherit; font-size: 12px; cursor: pointer; }
+.solar-date-trigger:hover:not(:disabled), .solar-date-trigger[aria-expanded='true'] { border-color: #6ca88e; background: #fff; }
+.solar-date-trigger:disabled { cursor: not-allowed; opacity: .64; }
+.solar-date-clear { position: absolute; inset-inline-end: 27px; display: grid; width: 18px; height: 18px; padding: 0; place-items: center; border: 0; border-radius: 50%; color: #61727e; background: #e6ece9; }
+.solar-date-clear:hover:not(:disabled) { color: #fff; background: #5e7568; }
+.solar-date-popover { position: absolute; z-index: 30; top: calc(100% + 7px); inset-inline-start: 0; width: 246px; padding: 11px; border: 1px solid #cfdcd4; border-radius: 12px; box-shadow: 0 16px 34px rgba(20, 55, 40, .2); color: var(--ink); background: #fff; }
+.solar-date-toolbar { display: grid; grid-template-columns: 30px 1fr 30px; align-items: center; margin-bottom: 8px; text-align: center; }
+.solar-date-toolbar button { display: grid; width: 30px; height: 30px; padding: 0; place-items: center; border: 0; border-radius: 7px; color: var(--green-dark); background: transparent; }
+.solar-date-toolbar button:hover { background: #e7f1ea; }
+.solar-date-toolbar strong { font-size: 12px; }
+.solar-date-weekdays, .solar-date-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
+.solar-date-weekdays { margin-bottom: 3px; color: #6b7a84; font-size: 10px; }
+.solar-date-days { grid-auto-rows: 28px; }
+.solar-date-days > span { display: block; }
+.solar-date-days button { padding: 0; border: 0; border-radius: 7px; color: #263a46; background: transparent; font: 600 11px var(--font-body); cursor: pointer; }
+.solar-date-days button:hover:not(:disabled) { color: #175940; background: #e6f2e9; }
+.solar-date-days button.selected { color: #fff; background: var(--green); }
+.solar-date-days button:disabled { color: #b6c0c5; cursor: not-allowed; }
+html[dir='rtl'] .solar-date-days button, html[dir='rtl'] .solar-date-toolbar { font-family: var(--font-dari); }
 
 .auth-card { width: min(100%, 425px); }
 .auth-card > .brand { margin-bottom: 58px; }
@@ -425,6 +457,12 @@ html[dir='rtl'] .brand strong { font-family: var(--font-dari); letter-spacing: 0
 .registry-form-head h2 { margin: 0; font: 700 22px var(--font-heading); }
 .registry-form { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 24px 25px 26px; }
 .registry-form label span { display: block; margin-bottom: 7px; color: #455460; font-size: 10px; font-weight: 800; }
+.registry-form label .solar-date-picker { display: inline-flex; margin: 0; color: inherit; font-size: inherit; font-weight: inherit; }
+.registry-form label .solar-date-popover { display: block; margin: 0; color: var(--ink); font-size: inherit; font-weight: inherit; }
+.registry-form label .solar-date-toolbar { display: grid; margin: 0 0 8px; color: var(--ink); font-size: inherit; font-weight: inherit; }
+.registry-form label .solar-date-weekdays, .registry-form label .solar-date-days { display: grid; margin: 0; color: inherit; font-size: inherit; font-weight: inherit; }
+.registry-form label .solar-date-weekdays { margin-bottom: 3px; }
+.registry-form label .solar-date-days > span { margin: 0; color: inherit; font-size: inherit; font-weight: inherit; }
 .registry-form input, .registry-form select { width: 100%; height: 43px; padding: 0 11px; border: 1px solid #d9e1e6; border-radius: 8px; outline: 0; color: var(--ink); background: #fbfcfd; font-size: 12px; }
 .registry-form input:focus, .registry-form select:focus { border-color: #6ca88e; background: #fff; }
 .registry-form .wide, .registry-form-actions { grid-column: 1 / -1; }
@@ -599,10 +637,10 @@ html[dir='rtl'] .role-title { font-family: var(--font-dari); letter-spacing: 0; 
 @media (max-width: 900px) {
   .auth-layout { grid-template-columns: 1fr; }
   .auth-visual { min-height: 230px; padding: 26px 30px; }
+  .auth-photo-plane { width: 108px; top: 15px; inset-inline-end: 20px; border-radius: 13px; opacity: .82; }
+  .auth-photo-truck { width: 128px; bottom: 13px; inset-inline-end: 16px; border-radius: 13px; opacity: .74; }
   .auth-visual .visual-copy { margin: auto 0 0; }
   .auth-visual .visual-copy h1 { margin: 0; font-size: 43px; }
-  .auth-artwork-plane { width: 110px; top: 2px; inset-inline-end: 7%; }
-  .auth-artwork-containers { width: 80px; top: 5px; inset-inline-start: 7%; }
   .auth-visual .visual-copy .auth-company-name { max-width: 330px; font-size: 12px; margin-top: 10px; }
   .auth-artwork-truck, .auth-map-marker, .auth-globe-mark { display: none; }
   .auth-panel { min-height: calc(100vh - 230px); padding: 42px 24px 55px; }
@@ -621,9 +659,6 @@ html[dir='rtl'] .role-title { font-family: var(--font-dari); letter-spacing: 0; 
 }
 
 @media (min-width: 901px) and (max-height: 700px) {
-  .auth-artwork-containers { top: 7%; width: 25%; }
-  .auth-artwork-plane { top: 3%; width: 30%; }
-  .auth-artwork-truck { bottom: 4%; width: 53%; }
   .auth-globe-mark { top: 31%; }
 }
 
