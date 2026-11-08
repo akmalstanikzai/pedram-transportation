@@ -11,7 +11,7 @@ const reply = (body: Record<string, unknown>, status = 200) => new Response(JSON
 const base64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes))
 const fromBase64 = (value: string) => Uint8Array.from(atob(value), char => char.charCodeAt(0))
 
-async function vaultKey() {
+async function legacyVaultKey() {
   const encoded = Deno.env.get('BRANCH_PASSWORD_VAULT_KEY')
   if (!encoded) throw new Error('VAULT_KEY_MISSING')
   let raw: Uint8Array
@@ -19,14 +19,24 @@ async function vaultKey() {
   if (raw.length !== 32) throw new Error('VAULT_KEY_INVALID')
   return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
 }
+async function vaultKey(version: number) {
+  if (version === 1) return legacyVaultKey()
+  if (version !== 2) throw new Error('VAULT_KEY_INVALID')
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const projectUrl = Deno.env.get('SUPABASE_URL')
+  if (!serviceKey || !projectUrl) throw new Error('VAULT_KEY_MISSING')
+  const material = new TextEncoder().encode(`pedram-branch-password-v2\0${projectUrl}\0${serviceKey}`)
+  const raw = await crypto.subtle.digest('SHA-256', material)
+  return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
+}
 async function encryptPassword(password: string, branchId: string) {
   const iv = crypto.getRandomValues(new Uint8Array(12))
   const data = new TextEncoder().encode(password)
-  const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: new TextEncoder().encode(branchId) }, await vaultKey(), data)
+  const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: new TextEncoder().encode(branchId) }, await vaultKey(2), data)
   return { ciphertext: base64(new Uint8Array(encrypted)), iv: base64(iv) }
 }
-async function decryptPassword(ciphertext: string, iv: string, branchId: string) {
-  const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromBase64(iv), additionalData: new TextEncoder().encode(branchId) }, await vaultKey(), fromBase64(ciphertext))
+async function decryptPassword(ciphertext: string, iv: string, branchId: string, version: number) {
+  const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromBase64(iv), additionalData: new TextEncoder().encode(branchId) }, await vaultKey(version), fromBase64(ciphertext))
   return new TextDecoder().decode(decrypted)
 }
 
@@ -48,7 +58,7 @@ Deno.serve(async (request: Request) => {
     const body = await request.json()
     requestedAction = String(body?.action || '')
     if (body?.action === 'check_vault') {
-      await vaultKey()
+      await vaultKey(2)
       return reply({ ready: true })
     }
     if (typeof body?.branch_id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.branch_id)
@@ -65,9 +75,11 @@ Deno.serve(async (request: Request) => {
       return reply({ login: manager.username || data.user.email || '' })
     }
     if (body.action === 'vault') {
-      const { data: vault, error: vaultError } = await admin.from('branch_password_vault').select('ciphertext,iv').eq('branch_id', branch.id).single()
+      const { data: vault, error: vaultError } = await admin.from('branch_password_vault').select('ciphertext,iv,key_version').eq('branch_id', branch.id).single()
       if (vaultError || !vault) return reply({ error: 'PASSWORD_NOT_VAULTED' }, 404)
-      const password = await decryptPassword(vault.ciphertext, vault.iv, branch.id)
+      let password: string
+      try { password = await decryptPassword(vault.ciphertext, vault.iv, branch.id, vault.key_version) }
+      catch { return reply({ error: 'VAULT_LEGACY_UNREADABLE' }, 409) }
       const { error: auditError } = await admin.from('branch_password_vault_audit').insert({ branch_id: branch.id, actor_id: user.id, action: 'viewed' })
       if (auditError) return reply({ error: 'VAULT_AUDIT_FAILED' }, 500)
       return reply({ password })
@@ -86,7 +98,7 @@ Deno.serve(async (request: Request) => {
     const sealed = await encryptPassword(body.password, branch.id)
     const { error } = await admin.auth.admin.updateUserById(manager.id, { password: body.password })
     if (error && error.code !== 'same_password') return reply({ error: 'PASSWORD_REJECTED' }, 400)
-    const { error: vaultError } = await admin.from('branch_password_vault').upsert({ branch_id: branch.id, ...sealed, key_version: 1, updated_by: user.id, updated_at: new Date().toISOString() })
+    const { error: vaultError } = await admin.from('branch_password_vault').upsert({ branch_id: branch.id, ...sealed, key_version: 2, updated_by: user.id, updated_at: new Date().toISOString() })
     if (vaultError) return reply({ error: 'VAULT_WRITE_FAILED' }, 500)
     const { error: auditError } = await admin.from('branch_password_vault_audit').insert({ branch_id: branch.id, actor_id: user.id, action: 'stored' })
     if (auditError) return reply({ error: 'VAULT_AUDIT_FAILED' }, 500)

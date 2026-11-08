@@ -58,12 +58,12 @@ The President can select **View saved password** in the branch key dialog. The s
 Before using it:
 
 1. Run `supabase/migrations/202611070001_branch_password_vault.sql` once.
-2. Create a 32-byte random key, base64 encode it, and set it as the **`BRANCH_PASSWORD_VAULT_KEY`** secret for the `manage-branch-account` Edge Function. Keep this value only in Supabase secrets—never in the frontend, SQL, Git, or a branch record.
+2. Deploy the latest `manage-branch-account` function. It derives the vault key from Supabase's server-only service credential, so no separate `BRANCH_PASSWORD_VAULT_KEY` setup is needed for new or updated passwords. Keep the service credential in Supabase only; never put it in the frontend, SQL, Git, or a branch record.
 3. Deploy the current `manage-branch-account` function and frontend.
 
-New branch creation immediately stores the assigned password in the vault. Existing passwords created before the vault cannot be recovered; use the key dialog to set a new password once, then it becomes viewable. Changing the vault secret without a planned key rotation makes existing vault records unreadable.
+New branch creation immediately stores the assigned password in the vault. Existing passwords created before the vault cannot be recovered; use the key dialog to set a new password once, then it becomes viewable. Vault records use version 2 for the derived key. Legacy version 1 records still use `BRANCH_PASSWORD_VAULT_KEY` when available. Rotating the Supabase service credential without first migrating version 2 records makes them unreadable; plan credential rotation with vault re-encryption.
 
-The new-branch form checks vault readiness before creating the branch. If it reports `VAULT_KEY_MISSING`, confirm the secret name under **Edge Functions → Secrets** in the same Supabase project as the app. If it reports `VAULT_KEY_INVALID`, verify that the saved value is a Base64 string encoding exactly 32 bytes. Supabase production secrets are project-level and available immediately after Save; redeploying is not required just to apply a changed secret. Do not regenerate a working key, because previous encrypted passwords depend on it. A branch created while vault storage failed already exists; set its password once in the key dialog after correcting the secret.
+The new-branch form checks vault readiness before creating the branch. A branch created while vault storage failed already exists; set its password once in the key dialog after deploying the new function. If an older password reports `VAULT_LEGACY_UNREADABLE`, set a new password once. Do not delete the old custom secret until any readable version 1 records have been migrated.
 
 ## Cashbook / روزنامچه
 
