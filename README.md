@@ -8,7 +8,7 @@ The Dari interface uses [Vazirmatn](https://github.com/rastikerdar/vazirmatn), b
 
 All user-facing dates use the Solar Hijri calendar with English digits, for example `1405/08/16`. Each compact date field opens a Solar Hijri calendar: choose a day instead of typing it. Date selections save their equivalent existing ISO date internally, so booking conflicts, expiry checks, sorting, and existing Supabase records remain correct. Bookings, cashbook entries, trader accounts, vehicle permits, driver licences, and document expiries use this calendar. This is a frontend update only; no data migration is required./
 
-Project documentation updated: **3 November 2026**. The current source includes record management, branch password controls and a focused driver portal. Apply the ordered migrations through `202611020005_driver_portal.sql` and use the current account Edge Functions. Source changes do not automatically update live Supabase.
+Project documentation updated: **3 November 2026**. The current source includes record management, branch password controls and a focused driver portal. Apply the ordered migrations through `202611020005_driver_portal.sql` and use the current account Edge Functions. Source changes do not automatically update live Supabase..
 
 ## Current features
 
