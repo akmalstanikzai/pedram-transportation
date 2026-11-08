@@ -365,7 +365,7 @@ html[dir='rtl'] .brand strong { font-family: var(--font-dari); letter-spacing: 0
 .logout-button:hover { border-color: #e5b5bc; color: var(--red); }
 
 .dashboard-content, .module-page { width: min(1080px, calc(100% - 44px)); margin: 0 auto; padding: 38px 0 80px; }
-.module-grid { display: grid; grid-template-columns: repeat(5, minmax(160px, 1fr)); gap: 18px; justify-content: start; }
+.module-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 18px; justify-content: start; }
 
 .module-card {
   min-height: 175px;
@@ -783,4 +783,81 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
   .driver-contact + .driver-contact { border-inline-start: 0; border-top: 1px solid var(--line); }
   .driver-job-footer { padding: 14px 16px; }
   .driver-job-footer .registry-primary { width: 100%; }
+}
+
+/* Phone and tablet layouts shared by the President, branch and driver portals. */
+@media (max-width: 800px) {
+  .dashboard-content, .module-page { width: calc(100% - 32px); }
+  .module-shell { min-width: 0; }
+  .branch-table-wrap { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .branch-table { min-width: 760px; }
+  .branch-table th, .branch-table td { font-size: 12px; }
+  .registry-modal { padding: 12px; align-items: center; }
+  .registry-form-card { max-width: 100%; max-height: calc(100dvh - 24px); }
+  .record-modal-body, .registry-form { min-width: 0; }
+  .document-upload { grid-template-columns: minmax(0, 1fr); }
+  .document-row { min-width: 0; }
+  .document-row > div:first-child { min-width: 0; overflow-wrap: anywhere; }
+  .trader-account-toolbar { align-items: stretch; }
+  .trader-account-toolbar label { min-width: min(100%, 180px); }
+  .simple-cashbook-list { -webkit-overflow-scrolling: touch; }
+  .simple-cashbook-list table { min-width: 350px; }
+}
+
+@media (max-width: 520px) {
+  .auth-layout, .auth-panel, .auth-visual { min-width: 0; }
+  .auth-visual { min-height: 205px; padding: 24px 20px; }
+  .auth-visual .visual-copy h1 { max-width: 70%; font-size: clamp(29px, 9vw, 38px); }
+  .auth-visual .visual-copy .auth-company-name { max-width: 68%; font-size: 11px; }
+  .auth-photo-plane { width: 90px; inset-inline-end: 12px; }
+  .auth-photo-truck { width: 108px; inset-inline-end: 12px; }
+  .auth-panel { min-height: calc(100dvh - 205px); padding: 44px 20px 36px; }
+  .auth-language { top: 12px; inset-inline-end: 12px; }
+  .auth-card > .brand { margin-bottom: 25px; }
+  .auth-card .card-heading h2 { font-size: clamp(25px, 8vw, 32px); }
+  .dashboard-header { height: 64px; padding: 0 12px; gap: 8px; }
+  .dashboard-header .brand { min-width: 0; }
+  .dashboard-header .brand strong { font-size: 13px; }
+  .dashboard-header .brand-logo { width: 38px; height: 34px; }
+  .header-actions { flex-shrink: 0; gap: 6px; }
+  .language-switch button { min-width: 36px; }
+  .dashboard-content, .module-page { width: calc(100% - 24px); padding-bottom: 40px; }
+  .module-shell { margin-top: 16px; border-radius: 10px; }
+  .module-back { min-height: 40px; text-align: start; }
+  .module-grid { gap: 9px; }
+  .module-card { min-height: 120px; padding: 12px 5px; }
+  .module-card strong { max-width: 100%; overflow-wrap: anywhere; line-height: 1.35; }
+  .fleet-page-title, .booking-page-header h1 { font-size: 24px; }
+  .fleet-tabs button { flex-direction: column; min-width: 0; min-height: 72px; gap: 3px; }
+  .fleet-tabs button strong { font-size: 11px; overflow-wrap: anywhere; }
+  .fleet-tabs button > span { font-size: 10px; }
+  .fleet-panel-heading { flex-wrap: wrap; }
+  .fleet-panel-heading .registry-primary { min-height: 44px; margin-inline-start: auto; }
+  .record-row { flex-wrap: wrap; gap: 9px; }
+  .record-row-main { flex-basis: calc(100% - 65px); }
+  .record-row > .record-tools { width: 100%; justify-content: flex-end; }
+  .record-row .record-icon-button { width: 42px; height: 42px; }
+  .booking-page-header { align-items: flex-start; margin-bottom: 16px; }
+  .booking-page-header > .record-tools { width: 100%; justify-content: space-between; }
+  .booking-record { padding: 15px; }
+  .booking-record-actions { gap: 7px; }
+  .registry-modal { padding: 0; align-items: end; }
+  .registry-form-card { width: 100%; max-height: 94dvh; border-radius: 16px 16px 0 0; }
+  .registry-form-head { padding: 16px; }
+  .registry-form-head h2 { min-width: 0; font-size: 19px; overflow-wrap: anywhere; }
+  .registry-form, .record-modal-body { padding: 16px; }
+  .branch-form { padding: 0 16px 20px; }
+  .record-details { grid-template-columns: minmax(0, 1fr); }
+  .registry-form-actions { flex-wrap: wrap; }
+  .registry-form-actions button { min-height: 44px; }
+  .branch-login-editor { flex-wrap: wrap; }
+  .branch-login-editor label, .branch-login-editor .registry-secondary { flex-basis: 100%; }
+  .simple-cashbook-toolbar { gap: 12px; }
+  .simple-cashbook-toolbar > label { flex: 1 1 140px; min-width: 0; }
+  .simple-cashbook-balance { flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 15px; }
+  .cashbook-ledger-side h2 { font-size: 27px; }
+  .driver-route { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; }
+  .driver-route h2 { font-size: clamp(17px, 5vw, 24px); }
+  .driver-licence-details { grid-template-columns: minmax(0, 1fr); padding: 16px; }
+  .solar-date-popover { max-width: calc(100vw - 24px); }
 }
