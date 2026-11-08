@@ -23,7 +23,7 @@ Vehicle model years accept digits without a calendar-year range, including leadi
 | Bookings | Create, edit, view, cancel, start, complete and archive/restore. Capacity, expiry, schedule conflict and duplicate-request checks. No money fields. |.
 | Cashbook / روزنامچه | Simple Money In / آمد and Money Out / رفت records for the admin account and branches, with separate tables and automatic totals. |.
 | Driver portal | Icon-led assigned jobs, route/maps, dates, load, assigned vehicle, sender/receiver/branch calls, licence expiry, job acceptance and delivery reporting. Recent history is separate. |
-
+..
 The President menu contains only working pages: Cashbook, Branches, Fleet, Bookings, and Traders. Empty Trip Plans, Customs, Finance and Reports pages have been removed, along with the duplicate Trader Accounts page. Old Trader Accounts links resolve to Traders. No business records were deleted when removing these menu items.
 
 ## Roles and access

@@ -64,6 +64,8 @@ export default function BranchPassword({ branch, language, onClose, onSaved }) {
   async function saveLogin(event) {
     event.preventDefault()
     if (!ready || !newLogin.trim() || newLogin.trim() === login) return
+    const candidate = newLogin.trim()
+    if (candidate.includes('@') ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidate) : !/^[a-z0-9._-]+$/i.test(candidate)) { setError(new Error('INVALID_LOGIN')); return }
     setError(null); setBusy(true)
     try {
       const data = await accountAction({ branch_id: branch.id, action: 'login', login: newLogin })

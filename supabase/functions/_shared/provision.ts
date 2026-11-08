@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,x-client-info,apikey,content-type','Content-Type':'application/json'}
 export async function provision(kind:'branch'|'driver',request:Request){
  if(request.method==='OPTIONS')return new Response('ok',{headers})
+ let stage='authenticate'
  try{
   const url=Deno.env.get('SUPABASE_URL')!,key=Deno.env.get('SUPABASE_ANON_KEY')!,service=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   const token=request.headers.get('Authorization');if(!token)throw new Error('ACCESS_DENIED')
@@ -46,9 +47,11 @@ export async function provision(kind:'branch'|'driver',request:Request){
    fullName=driver.full_name;metadata={pedram_driver_request:id,pedram_driver_actor:user.id,pedram_driver_id:driver.id}
    lookupName='find_driver_account';lookup={p_actor:user.id,p_driver:driver.id,p_request:id,p_email:email}
   }
+  stage='find_account'
   const found=await admin.rpc(lookupName,lookup);if(found.error)throw found.error
   let account=found.data
   if(!account){
+   stage='create_account'
    const created=await admin.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{full_name:fullName},app_metadata:metadata})
    if(created.error){const recovered=await admin.rpc(lookupName,lookup);if(recovered.error||!recovered.data)throw created.error;account=recovered.data}else account=created.data.user.id
   }
@@ -57,8 +60,9 @@ export async function provision(kind:'branch'|'driver',request:Request){
    return new Response(JSON.stringify({user_id:data,username,email}),{headers})
   }
   const manager=body.manager,branch=body.branch
+  stage='save_branch'
   const {data,error}=await admin.rpc('provision_branch',{p_actor:user.id,p_request:id,p_manager:account,p_username:username,p_data:{name:branch.name,province:branch.province,city:branch.city,address:branch.address,phone:branch.phone,manager_name:manager.full_name,manager_phone:manager.phone,father_name:manager.father_name,national_id:manager.national_id,manager_address:manager.address}})
   if(error)throw error
   return new Response(JSON.stringify({branch_id:data,username,email}),{headers})
- }catch(error){const message=error instanceof Error?error.message:(error as {message?:string})?.message||'Unable to create account';return new Response(JSON.stringify({error:message}),{status:400,headers})}
+ }catch(error){const message=error instanceof Error?error.message:(error as {message?:string})?.message||'Unable to create account';console.error('branch provisioning failed',{stage,code:(error as {code?:string})?.code||'',message});return new Response(JSON.stringify({error:message,stage}),{status:400,headers})}
 }

@@ -14,7 +14,8 @@ const fromBase64 = (value: string) => Uint8Array.from(atob(value), char => char.
 async function vaultKey() {
   const encoded = Deno.env.get('BRANCH_PASSWORD_VAULT_KEY')
   if (!encoded) throw new Error('VAULT_NOT_CONFIGURED')
-  const raw = fromBase64(encoded)
+  let raw: Uint8Array
+  try { raw = fromBase64(encoded.trim()) } catch { throw new Error('VAULT_NOT_CONFIGURED') }
   if (raw.length !== 32) throw new Error('VAULT_NOT_CONFIGURED')
   return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
 }
@@ -92,7 +93,7 @@ Deno.serve(async (request: Request) => {
     console.error('manage-branch-account failed', { action: requestedAction || 'unknown', error: code })
     const safeCode = ['VAULT_NOT_CONFIGURED'].includes(code)
       ? code
-      : requestedAction === 'login' ? 'LOGIN_UPDATE_FAILED' : 'ACCOUNT_UPDATE_FAILED'
+      : requestedAction === 'login' ? 'LOGIN_UPDATE_FAILED' : requestedAction === 'password' ? 'PASSWORD_UPDATE_FAILED' : 'ACCOUNT_UPDATE_FAILED'
     return reply({ error: safeCode }, 400)
   }
 })

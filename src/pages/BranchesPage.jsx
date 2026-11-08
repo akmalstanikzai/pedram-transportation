@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Archive, Building2, KeyRound, Plus, Power, UserRound } from 'lucide-react'
-import { FunctionsHttpError } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { rpc, explain } from '../lib/operations'
 import { ConfirmArchive, IconButton, Modal, RecordTools } from '../components/RecordTools'
 import BranchPassword from '../components/BranchPassword'
+import { branchAccountError } from '../lib/branchAccountError'
 
 const labels = {
   en: {
@@ -15,7 +15,7 @@ const labels = {
     fatherName: 'Father name', managerPhone: 'Manager phone', nationalId: 'National ID', managerAddress: 'Home address',
     login: 'Email or username', password: 'Password', confirm: 'Confirm password',
     create: 'Create branch and account', cancel: 'Cancel', required: 'Complete all required fields.', mismatch: 'Passwords do not match.',
-    shortPassword: 'Password must contain at least 8 characters.', success: 'Branch and manager account created.',
+    shortPassword: 'Password must contain at least 8 characters.', invalidLogin: 'Use a valid email, or a username with English letters, numbers, dots, hyphens or underscores.', success: 'Branch and manager account created.',
     passwordSaved: 'Password saved. The branch manager can sign in with the new password.', passwordSavedDisabled: 'Password saved. Enable the login using the power icon to allow sign-in.',
     loadError: 'The branch database is not ready. Apply and deploy the latest Supabase changes.', total: 'Branches', managers: 'Managers',
   },
@@ -27,7 +27,7 @@ const labels = {
     managerPhone: 'شماره تماس مدیر', nationalId: 'نمبر تذکره', managerAddress: 'آدرس خانه',
     login: 'ایمیل یا نام کاربری', password: 'رمز عبور', confirm: 'تکرار رمز عبور', create: 'ایجاد شعبه و حساب',
     cancel: 'انصراف', required: 'خانه‌های ضروری را تکمیل کنید.', mismatch: 'رمزهای عبور یکسان نیست.',
-    shortPassword: 'رمز عبور باید حداقل 8 حرف داشته باشد.', success: 'شعبه و حساب مدیر ایجاد شد.',
+    shortPassword: 'رمز عبور باید حداقل 8 حرف داشته باشد.', invalidLogin: 'ایمیل درست وارد کنید، یا نام کاربری را با حروف انگلیسی، اعداد، نقطه، خط تیره یا زیرخط بنویسید.', success: 'شعبه و حساب مدیر ایجاد شد.',
     passwordSaved: 'رمز عبور ثبت شد. مدیر شعبه می‌تواند با رمز جدید وارد شود.', passwordSavedDisabled: 'رمز عبور ثبت شد. برای ورود، حساب را با آیکن روشن/خاموش فعال کنید.',
     loadError: 'دیتابیس شعبات آماده نیست. تغییرات جدید Supabase را اجرا و نشر کنید.', total: 'شعبات', managers: 'مدیران',
   },
@@ -83,7 +83,9 @@ function BranchRegistry({ language }) {
       }catch(e){setMessage({type:'error',text:explain(e,language)})}finally{setSaving(false)}
       return
     }
-    if (!form.name || !form.province || !form.city || !form.managerName || !form.managerPhone || !form.login || !form.password) return setMessage({ type: 'error', text: text.required })
+    if (!form.name.trim() || !form.province.trim() || !form.city.trim() || !form.managerName.trim() || !form.managerPhone.trim() || !form.login.trim() || !form.password) return setMessage({ type: 'error', text: text.required })
+    const login = form.login.trim()
+    if (login.includes('@') ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(login) : !/^[a-z0-9._-]+$/i.test(login)) return setMessage({ type: 'error', text: text.invalidLogin })
     if (form.password.length < 8) return setMessage({ type: 'error', text: text.shortPassword })
     if (form.password !== form.confirm) return setMessage({ type: 'error', text: text.mismatch })
     setSaving(true)
@@ -96,21 +98,13 @@ function BranchRegistry({ language }) {
     } })
     setSaving(false)
     if (error || data?.error) {
-      let errorText = data?.error || error?.message
-      if (error instanceof FunctionsHttpError) {
-        try {
-          const details = await error.context.json()
-          errorText = details?.error || details?.message || errorText
-        } catch {
-          // Keep the SDK message when the response body is not JSON.
-        }
-      }
-      return setMessage({ type: 'error', text: errorText ? explain({message:errorText},language) : text.loadError })
+      const failure = await branchAccountError(data, error)
+      return setMessage({ type: 'error', text: explain(failure, language) })
     }
     const { data: vaultData, error: vaultError } = await supabase.functions.invoke('manage-branch-account', { body: { branch_id: data.branch_id, action: 'password', password: form.password } })
     if (vaultError || vaultData?.error) {
-      const vaultCode = vaultData?.error || vaultError?.message || 'VAULT_WRITE_FAILED'
-      setForm(initialForm); setOpen(false); setMessage({ type: 'error', text: `${text.success} ${explain({message:vaultCode},language)}` }); loadBranches(); return
+      const failure = await branchAccountError(vaultData, vaultError)
+      setForm(initialForm); setOpen(false); setMessage({ type: 'error', text: `${text.success} ${explain(failure,language)}` }); loadBranches(); return
     }
     setForm(initialForm); setOpen(false); setMessage({ type: 'success', text: text.success }); loadBranches()
   }
