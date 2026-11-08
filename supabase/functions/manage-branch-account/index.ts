@@ -45,7 +45,7 @@ Deno.serve(async (request: Request) => {
 
     const body = await request.json()
     if (typeof body?.branch_id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.branch_id)
-      || !['details', 'password', 'vault'].includes(body.action)) return reply({ error: 'REQUIRED_FIELDS' }, 400)
+      || !['details', 'password', 'vault', 'login'].includes(body.action)) return reply({ error: 'REQUIRED_FIELDS' }, 400)
     const { data: branch, error: branchError } = await admin.from('branches').select('id,manager_user_id,archived_at').eq('id', body.branch_id).single()
     if (branchError || !branch || branch.archived_at) return reply({ error: 'BRANCH_UNAVAILABLE' }, 400)
     if (!branch.manager_user_id) return reply({ error: 'ACCOUNT_MISSING' }, 400)
@@ -64,6 +64,16 @@ Deno.serve(async (request: Request) => {
       const { error: auditError } = await admin.from('branch_password_vault_audit').insert({ branch_id: branch.id, actor_id: user.id, action: 'viewed' })
       if (auditError) return reply({ error: 'VAULT_AUDIT_FAILED' }, 500)
       return reply({ password })
+    }
+    if (body.action === 'login') {
+      const login = String(body.login || '').trim().toLowerCase()
+      if (!login || (!login.includes('@') && !/^[a-z0-9._-]+$/.test(login))) return reply({ error: 'REQUIRED_FIELDS' }, 400)
+      const email = login.includes('@') ? login : `${login}@users.pedram.local`
+      const { error: authUpdateError } = await admin.auth.admin.updateUserById(manager.id, { email, email_confirm: true })
+      if (authUpdateError) return reply({ error: 'LOGIN_REJECTED' }, 400)
+      const { error: profileUpdateError } = await admin.from('profiles').update({ username: login }).eq('id', manager.id)
+      if (profileUpdateError) return reply({ error: 'LOGIN_REJECTED' }, 400)
+      return reply({ success: true, login })
     }
     if (typeof body.password !== 'string' || body.password.length < 8) return reply({ error: 'PASSWORD_TOO_SHORT' }, 400)
     const sealed = await encryptPassword(body.password, branch.id)

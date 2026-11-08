@@ -140,6 +140,9 @@ html[dir='rtl'] .auth-visual .visual-copy .auth-company-name { font-family: var(
 .solar-date-days button.selected { color: #fff; background: var(--green); }
 .solar-date-days button:disabled { color: #b6c0c5; cursor: not-allowed; }
 html[dir='rtl'] .solar-date-days button, html[dir='rtl'] .solar-date-toolbar { font-family: var(--font-dari); }
+.branch-login-editor { display: flex; align-items: end; gap: 9px; }
+.branch-login-editor label { flex: 1; }
+.branch-login-editor .registry-secondary { min-height: 42px; white-space: nowrap; }
 
 .auth-card { width: min(100%, 425px); }
 .auth-card > .brand { margin-bottom: 58px; }

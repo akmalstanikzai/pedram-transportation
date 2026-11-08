@@ -53,7 +53,7 @@ The self-contained **`manage-branch-account` Edge Function** checks that the cal
 
 ### Protected branch password vault
 
-The President can select **View saved password** in the branch key dialog. The vault is not a branch column and is inaccessible to browser roles: it stores an AES-GCM encrypted password, its IV, the last-changing President, and a private audit event every time a password is stored or viewed. Only `manage-branch-account`, after checking an enabled President session and the branch-manager relationship, can decrypt and return it.
+The President can select **View saved password** in the branch key dialog. The same dialog displays the branch email/username and lets the President change it. The vault is not a branch column and is inaccessible to browser roles: it stores an AES-GCM encrypted password, its IV, the last-changing President, and a private audit event every time a password is stored or viewed. Only `manage-branch-account`, after checking an enabled President session and the branch-manager relationship, can decrypt and return it.
 
 Before using it:
 
