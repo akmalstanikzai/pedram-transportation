@@ -20,7 +20,7 @@ Vehicle model years accept digits without a calendar-year range, including leadi
 | Branches | Create, edit, view, archive/restore, and enable/disable the manager's login. Assign credentials when creating a branch; use the key icon in the Password column to view its login and set a new password. |
 | Fleet | Independent owner, vehicle and driver records, with edit, detail, status, archive/restore, documents and driver login management. |
 | Traders | Create, edit and archive/restore traders; open their profile and account together. Record fares and receipts, and see money owed, credit and payment history by currency. |
-| Bookings | Create, edit, view, cancel, start, complete and archive/restore. Capacity, expiry, schedule conflict and duplicate-request checks. No money fields. |
+| Bookings | Create, edit, view, cancel, start, complete and archive/restore. Capacity, expiry, schedule conflict and duplicate-request checks. No money fields. |.
 | Cashbook / روزنامچه | Simple Money In / آمد and Money Out / رفت records for the admin account and branches, with separate tables and automatic totals. |
 | Driver portal | Icon-led assigned jobs, route/maps, dates, load, assigned vehicle, sender/receiver/branch calls, licence expiry, job acceptance and delivery reporting. Recent history is separate. |
 
