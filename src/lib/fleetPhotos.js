@@ -24,6 +24,16 @@ export async function uploadDriverPassport(parentId, file) {
   await rpc('complete_fleet_document', { p_id: id })
 }
 
+export async function uploadVehicleDocument(parentId, category, file) {
+  const ext = file.name.split('.').pop()?.toLowerCase()
+  if (!passportMime[ext] || !file.size || file.size > 5 * 1024 * 1024) throw new Error('INVALID_FILE')
+  const id = crypto.randomUUID()
+  const path = await rpc('reserve_fleet_document', { p_id: id, p_kind: 'vehicle', p_parent: parentId, p_type: category, p_name: file.name, p_mime: passportMime[ext], p_size: file.size, p_expires: null })
+  const { error } = await supabase.storage.from('fleet-documents').upload(path, file, { contentType: passportMime[ext], upsert: false })
+  if (error) throw error
+  await rpc('complete_fleet_document', { p_id: id })
+}
+
 export async function loadFleetPhotos() {
   const data = []
   for (let offset = 0; ; offset += 500) {

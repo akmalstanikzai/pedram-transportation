@@ -544,14 +544,17 @@ html[dir='rtl'] .brand strong { font-family: var(--font-dari); letter-spacing: 0
 .booking-fields { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; border: 0; padding: 0; margin: 0; min-width: 0; }
 .capacity-entry { min-width: 0; margin: 0; padding: 0; border: 0; }
 .capacity-entry legend { margin-bottom: 8px; color: #455460; font-size: 12px; font-weight: 800; }
-.capacity-entry-grid { display: flex; align-items: center; gap: 12px; }
-.capacity-entry-grid > label { flex: 1; min-width: 0; }
-.capacity-entry-grid label span { display: block; margin-bottom: 5px; }
-.capacity-entry-plus { color: #6d7b83; font-size: 18px; font-weight: 800; }
-.capacity-fraction { width: 76px; display: grid; gap: 4px; }
-.capacity-fraction label:first-child { padding-bottom: 6px; border-bottom: 2px solid #52636c; }
+.capacity-choice { display: inline-flex; gap: 3px; margin-bottom: 10px; padding: 3px; border: 1px solid var(--line); border-radius: 8px; background: #f5f8f7; }
+.capacity-choice button { min-height: 34px; padding: 5px 12px; border: 0; border-radius: 6px; color: #52636c; background: transparent; font-size: 12px; font-weight: 750; }
+.capacity-choice button.active { color: #fff; background: var(--green); }
+.capacity-entry > input { display: block; max-width: 150px; }
+.capacity-fraction { width: 84px; display: grid; gap: 5px; }
 .capacity-fraction input { text-align: center; }
-.capacity-entry > small { display: block; margin-top: 8px; color: #657581; font-size: 11px; }
+.capacity-fraction input:first-child { border-bottom: 2px solid #52636c; }
+.vehicle-choice-field input { margin-top: 8px; }
+.vehicle-document-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+.vehicle-document-fields > strong { grid-column: 1/-1; font-size: 13px; }
+@media (max-width: 600px) { .vehicle-document-fields { grid-template-columns: minmax(0,1fr); } }
 .booking-section-heading { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; padding: 18px 0 10px; margin: 8px 0 0; border-bottom: 1px solid var(--line); font-size: 17px; font-weight: 800; }
 .booking-section-heading:first-child { margin-top: 0; padding-top: 0; }
 .booking-section-heading svg { color: #277658; }
