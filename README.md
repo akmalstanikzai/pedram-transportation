@@ -154,7 +154,7 @@ Fleet has three separate icon tabs: Vehicles, Drivers, and Owners. Each tab has 
 
 Save the parent record first, then use the document icon. Documents have type, filename, size, MIME type, expiry and upload state, stored alongside the private file in `fleet-documents`. The panel lists documents, opens temporary private view links, downloads files, updates expiry dates, and flags expired documents.
 
-PDF, PNG, JPG/JPEG, WebP, HEIC/HEIF and TIFF are accepted, up to 20 MB per file. Pending uploads can be finished if the file reached storage, or retried with the same file. Incomplete deletions can also be retried. The migration recovers metadata associations for old files whose paths match known parents; original filenames cannot be recovered if the old uploader never stored them.
+PDF, PNG, JPG/JPEG, WebP, HEIC/HEIF and TIFF are accepted, up to 5 MB per file. Pending uploads can be finished if the file reached storage, or retried with the same file. Incomplete deletions can also be retried. The migration recovers metadata associations for old files whose paths match known parents; original filenames cannot be recovered if the old uploader never stored them.
 
 Business record deletion is recoverable archiving. Document file deletion is permanent and asks for confirmation. Deleting a document first marks its metadata, removes the object, then finishes the metadata deletion, so interruptions stay visible for recovery.
 
@@ -273,3 +273,5 @@ tests/                        Cashbook calculation and database integration chec
 ### Fleet profile photos
 
 Vehicle, owner, and driver forms accept an optional JPG, PNG, or WebP profile photo up to 5 MB. Photos use the existing private `fleet-documents` bucket and `vehicle_documents` metadata, with `profile_photo` as a dedicated type. The latest ready photo appears as a thumbnail in Fleet lists and beside the record details; signed URLs are refreshed when the page loads. Photos can also be uploaded and managed from the Documents panel. Apply `supabase/migrations/202611080001_fleet_profile_photos.sql` before deploying the updated frontend. Existing records and documents remain intact.
+
+The driver form also accepts an optional passport scan (PDF, JPG, PNG, or WebP, up to 5 MB). It is listed under driver Documents and requires `supabase/migrations/202611080002_driver_passport_document.sql`. The driver form no longer asks for Status or Licence expiry; saved values remain unchanged when editing. Apply `supabase/migrations/202611080003_fleet_upload_limit_5mb.sql` to enforce the 5 MB limit in storage and the reservation RPC; files already uploaded remain available.

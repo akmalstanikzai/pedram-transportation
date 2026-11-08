@@ -9,7 +9,7 @@ migration adds simple lifecycle APIs and account controls, preserving business
 records. Use the current frontend and deploy the account Edge Functions listed below.
 
 Apply `202611020003_combined_trader_accounts.sql` afterwards for the combined Traders profile/account screen and optional trader links in cashbook entries. This adds trader fare records and account statements; receipts remain in the existing cashbook without duplication. Removed menu pages do not delete their historical data. No Edge Function change is needed for this additional migration......
-
+.
 Apply `202611020004_branch_portal.sql` next to enable branch Fleet, Bookings and Traders workflows alongside Cashbook. Branch users can edit their own branch records and select shared head-office directory profiles in bookings. Private head-office documents, other branches' records and financial data, and account administration remain restricted. Trader charges and statements are now branch-scoped. The President retains the all-branch view. No additional Edge Function deployment is needed for this migration.
 
 Apply `202611020005_driver_portal.sql` next for the driver's icon-led Jobs screen. It adds `driver_accepted_at` and `driver_delivered_at` to bookings, plus `get_driver_portal` and `driver_booking_action`. Only the driver linked to that assignment can accept/report delivery; the branch or President still confirms completion. Operational assignment edits clear the reports, requiring fresh acceptance. The read API exposes only required job, vehicle, contact and licence fields. There is no financial or document-scan access through this API. No Edge Function redeployment is needed for this migration.

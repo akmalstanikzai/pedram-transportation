@@ -2,6 +2,7 @@ import { supabase } from './supabase'
 import { rpc } from './operations'
 
 const mime = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp' }
+const passportMime = { ...mime, pdf: 'application/pdf' }
 
 export async function uploadFleetPhoto(kind, parentId, file) {
   const ext = file.name.split('.').pop()?.toLowerCase()
@@ -9,6 +10,16 @@ export async function uploadFleetPhoto(kind, parentId, file) {
   const id = crypto.randomUUID()
   const path = await rpc('reserve_fleet_document', { p_id: id, p_kind: kind, p_parent: parentId, p_type: 'profile_photo', p_name: file.name, p_mime: mime[ext], p_size: file.size, p_expires: null })
   const { error } = await supabase.storage.from('fleet-documents').upload(path, file, { contentType: mime[ext], upsert: false })
+  if (error) throw error
+  await rpc('complete_fleet_document', { p_id: id })
+}
+
+export async function uploadDriverPassport(parentId, file) {
+  const ext = file.name.split('.').pop()?.toLowerCase()
+  if (!passportMime[ext] || !file.size || file.size > 5 * 1024 * 1024) throw new Error('INVALID_FILE')
+  const id = crypto.randomUUID()
+  const path = await rpc('reserve_fleet_document', { p_id: id, p_kind: 'driver', p_parent: parentId, p_type: 'passport', p_name: file.name, p_mime: passportMime[ext], p_size: file.size, p_expires: null })
+  const { error } = await supabase.storage.from('fleet-documents').upload(path, file, { contentType: passportMime[ext], upsert: false })
   if (error) throw error
   await rpc('complete_fleet_document', { p_id: id })
 }
