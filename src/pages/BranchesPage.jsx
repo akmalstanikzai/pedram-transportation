@@ -118,7 +118,7 @@ function BranchRegistry({ language }) {
   return <div className="registry-page branch-registry">
     <div className="registry-actions"><button className="registry-primary" onClick={() => { setMessage(null); setEditing(null);setForm(initialForm);request.current=null;setOpen(true) }}><Plus size={18} />{text.add}</button><button className="registry-secondary" aria-pressed={archived} onClick={()=>setArchived(!archived)}><Archive size={18}/>{language==='fa'?'بایگانی':'Archive'}</button></div>
     {message && <div className={`registry-notice ${message.type}`}>{message.code?text[message.code]:message.text}</div>}
-    <div className="branch-table-wrap"><table className="branch-table"><thead><tr><th>{text.name}</th><th>{text.location}</th><th>{text.manager}</th><th>{text.branchPhone}</th><th>{text.username}</th><th>{text.password}</th><th>{language==='fa'?'حساب':'Account'}</th><th>{language==='fa'?'عملیات':'Actions'}</th></tr></thead><tbody>
+    <div className="branch-table-wrap"><table className="branch-table"><thead><tr><th>{text.name}</th><th>{text.location}</th><th>{text.manager}</th><th>{text.branchPhone}</th><th>{text.username}</th><th>{text.password}</th><th>{language==='fa'?'حالت':'Account'}</th><th>{language==='fa'?'عملیات':'Actions'}</th></tr></thead><tbody>
       {loading ? <tr><td colSpan="8" className="branch-table-empty"><span className="spinner dark" /></td></tr> : branches.filter(b=>!!b.archived_at===archived).length ? branches.filter(b=>!!b.archived_at===archived).map(branch => <tr key={branch.id}>
         <td><span className="branch-name-cell"><span className="branch-table-icon"><Building2 size={18} /></span><strong>{branch.name}</strong></span></td>
         <td>{branch.city}, {branch.province}</td>

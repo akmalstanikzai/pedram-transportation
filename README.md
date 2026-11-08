@@ -269,3 +269,7 @@ supabase/
   functions/                  Branch/driver account provisioning and shared helper
 tests/                        Cashbook calculation and database integration checks
 ```
+
+### Fleet profile photos
+
+Vehicle, owner, and driver forms accept an optional JPG, PNG, or WebP profile photo up to 5 MB. Photos use the existing private `fleet-documents` bucket and `vehicle_documents` metadata, with `profile_photo` as a dedicated type. The latest ready photo appears as a thumbnail in Fleet lists and beside the record details; signed URLs are refreshed when the page loads. Photos can also be uploaded and managed from the Documents panel. Apply `supabase/migrations/202611080001_fleet_profile_photos.sql` before deploying the updated frontend. Existing records and documents remain intact.
