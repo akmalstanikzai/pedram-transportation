@@ -9,7 +9,7 @@ import DriverAccount from '../components/DriverAccount'
 import SolarHijriDateInput from '../components/SolarHijriDateInput'
 import { formatSolarHijri } from '../lib/solarHijri'
 import { loadFleetPhotos, uploadFleetPhoto, uploadDriverPassport } from '../lib/fleetPhotos'
-import { parseCapacity } from '../lib/capacity'
+import { capacityFromParts, capacityParts } from '../lib/capacity'
 
 const tables={vehicle:'vehicles',owner:'vehicle_owners',driver:'drivers'}
 const fields={
@@ -21,7 +21,7 @@ export default function VehiclesPage({language,profile}){
  const branchManager=profile?.role==='branch_manager'
  const canManage=row=>!branchManager||row.branch_id===profile.branch_id
  const t=(en,fa)=>language==='fa'?fa:en
- const [data,setData]=useState({vehicle:[],owner:[],driver:[]}),[photos,setPhotos]=useState({}),[photoFile,setPhotoFile]=useState(null),[passportFile,setPassportFile]=useState(null),[queries,setQueries]=useState({vehicle:'',driver:'',owner:''}),[archives,setArchives]=useState({vehicle:false,driver:false,owner:false}),[editor,setEditor]=useState(null),[detail,setDetail]=useState(null),[account,setAccount]=useState(null),[deletion,setDeletion]=useState(null),[form,setForm]=useState({}),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState('')
+ const [data,setData]=useState({vehicle:[],owner:[],driver:[]}),[photos,setPhotos]=useState({}),[photoFile,setPhotoFile]=useState(null),[passportFile,setPassportFile]=useState(null),[capacity,setCapacity]=useState(capacityParts(null)),[queries,setQueries]=useState({vehicle:'',driver:'',owner:''}),[archives,setArchives]=useState({vehicle:false,driver:false,owner:false}),[editor,setEditor]=useState(null),[detail,setDetail]=useState(null),[account,setAccount]=useState(null),[deletion,setDeletion]=useState(null),[form,setForm]=useState({}),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState('')
  const [active,setActive]=useState('vehicle')
  const kinds=['vehicle','driver','owner']
  const icons={vehicle:Truck,driver:UserRound,owner:Users}
@@ -32,9 +32,9 @@ export default function VehiclesPage({language,profile}){
  useEffect(()=>{void Promise.resolve().then(load).catch(e=>setError(explain(e,language))).finally(()=>setLoading(false))},[load,language])
  const title=kind=>kind==='vehicle'?t('Vehicles','وسایط'):kind==='driver'?t('Drivers','رانندگان'):t('Owners','مالکان')
  const statusLabel=id=>({available:t('Available','آماده'),assigned:t('Assigned','تعیین‌شده'),on_trip:t('On trip','در سفر'),under_repair:t('Under repair','در ترمیم'),inactive:t('Inactive','غیرفعال')})[id]||id
- function edit(kind,row=null){setEditor({kind,row});setPhotoFile(null);setPassportFile(null);setError('');request.current=null;setForm(row?{...row}:{status:'available',branch_id:branchManager?profile.branch_id:null})}
+ function edit(kind,row=null){setEditor({kind,row});setPhotoFile(null);setPassportFile(null);setCapacity(capacityParts(row?.capacity_tons));setError('');request.current=null;setForm(row?{...row}:{status:'available',branch_id:branchManager?profile.branch_id:null})}
  async function write(kind,row,payload){const key=JSON.stringify({kind,id:row?.id,payload});if(request.current?.key!==key)request.current={key,id:crypto.randomUUID()};return rpc('save_fleet_record',{p_kind:kind,p_id:row?.id||null,p_request:request.current.id,p_data:payload,p_expected:row?.updated_at||null})}
- async function save(e){e.preventDefault();if(busy)return;setBusy(true);setError('');try{const payload={...form,archived:!!form.archived_at};if(editor.kind==='vehicle')payload.capacity_tons=parseCapacity(form.capacity_tons);const id=await write(editor.kind,editor.row,payload);const kind=editor.kind;if(photoFile)await uploadFleetPhoto(kind,id,photoFile);if(kind==='driver'&&passportFile)await uploadDriverPassport(id,passportFile);setEditor(null);setPhotoFile(null);setPassportFile(null);const updated=await load();setDetail({kind,row:updated[kind].find(r=>r.id===id)})}catch(e){setError(explain(e,language))}finally{setBusy(false)}}
+ async function save(e){e.preventDefault();if(busy)return;setBusy(true);setError('');try{const payload={...form,archived:!!form.archived_at};if(editor.kind==='vehicle')payload.capacity_tons=capacityFromParts(capacity);const id=await write(editor.kind,editor.row,payload);const kind=editor.kind;if(photoFile)await uploadFleetPhoto(kind,id,photoFile);if(kind==='driver'&&passportFile)await uploadDriverPassport(id,passportFile);setEditor(null);setPhotoFile(null);setPassportFile(null);const updated=await load();setDetail({kind,row:updated[kind].find(r=>r.id===id)})}catch(e){setError(explain(e,language))}finally{setBusy(false)}}
  async function archive(){setBusy(true);setError('');try{await write(deletion.kind,deletion.row,{...deletion.row,archived:!deletion.row.archived_at});setDeletion(null);await load()}catch(e){setError(explain(e,language))}finally{setBusy(false)}}
  const rowName=r=>r.plate_number||r.full_name
  const detailRow=detail&&data[detail.kind].find(r=>r.id===detail.row?.id)
@@ -54,7 +54,7 @@ export default function VehiclesPage({language,profile}){
  </section>
  {editor&&<Modal title={editor.row?t('Edit','ویرایش'):t('Register','ثبت')} onClose={()=>setEditor(null)} busy={busy}><form className="registry-form" onSubmit={save}><fieldset className="booking-fields wide" disabled={busy}>
  {editor.kind==='vehicle'&&<label><span>{t('Owner','مالک')} *</span><select required value={form.owner_id||''} onChange={e=>setForm({...form,owner_id:e.target.value})}><option value="">—</option>{data.owner.filter(o=>(!o.archived_at||o.id===form.owner_id)&&(!o.branch_id||o.branch_id===(form.branch_id||null))).map(o=><option key={o.id} value={o.id}>{o.full_name} · {o.phone}</option>)}</select></label>}
- {fields[editor.kind].map(([key,en,fa,type='text',required=false])=><label key={key}><span>{t(en,fa)}{required?' *':''}</span>{type==='date'?<SolarHijriDateInput required={required} language={language} value={form[key]??''} onChange={value=>setForm({...form,[key]:value})} ariaLabel={t(en,fa)}/>:<input required={required} type={type==='capacity'?'text':type} inputMode={key==='model_year'?'numeric':type==='capacity'?'decimal':undefined} pattern={key==='model_year'?'[0-9]+':undefined} step={type==='number'?'0.001':undefined} min={type==='number'?'0.001':undefined} value={form[key]??''} onChange={e=>setForm({...form,[key]:e.target.value})}/ >}{type==='capacity'&&<small>{t('Examples: 10, 10.5, 1/2','مثال: 10، 10.5، 1/2')}</small>}</label>)}
+ {fields[editor.kind].map(([key,en,fa,type='text',required=false])=>type==='capacity'?<CapacityField key={key} language={language} value={capacity} onChange={setCapacity}/>:<label key={key}><span>{t(en,fa)}{required?' *':''}</span>{type==='date'?<SolarHijriDateInput required={required} language={language} value={form[key]??''} onChange={value=>setForm({...form,[key]:value})} ariaLabel={t(en,fa)}/>:<input required={required} type={type} inputMode={key==='model_year'?'numeric':undefined} pattern={key==='model_year'?'[0-9]+':undefined} step={type==='number'?'0.001':undefined} min={type==='number'?'0.001':undefined} value={form[key]??''} onChange={e=>setForm({...form,[key]:e.target.value})}/>}</label>)}
  {editor.kind==='vehicle'&&<label><span>{t('Status','وضعیت')}</span><select value={form.status||'available'} onChange={e=>setForm({...form,status:e.target.value})}>{['available','assigned','on_trip','under_repair','inactive'].map(id=><option key={id} value={id}>{statusLabel(id)}</option>)}</select></label>}
  <label className="wide"><span>{t('Profile photo (optional)','عکس پروفایل (اختیاری)')}</span><input type="file" accept=".jpg,.jpeg,.png,.webp" onChange={e=>setPhotoFile(e.target.files?.[0]||null)}/><small>{t('JPG, PNG or WebP · up to 5 MB','JPG، PNG یا WebP · تا 5 MB')}</small></label>
  {editor.kind==='driver'&&<label className="wide"><span>{t('Passport scan (optional)','اسکن پاسپورت (اختیاری)')}</span><input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" onChange={e=>setPassportFile(e.target.files?.[0]||null)}/><small>{t('PDF or image · up to 5 MB','PDF یا عکس · تا 5 MB')}</small></label>}
@@ -63,4 +63,10 @@ export default function VehiclesPage({language,profile}){
  {account&&<Modal title={t('Driver login','حساب ورود راننده')} onClose={()=>setAccount(null)} busy={busy} className={account.user_id?'branch-password-modal':''}><DriverAccount driver={account} language={language} onBusyChange={setBusy} onChanged={async()=>{const updated=await load();setAccount(updated.driver.find(d=>d.id===account.id))}}/></Modal>}
  {deletion&&<ConfirmArchive language={language} busy={busy} error={error} restore={!!deletion.row.archived_at} onClose={()=>setDeletion(null)} onConfirm={archive}/>}
  </div>
+}
+
+function CapacityField({language,value,onChange}) {
+ const t=(en,fa)=>language==='fa'?fa:en
+ const change=(key,next)=>onChange({...value,[key]:next})
+ return <fieldset className="capacity-entry"><legend>{t('Weight capacity','ظرفیت')}</legend><div className="capacity-entry-grid"><label><span>{t('Whole','عدد کامل')}</span><input type="number" min="0" step="1" inputMode="numeric" value={value.whole} onChange={e=>change('whole',e.target.value)} placeholder="0"/></label><span className="capacity-entry-plus" aria-hidden="true">+</span><div className="capacity-fraction"><label><span>{t('Top','صورت')}</span><input type="number" min="0" step="1" inputMode="numeric" value={value.numerator} onChange={e=>change('numerator',e.target.value)} placeholder="1"/></label><label><span>{t('Bottom','مخرج')}</span><input type="number" min="1" step="1" inputMode="numeric" value={value.denominator} onChange={e=>change('denominator',e.target.value)} placeholder="2"/></label></div></div><small>{t('Example: 3 and 1 over 2 = 3.5','مثال: 3 و 1 بر 2 = 3.5')}</small></fieldset>
 }
