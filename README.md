@@ -63,6 +63,8 @@ Before using it:
 
 New branch creation immediately stores the assigned password in the vault. Existing passwords created before the vault cannot be recovered; use the key dialog to set a new password once, then it becomes viewable. Changing the vault secret without a planned key rotation makes existing vault records unreadable.
 
+The new-branch form checks vault readiness before creating the branch. If it reports `VAULT_KEY_MISSING`, confirm the secret name under **Edge Functions → Secrets** in the same Supabase project as the app. If it reports `VAULT_KEY_INVALID`, verify that the saved value is a Base64 string encoding exactly 32 bytes. Supabase production secrets are project-level and available immediately after Save; redeploying is not required just to apply a changed secret. Do not regenerate a working key, because previous encrypted passwords depend on it. A branch created while vault storage failed already exists; set its password once in the key dialog after correcting the secret.
+
 ## Cashbook / روزنامچه
 
 The page follows a simple ledger layout:

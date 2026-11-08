@@ -74,6 +74,15 @@ test('login details support both username and email accounts without writing Aut
   }
 })
 
+test('vault readiness checks the configured key without needing a branch', async () => {
+  const app = setup()
+  const response = await app.invoke({ action: 'check_vault', branch_id: undefined })
+  assert.equal(response.status, 200)
+  assert.deepEqual(await response.json(), { ready: true })
+  assert.equal(app.writes.length, 0)
+  assert.equal(app.vaultWrites.length, 0)
+})
+
 test('archived/missing branches, missing managers and wrong-role/cross-branch managers cannot be changed', async () => {
   for (const overrides of [{ branch: { archived_at: '2026-11-02' } }, { branch: { manager_user_id: null } }, { branch: { manager_user_id: presidentId } }, { manager: { role: 'president' } }, { manager: { branch_id: null } }]) {
     const app = setup(overrides)

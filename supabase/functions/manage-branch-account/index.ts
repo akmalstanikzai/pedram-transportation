@@ -13,10 +13,10 @@ const fromBase64 = (value: string) => Uint8Array.from(atob(value), char => char.
 
 async function vaultKey() {
   const encoded = Deno.env.get('BRANCH_PASSWORD_VAULT_KEY')
-  if (!encoded) throw new Error('VAULT_NOT_CONFIGURED')
+  if (!encoded) throw new Error('VAULT_KEY_MISSING')
   let raw: Uint8Array
-  try { raw = fromBase64(encoded.trim()) } catch { throw new Error('VAULT_NOT_CONFIGURED') }
-  if (raw.length !== 32) throw new Error('VAULT_NOT_CONFIGURED')
+  try { raw = fromBase64(encoded.trim()) } catch { throw new Error('VAULT_KEY_INVALID') }
+  if (raw.length !== 32) throw new Error('VAULT_KEY_INVALID')
   return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
 }
 async function encryptPassword(password: string, branchId: string) {
@@ -47,6 +47,10 @@ Deno.serve(async (request: Request) => {
 
     const body = await request.json()
     requestedAction = String(body?.action || '')
+    if (body?.action === 'check_vault') {
+      await vaultKey()
+      return reply({ ready: true })
+    }
     if (typeof body?.branch_id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.branch_id)
       || !['details', 'password', 'vault', 'login'].includes(body.action)) return reply({ error: 'REQUIRED_FIELDS' }, 400)
     const { data: branch, error: branchError } = await admin.from('branches').select('id,manager_user_id,archived_at').eq('id', body.branch_id).single()
@@ -91,7 +95,7 @@ Deno.serve(async (request: Request) => {
     const code = error instanceof Error ? error.message : 'ACCOUNT_UPDATE_FAILED'
     // This log contains only the action and technical error; never log credentials or vault data.
     console.error('manage-branch-account failed', { action: requestedAction || 'unknown', error: code })
-    const safeCode = ['VAULT_NOT_CONFIGURED'].includes(code)
+    const safeCode = ['VAULT_KEY_MISSING', 'VAULT_KEY_INVALID'].includes(code)
       ? code
       : requestedAction === 'login' ? 'LOGIN_UPDATE_FAILED' : requestedAction === 'password' ? 'PASSWORD_UPDATE_FAILED' : 'ACCOUNT_UPDATE_FAILED'
     return reply({ error: safeCode }, 400)

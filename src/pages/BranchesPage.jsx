@@ -89,6 +89,12 @@ function BranchRegistry({ language }) {
     if (form.password.length < 8) return setMessage({ type: 'error', text: text.shortPassword })
     if (form.password !== form.confirm) return setMessage({ type: 'error', text: text.mismatch })
     setSaving(true)
+    const { data: readiness, error: readinessError } = await supabase.functions.invoke('manage-branch-account', { body: { action: 'check_vault' } })
+    if (readinessError || !readiness?.ready) {
+      const failure = await branchAccountError(readiness, readinessError)
+      setSaving(false)
+      return setMessage({ type: 'error', text: explain(failure, language) })
+    }
     const key=JSON.stringify(form);if(request.current?.key!==key)request.current={key,id:crypto.randomUUID()}
     const { data, error } = await supabase.functions.invoke('create-branch-with-manager', { body: {
       request_id:request.current.id,
