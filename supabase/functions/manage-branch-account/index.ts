@@ -32,6 +32,7 @@ async function decryptPassword(ciphertext: string, iv: string, branchId: string)
 Deno.serve(async (request: Request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers })
   if (request.method !== 'POST') return reply({ error: 'METHOD_NOT_ALLOWED' }, 405)
+  let requestedAction = ''
   try {
     const token = request.headers.get('Authorization')
     if (!token) return reply({ error: 'ACCESS_DENIED' }, 401)
@@ -44,6 +45,7 @@ Deno.serve(async (request: Request) => {
     if (actorError || actor?.role !== 'president' || !actor.account_enabled) return reply({ error: 'ACCESS_DENIED' }, 403)
 
     const body = await request.json()
+    requestedAction = String(body?.action || '')
     if (typeof body?.branch_id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.branch_id)
       || !['details', 'password', 'vault', 'login'].includes(body.action)) return reply({ error: 'REQUIRED_FIELDS' }, 400)
     const { data: branch, error: branchError } = await admin.from('branches').select('id,manager_user_id,archived_at').eq('id', body.branch_id).single()
@@ -86,6 +88,11 @@ Deno.serve(async (request: Request) => {
     return reply({ success: true })
   } catch (error) {
     const code = error instanceof Error ? error.message : 'ACCOUNT_UPDATE_FAILED'
-    return reply({ error: ['VAULT_NOT_CONFIGURED'].includes(code) ? code : 'ACCOUNT_UPDATE_FAILED' }, 400)
+    // This log contains only the action and technical error; never log credentials or vault data.
+    console.error('manage-branch-account failed', { action: requestedAction || 'unknown', error: code })
+    const safeCode = ['VAULT_NOT_CONFIGURED'].includes(code)
+      ? code
+      : requestedAction === 'login' ? 'LOGIN_UPDATE_FAILED' : 'ACCOUNT_UPDATE_FAILED'
+    return reply({ error: safeCode }, 400)
   }
 })
