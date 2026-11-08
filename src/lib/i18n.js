@@ -104,7 +104,7 @@ export const translations = {
     vehiclesPage: 'وسایط، مالکان و رانندگان در این بخش مدیریت می‌شوند.',
     drivers: 'رانندگان',
     driversPage: 'مشخصات، وظایف و اسناد رانندگان در این بخش اضافه می‌شود.',
-    bookings: 'بوکینگ‌ها',
+    bookings: 'برنامه',
     traders: 'تاجران',
     bookingsPage: 'ثبت بوکینگ با کمیشن شامل کرایه مجموعی.',
     tripPlans: 'برنامه‌های سفر',
