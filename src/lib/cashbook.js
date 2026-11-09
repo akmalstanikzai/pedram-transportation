@@ -22,10 +22,10 @@ export function ledgerPeriod(ledger,start,end) {
   const incoming=sum(rows,'in'),outgoing=sum(rows,'out')
   return {rows,opening,incoming,outgoing,balance:opening+incoming-outgoing}
 }
-export async function allRows(client, table, select = '*') {
+export async function allRows(client, table, select = '*', orderBy = 'id') {
   const rows = []
   for (let offset = 0; ; offset += 500) {
-    const { data, error } = await client.from(table).select(select).order('id').range(offset,offset+499)
+    const { data, error } = await client.from(table).select(select).order(orderBy).range(offset,offset+499)
     if (error) throw error
     rows.push(...data)
     if (data.length < 500) return rows

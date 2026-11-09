@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowDownLeft, ArrowUpRight, RefreshCw } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Printer, RefreshCw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { allRows, cents, currencies, kabulToday, simpleLedger, ledgerPeriod } from '../lib/cashbook'
 import { rpc } from '../lib/operations'
 import { Modal } from '../components/RecordTools'
-import { downloadCsv } from '../lib/recordExports'
+import { printRecord } from '../lib/recordExports'
 import SolarHijriDateInput from '../components/SolarHijriDateInput'
 import { formatSolarHijri, solarHijriToday, solarHijriToISODate } from '../lib/solarHijri'
 
@@ -42,15 +42,24 @@ export default function CashbookPage({ language, profile }) {
   const [uncertain,setUncertain]=useState(false)
   const [correction,setCorrection]=useState(null)
   const [reason,setReason]=useState('')
+  const [correctedAmount,setCorrectedAmount]=useState('')
   const [correctionError,setCorrectionError]=useState('')
   const loadPayments = useCallback(async () => {
     if (!president) return []
-    const [entries, operations] = await Promise.all([
+    const [entries, operations, corrections] = await Promise.all([
       allRows(supabase,'cashbook_entries'),
       allRows(supabase,'cashbook_operations','id,receipt_number,mode,reverses_id'),
+      allRows(supabase,'cashbook_amount_corrections','request_id,entry_id,previous_amount,corrected_amount,reason,changed_at', 'request_id'),
     ])
     const byId = new Map(operations.map(row => [row.id,row]))
     const reversals = new Map(operations.filter(row => row.reverses_id).map(row => [row.reverses_id,row.receipt_number]))
+    const historyByEntry = new Map()
+    corrections.sort((a,b)=>b.changed_at.localeCompare(a.changed_at))
+    for (const correction of corrections) {
+      const history = historyByEntry.get(correction.entry_id) ?? []
+      history.push(correction)
+      historyByEntry.set(correction.entry_id,history)
+    }
     return entries.map(entry => {
       const operation = byId.get(entry.operation_id)
       return {
@@ -59,6 +68,8 @@ export default function CashbookPage({ language, profile }) {
         reversal: operation?.mode === 'reversal',
         reverses_receipt: byId.get(operation?.reverses_id)?.receipt_number,
         reversed_by: reversals.get(entry.operation_id),
+        can_edit_amount: ['income','expense'].includes(operation?.mode) && !entry.is_transfer,
+        corrections: historyByEntry.get(entry.id) ?? [],
       }
     })
   }, [president])
@@ -100,36 +111,78 @@ export default function CashbookPage({ language, profile }) {
     return row.description
   }
 
-  function exportPeriod() {
-    const header=[t('Date','تاریخ'),t('Receipt','رسید'),t('Description','شرح'),t('Currency','واحد پول'),t('Money In','آمد'),t('Money Out','رفت'),t('Balance','موجودی')]
-    const amount=(row,direction)=>row.direction===direction?Number(row.amount):''
-    downloadCsv(`cashbook-${currency}-${periodStart}-${periodEnd}.csv`, [
-      [t('Account','حساب'), name(scope)],
-      [t('Period','بازه زمانی'), period==='all'?t('All time','همه زمان‌ها'):formatSolarHijri(periodStart), formatSolarHijri(periodEnd)],
-      header,
-      ['', '', t('Opening balance','موجودی اول دوره'), currency, '', '', selectedLedger.opening/100],
-      ...selectedLedger.rows.map(row=>[formatSolarHijri(row.entry_date),row.receipt_number||'',description(row),currency,amount(row,'in'),amount(row,'out'),'']),
-      ['', '', t('Period totals','مجموع دوره'), currency, selectedLedger.incoming/100, selectedLedger.outgoing/100, selectedLedger.balance/100],
-    ])
+  function printPeriod() {
+    const range = period === 'all'
+      ? `${t('All records through','همه معاملات تا')} ${formatSolarHijri(periodEnd)}`
+      : periodStart === periodEnd ? formatSolarHijri(periodStart) : `${formatSolarHijri(periodStart)} – ${formatSolarHijri(periodEnd)}`
+    const entries = selectedLedger.rows.map(row => {
+      const annotation = row.reversed_by
+        ? `${t('Reversed by','اصلاح‌شده با')} #${row.reversed_by}`
+        : row.corrections?.length ? t('Amount corrected','مبلغ اصلاح شد') : ''
+      return [
+        formatSolarHijri(row.entry_date), row.receipt_number ? `#${row.receipt_number}` : '',
+        [description(row),annotation].filter(Boolean).join(' · '),
+        row.direction === 'in' ? money(cents(row.amount)) : '',
+        row.direction === 'out' ? money(cents(row.amount)) : '',
+      ]
+    })
+    const printed = printRecord({
+      language,
+      title: t('Cashbook statement','صورت حساب روزنامچه'),
+      subtitle: `${name(scope)} · ${currency} · ${range}`,
+      sections: [
+        { title: t('Period summary','خلاصه دوره'), rows: [
+          [t('Opening balance','موجودی اول دوره'),money(selectedLedger.opening)],
+          [t('Money In','آمد'),money(selectedLedger.incoming)],
+          [t('Money Out','رفت'),money(selectedLedger.outgoing)],
+          [t('Closing balance','موجودی پایان دوره'),money(selectedLedger.balance)],
+        ] },
+        { title: t('Transactions','معاملات'), widths: [15,11,42,16,16], numeric: [3,4],
+          headers: [t('Date','تاریخ'),t('Receipt','رسید'),t('Description','شرح'),t('Money In','آمد'),t('Money Out','رفت')],
+          rows: entries.length ? entries : [['','',t('No records for this period.','در این بازه معامله‌ای ثبت نشده است.'),'','']],
+        },
+      ],
+      note: `${t('Printed on','تاریخ چاپ')} ${formatSolarHijri(kabulToday())}`,
+    })
+    if (!printed) setError(t('Allow pop-ups to print this statement.','برای چاپ صورت حساب، پنجرهٔ جدید را اجازه دهید.'))
   }
 
-  async function reverse(event) {
+  function openCorrection(row, mode) {
+    setCorrection({row,mode,requestId:crypto.randomUUID()})
+    setCorrectedAmount(String(row.amount))
+    setReason('')
+    setCorrectionError('')
+  }
+
+  async function saveCorrection(event) {
     event.preventDefault()
-    if (busy || !president || !reason.trim()) return
+    if (busy || !president || !correction || !reason.trim()) return
+    const {row,mode,requestId} = correction
     setBusy(true)
     setCorrectionError('')
     try {
-      await rpc('reverse_cashbook_entry',{p_operation:correction.operation_id,p_reason:reason.trim()})
+      if (mode === 'edit') {
+        await rpc('correct_cashbook_amount',{
+          p_request:requestId,p_entry:row.id,p_expected_amount:row.amount,p_amount:correctedAmount,p_reason:reason.trim(),
+        })
+      } else {
+        await rpc('reverse_cashbook_entry',{p_operation:row.operation_id,p_reason:reason.trim()})
+      }
       setCorrection(null)
-      setNotice(t('Reversal recorded.','اصلاح ثبت شد.'))
+      setNotice(mode === 'edit' ? t('Amount updated.','مبلغ به‌روز شد.') : t('Reversal recorded.','اصلاح ثبت شد.'))
       try { await load() }
-      catch { setNotice(t('Reversal recorded. Refresh to see the updated balance.','اصلاح ثبت شد. برای دیدن موجودی، صفحه را تازه کنید.')) }
+      catch { setNotice(t('Correction saved. Refresh to see the updated balance.','اصلاح ثبت شد. برای دیدن موجودی، صفحه را تازه کنید.')) }
     } catch (error) {
       const messages = {
         REVERSAL_REASON_REQUIRED: t('Enter a reason of up to 500 characters.','دلیل را حداکثر در ۵۰۰ حرف وارد کنید.'),
+        CORRECTION_REASON_REQUIRED: t('Enter a reason of up to 500 characters.','دلیل را حداکثر در ۵۰۰ حرف وارد کنید.'),
         INVALID_REVERSAL: t('This receipt cannot be reversed.','این رسید قابل اصلاح نیست.'),
+        INVALID_CORRECTION: t('This receipt amount cannot be changed.','مبلغ این رسید قابل تغییر نیست.'),
+        INVALID_AMOUNT: t('Enter a positive amount with up to two decimal places.','یک مبلغ مثبت با حداکثر دو رقم اعشار وارد کنید.'),
+        STALE_RECORD: t('The receipt changed. Close this dialog and refresh.','رسید تغییر کرده است. این پنجره را بسته و صفحه را تازه کنید.'),
+        REQUEST_CONFLICT: t('Refresh the Cashbook before making another correction.','پیش از اصلاح دوباره، روزنامچه را تازه کنید.'),
       }
-      setCorrectionError(messages[error.message] || t('Could not confirm the reversal. Try again.','اصلاح تأیید نشد. دوباره کوشش کنید.'))
+      setCorrectionError(messages[error.message] || t('Could not confirm the correction. Try again with the same details.','اصلاح تأیید نشد. با همان معلومات دوباره کوشش کنید.'))
     } finally { setBusy(false) }
   }
   async function refresh(){
@@ -165,7 +218,7 @@ export default function CashbookPage({ language, profile }) {
         <label><span>{t('From','از تاریخ')}</span><SolarHijriDateInput language={language} value={customRange.start} ariaLabel={t('From','از تاریخ')} onChange={start=>{setCustomRange(current=>({...current,start}));setShown(20)}}/></label>
         <label><span>{t('Through','تا تاریخ')}</span><SolarHijriDateInput language={language} value={customRange.end} ariaLabel={t('Through','تا تاریخ')} onChange={end=>{setCustomRange(current=>({...current,end}));setShown(20)}}/></label>
       </>}
-      <button type="button" className="registry-secondary" disabled={!loaded||loading||!validPeriod} onClick={exportPeriod}>{t('Export CSV','دریافت CSV')}</button>
+      <button type="button" className="registry-secondary" disabled={!loaded||loading||!validPeriod||busy} onClick={printPeriod}><Printer size={17}/>{t('Print / Save PDF','چاپ / ذخیره PDF')}</button>
     </div>
     {notice&&<p className="registry-notice success" role="status">{notice}</p>}
     {error&&<p className="registry-notice error" role="alert">{error}</p>}
@@ -186,19 +239,38 @@ export default function CashbookPage({ language, profile }) {
           {president&&<td>
             {row.reversed_by ? `${t('Reversed by','اصلاح‌شده با')} #${row.reversed_by}`
               : row.reversal ? `${t('Reversal of','اصلاح رسید')} #${row.reverses_receipt}`
-              : row.operation_id && <button type="button" className="registry-secondary" disabled={busy||uncertain} onClick={()=>{setCorrection(row);setReason('');setCorrectionError('')}}>{t('Reverse','اصلاح')}</button>}
+              : row.operation_id && <div className="cashbook-correction-actions">
+                {row.can_edit_amount&&<button type="button" className="registry-secondary" disabled={busy||uncertain} onClick={()=>openCorrection(row,'edit')}>{t('Edit amount','ویرایش مبلغ')}</button>}
+                <button type="button" className="registry-secondary" disabled={busy||uncertain} onClick={()=>openCorrection(row,'reverse')}>{t('Reverse','معکوس‌کردن')}</button>
+              </div>}
+            {!!row.corrections?.length&&<details className="cashbook-correction-history">
+              <summary>{t('Amount history','تاریخچه مبلغ')}</summary>
+              <ul>{row.corrections.map(item=><li key={item.request_id}>
+                <bdi>{money(cents(item.previous_amount))} → {money(cents(item.corrected_amount))}</bdi>
+                <span>{formatSolarHijri(item.changed_at)} · {item.reason}</span>
+              </li>)}</ul>
+            </details>}
           </td>}
         </tr>)}
         {!selectedLedger.rows.length&&<tr><td colSpan={president?5:4} className="simple-cashbook-empty">{t('No records for this period.','در این بازه معامله‌ای ثبت نشده است.')}</td></tr>}
       </tbody></table></div>{selectedLedger.rows.length>shown&&<button type="button" className="cashbook-see-more" onClick={()=>setShown(current=>current+20)}>{t('See more','نمایش بیشتر')}</button>}</section>
     </>}
-    {correction&&president&&<Modal title={`${t('Reverse receipt','اصلاح رسید')} #${correction.receipt_number}`} busy={busy} onClose={()=>setCorrection(null)}>
-      <form className="registry-form" onSubmit={reverse}>
-        <p className="wide">{description(correction)} · {money(cents(correction.amount))}</p>
-        <p className="wide booking-help">{t('An opposite entry will be recorded today. The original receipt stays in the history.','یک معامله معکوس به تاریخ امروز ثبت می‌شود. رسید اصلی در تاریخچه باقی می‌ماند.')}</p>
+    {correction&&president&&<Modal title={`${correction.mode==='edit'?t('Edit receipt amount','ویرایش مبلغ رسید'):t('Reverse receipt','معکوس‌کردن رسید')} #${correction.row.receipt_number}`} busy={busy} onClose={()=>setCorrection(null)}>
+      <form className="registry-form" onSubmit={saveCorrection}>
+        <p className="wide">{description(correction.row)} · {money(cents(correction.row.amount))}</p>
+        {correction.mode==='edit'
+          ? <label className="wide"><span>{t('Corrected amount','مبلغ اصلاح‌شده')} ({currency}) *</span>
+            <input type="number" inputMode="decimal" required min="0.01" max="999999999999.99" step="0.01" value={correctedAmount} disabled={busy} onChange={event=>setCorrectedAmount(event.target.value)}/>
+          </label>
+          : <p className="wide booking-help">{t('An opposite entry will be recorded today. The original receipt stays in the history.','یک معامله معکوس به تاریخ امروز ثبت می‌شود. رسید اصلی در تاریخچه باقی می‌ماند.')}</p>}
         <label className="wide"><span>{t('Reason','دلیل')} *</span><textarea value={reason} maxLength={500} required disabled={busy} onChange={event=>setReason(event.target.value)}/></label>
         {correctionError&&<p className="wide registry-notice error" role="alert">{correctionError}</p>}
-        <div className="registry-form-actions"><button type="button" disabled={busy} onClick={()=>setCorrection(null)}>{t('Cancel','انصراف')}</button><button className="registry-primary" disabled={busy||!reason.trim()}>{t('Record reversal','ثبت اصلاح')}</button></div>
+        <div className="registry-form-actions">
+          <button type="button" disabled={busy} onClick={()=>setCorrection(null)}>{t('Cancel','انصراف')}</button>
+          <button className="registry-primary" disabled={busy||!reason.trim()||(correction.mode==='edit'&&Number(correctedAmount)===Number(correction.row.amount))}>
+            {correction.mode==='edit'?t('Save amount','ثبت مبلغ'):t('Record reversal','ثبت معامله معکوس')}
+          </button>
+        </div>
       </form>
     </Modal>}
   </div>

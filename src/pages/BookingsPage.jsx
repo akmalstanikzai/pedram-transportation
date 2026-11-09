@@ -46,22 +46,51 @@ export default function BookingsPage({ language, profile }) {
   async function changeStatus(row,status){if(busy)return;setBusy(true);setMessage('');try{await rpc('change_booking_status',{p_id:row.id,p_status:status,p_request:crypto.randomUUID(),p_expected:row.updated_at});setCancelRow(null);await load()}catch(e){setMessage(explain(e,language))}finally{setBusy(false)}}
   function printBooking(row) {
     const contacts = (name, phone, address) => [name, phone, address].filter(Boolean).join(' · ')
+    const vehicle = vehicles.find(item => item.id === row.vehicle_id)
+    const driver = drivers.find(item => item.id === row.driver_id)
+    const branch = branches.find(item => item.id === row.branch_id)
+    const managed = row.service_type === 'managed'
+    const amount = value => value == null ? '—' : money(value,row.commission_currency)
+    const sections = [
+      { title: t('Booking details','مشخصات بوکینگ'), rows: [
+        [t('Booking date','تاریخ بوکینگ'),formatSolarHijri(row.booking_date)],
+        [t('Status','وضعیت'),statuses[row.status]],
+        [t('Service','خدمات'),managed?t('Company-managed transport','انتقال توسط شرکت'):t('Vehicle arrangement','معرفی واسطه')],
+        [t('Office','دفتر'),branch ? contacts(branch.name,branch.phone,branch.address) : row.branch_id ? '—' : t('Head office','دفتر مرکزی')],
+        [t('Origin','مبدأ'),row.origin],
+        [t('Destination','مقصد'),row.destination],
+        [t('Goods','بار'),row.goods],
+        [t('Quantity','مقدار بار'),quantityText(row)],
+      ] },
+      { title: t('Contacts and fleet','تماس‌ها و وسایط'), rows: [
+        [t('Trader','تاجر'),contacts(`${row.trader_first_name || ''} ${row.trader_last_name || ''}`.trim() || row.traders?.full_name,row.trader_phone || row.traders?.phone,row.trader_address)],
+        ...(managed ? [
+          [t('Sender','فرستنده'),contacts(row.sender_name,row.sender_phone,row.sender_address)],
+          [t('Receiver','گیرنده'),contacts(row.receiver_name,row.receiver_phone,row.receiver_address)],
+        ] : []),
+        [t('Vehicle','واسطه'),contacts(vehicle?.plate_number || row.vehicles?.plate_number,vehicle?.vehicle_type,vehicle?.foreign_plate_number)],
+        [t('Driver','راننده'),contacts(driver?.full_name || row.drivers?.full_name,driver?.phone)],
+      ] },
+    ]
+    if (row.commission_currency) {
+      const charges = [[t('Commission','کمیسیون'),amount(row.commission_amount)]]
+      if (managed) charges.push(
+        [t('Freight','کرایه بار'),amount(row.freight_amount)],
+        [t('Vehicle / driver cost','مصارف واسطه و راننده'),amount(row.carrier_cost)],
+        ...(row.other_expenses || []).map(item => [item.description,amount(item.amount)]),
+      )
+      if (president && row.charged != null) charges.push(
+        [t('Total charges','مجموع بدهی'),amount(row.charged)],
+        [t('Paid (net)','پرداخت خالص'),amount(row.paid)],
+        [t('Remaining owed','باقی‌مانده قابل پرداخت'),amount(bookingDue(row.charged,row.paid)/100)],
+      )
+      sections.push({ title: t('Booking charges','بدهی بوکینگ'), rows: charges })
+    }
     const printed = printRecord({
       language,
       title: `${t('Booking confirmation', 'تأییدیه بوکینگ')} #${row.booking_number}`,
-      subtitle: t('Pedram Transportation', 'شرکت ترانسپورتی پدرام'),
-      sections: [{ rows: [
-        [t('Date', 'تاریخ'), formatSolarHijri(row.booking_date)],
-        [t('Status', 'وضعیت'), statuses[row.status]],
-        [t('Service', 'خدمات'), row.service_type === 'managed' ? t('Company-managed transport', 'انتقال توسط شرکت') : t('Vehicle arrangement', 'معرفی واسطه')],
-        [t('Trader', 'تاجر'), contacts(`${row.trader_first_name || ''} ${row.trader_last_name || ''}`.trim() || row.traders?.full_name, row.trader_phone, row.trader_address)],
-        [t('Sender', 'فرستنده'), contacts(row.sender_name, row.sender_phone, row.sender_address)],
-        [t('Receiver', 'گیرنده'), contacts(row.receiver_name, row.receiver_phone, row.receiver_address)],
-        [t('Route', 'مسیر'), `${row.origin} → ${row.destination}`],
-        [t('Goods', 'بار'), `${row.goods} · ${quantityText(row)}`],
-        [t('Vehicle', 'واسطه'), row.vehicles?.plate_number],
-        [t('Driver', 'راننده'), row.drivers?.full_name],
-      ] }],
+      sections,
+      note: `${t('Printed on','تاریخ چاپ')} ${formatSolarHijri(kabulToday())}`,
     })
     if (!printed) setMessage(t('Allow pop-ups to print this confirmation.', 'برای چاپ تأییدیه، پنجرهٔ جدید را اجازه دهید.'))
   }

@@ -19,7 +19,7 @@ The database also defines Vice-president and Departmental Manager roles. The app
 
 ## Operations dashboard and fleet availability
 
-The home dashboard shows active journeys, today's Cashbook Money In and Money Out by currency, and permits, licences, and fleet documents expiring within 30 days. The President also sees a count of traders with unpaid charges older than 30 days. The calculation applies net payments to the oldest charges first within each currency.
+The home dashboard lists active journeys, today's Cashbook Money In and Money Out by currency, and documents expiring within 30 days in a compact table. The President also sees a count of traders with unpaid charges older than 30 days. The calculation applies net payments to the oldest charges first within each currency.
 
 Open **Fleet Availability** from the dashboard before creating a booking. Select vehicles or drivers, choose a start date and a 7, 14, or 30 day window, and search by plate or name. Each row shows the resource status, document expiry when recorded, and confirmed or on-road work in the selected window. A shared resource can show a booking from another branch as **Busy at another branch**, with its booked dates.
 
@@ -38,7 +38,7 @@ Open **Fleet Availability** from the dashboard before creating a booking. Select
 
 The booking charge records the amount owed. When money is collected at booking time, the President can enter the amount in **Received now**. The President can record a later or partial payment using **Receive payment** in Bookings or Traders, or by selecting the trader and booking in Cashbook. Each recorded receipt appears in **Cashbook Money In** and reduces the trader's balance. Booking amounts share one currency.
 
-Bookings follow **Confirmed → On road → Completed** and can be cancelled. Confirmed bookings can be edited. The single Date field reserves the vehicle and driver for that calendar day. A booking can be opened to print a confirmation with the route, cargo, contacts, vehicle, and driver. Choose **Print confirmation**, then select a printer or save as PDF in the browser.
+Bookings follow **Confirmed → On road → Completed** and can be cancelled. Confirmed bookings can be edited. The single Date field reserves the vehicle and driver for that calendar day. Open a booking and choose **Print confirmation** for a branded document with the route, cargo, contacts, fleet details, and charges. The President's copy also shows the payment balance. Choose a printer or **Save as PDF** in the browser.
 
 The President can filter bookings across all branches, head office, or one branch. Select multiple completed bookings to use **Clear selection**, **Archive selected**, or **Delete selected** above the list. Archive is recoverable. Bulk delete hides completed bookings from the booking list and retains their financial history. Cancelling a booking leaves its recorded charges and receipts in the account for review.
 
@@ -49,9 +49,11 @@ Choose an **Account**, **Currency**, and **Period**. The President can switch be
 - **Add a record** takes a description, amount, and date. Use **Save Money In** or **Save Money Out** to post it.
 - Select Today, Yesterday, Last 7 days, This month, This year, All time, or Custom dates. The page shows opening balance, Money In, Money Out, and closing balance for the selected period above the entries.
 - Newer records appear first. Use **See more** to show older rows within the period.
-- **Export CSV** downloads the complete selected period, with its account, currency, receipts, and totals.
+- **Print / Save PDF** opens a statement with the company logo, account, currency, selected dates, totals, and every receipt in the period. Choose **Save as PDF** in the browser print dialog.
 
 ### Correct a mistaken receipt
+
+As President, use **Edit amount** to enter the correct amount and a reason. This updates the same receipt on its original date and adjusts its linked balances. **Amount history** shows the previous and corrected values and the reason. Use **Reverse** when the receipt itself should be cancelled.
 
 As President, select **Reverse** beside the original receipt, enter a reason, and confirm. Cashbook adds an opposite entry dated today and displays the reference between the two receipts. Both remain in history, and any linked booking or trader balance reflects the correction. The same original receipt can be reversed once.
 
@@ -112,7 +114,7 @@ Open the URL printed by Vite, typically `http://localhost:5173`. Restart Vite af
 ## Supabase setup and upgrades
 
 1. Apply [the SQL migrations](supabase/migrations) in filename order. For an existing project, apply only pending migrations. With a linked Supabase CLI project, use `supabase db push`.
-2. Make sure [booking receivables](supabase/migrations/202611090007_booking_receivables.sql) is applied before [operations controls](supabase/migrations/202611090008_operations_controls.sql). The latter adds staff permissions, Cashbook reversals, fleet availability, and dashboard totals. Deploy the frontend after applying the migrations.
+2. Apply [booking receivables](supabase/migrations/202611090007_booking_receivables.sql), [operations controls](supabase/migrations/202611090008_operations_controls.sql), and [Cashbook amount corrections](supabase/migrations/202611090009_cashbook_amount_corrections.sql) in that order. Deploy the frontend after applying the migrations.
 3. For a fresh setup or an account function update, deploy these current functions to the same project used by the frontend:
 
    ```powershell

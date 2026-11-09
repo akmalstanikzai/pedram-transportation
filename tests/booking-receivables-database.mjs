@@ -137,4 +137,34 @@ await signIn(traderUser)
 assert.equal((await call('trader_portal_statement',[])).payments.filter(row=>row.booking_id===managed).length,2)
 await assert.rejects(call('operations_summary',[]),/ACCESS_DENIED/)
 console.log('Operations controls passed: staff permissions, branch redaction, shared availability, reversal, and trader self-service.')
+
+await db.exec('reset role')
+await db.exec(await readFile(new URL('../supabase/migrations/202611090009_cashbook_amount_corrections.sql',import.meta.url),'utf8'))
+await signIn(president)
+const originalEntry = (await db.query(
+  'select id,operation_id,entry_date,amount from public.cashbook_entries where booking_id=$1',[paidAtBooking],
+)).rows[0]
+const correctionRequest = uid()
+const args = [correctionRequest,originalEntry.id,'15.00','21.25','Receipt checked']
+await assert.rejects(call('correct_cashbook_amount',[uid(),originalEntry.id,'15','0','Invalid']),/INVALID_AMOUNT/)
+await assert.rejects(call('correct_cashbook_amount',[uid(),originalEntry.id,'15','21.25',' ']),/CORRECTION_REASON_REQUIRED/)
+assert.equal(await call('correct_cashbook_amount',args),correctionRequest)
+assert.equal(await call('correct_cashbook_amount',args),correctionRequest)
+await assert.rejects(call('correct_cashbook_amount',[uid(),originalEntry.id,'15','30','Stale']),/STALE_RECORD/)
+const updatedEntries = (await db.query(
+  'select id,operation_id,entry_date,amount from public.cashbook_entries where booking_id=$1',[paidAtBooking],
+)).rows
+assert.deepEqual(updatedEntries,[{...originalEntry,amount:'21.25'}])
+assert.equal(Number((await call('booking_finance_rows',[])).find(row=>row.id===paidAtBooking).paid),21.25)
+assert.deepEqual((await db.query(
+  'select previous_amount,corrected_amount,reason from public.cashbook_amount_corrections where entry_id=$1',[originalEntry.id],
+)).rows,[{previous_amount:'15.00',corrected_amount:'21.25',reason:'Receipt checked'}])
+await signIn(manager)
+await assert.rejects(call('correct_cashbook_amount',[uid(),originalEntry.id,'21.25','30','Forbidden']),/ACCESS_DENIED/)
+assert.equal((await db.query('select * from public.cashbook_amount_corrections')).rows.length,0)
+await signIn(president)
+const updatedReversal = await call('reverse_cashbook_entry',[originalEntry.operation_id,'Receipt cancelled'])
+assert.equal(Number((await db.query('select amount from public.cashbook_entries where operation_id=$1',[updatedReversal])).rows[0].amount),21.25)
+await assert.rejects(call('correct_cashbook_amount',[uid(),originalEntry.id,'21.25','30','Already reversed']),/INVALID_CORRECTION/)
+console.log('Amount corrections passed: preserved receipt and audit history, linked balance, retry and stale protection, permissions, and reversal.')
 await db.close()

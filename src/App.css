@@ -911,8 +911,19 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 }
 .operations-overview { margin-block-end: 1.5rem; }
 .operations-overview h1 { margin-block: 0 0.75rem; }
-.operations-summary small, .operation-note { display: block; margin-top: 0.25rem; }
-.operations-summary { grid-template-columns: repeat(auto-fit,minmax(min(100%,180px),1fr)); }
-.operations-summary small { font-size: 0.85rem; }
+.operation-note { display: block; margin-top: 0.25rem; }
+.operations-summary { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fff; }
+.operations-summary table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.operations-summary th, .operations-summary td { padding: 7px 12px; text-align: start; }
+.operations-summary th { width: 42%; background: #f5f8fa; color: #294351; }
+.operations-summary tr + tr { border-top: 1px solid var(--line); }
+.operations-summary td small { display: inline-block; margin-inline-start: 0.5rem; color: #526875; }
+.operations-summary ul { list-style: none; padding: 0; margin: 0; }
+.operations-summary li { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 0.65rem; }
+.operations-summary li span { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cashbook-correction-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.cashbook-correction-history { margin-block-start: 6px; font-size: 0.85rem; }
+.cashbook-correction-history ul { padding-inline-start: 16px; }
+.cashbook-correction-history li span { display: block; }
 .availability-jobs { margin: 0; padding: 0; list-style: none; }
 .availability-jobs li + li { margin-top: 0.55rem; padding-top: 0.55rem; border-top: 1px solid #d7e2ee; }
