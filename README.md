@@ -31,7 +31,7 @@ The President menu contains only working pages: Cashbook, Branches, Fleet, Booki
 The database defines five roles: President, Vice-president, Departmental Manager, Branch Manager, and Driver.
 
 - **President:** accesses the implemented President modules and views cashbook records for the admin account, one branch, or all accounts.
-- **Branch Manager:** accesses Cashbook, Fleet, Bookings and Traders for their assigned branch. They can register and manage branch-owned records, create and process their branch's bookings, and maintain their branch's trader fares and receipts. Shared head-office directory profiles can be viewed and selected for bookings, but cannot be edited, archived or have their private documents opened by branch staff. Other branches' records and accounts remain hidden.
+- **Branch Manager:** accesses Cashbook, Fleet, Bookings and Fleet Availability. They can select traders and register a new trader through a booking. The President manages trader profiles, statements and payments. The branch cashbook includes combined trader activity totals for reconciliation.
 
 Branches is President-only in the module menu, navigation guard and Branches component. A branch login opening `#/branches` is returned to its allowed module menu. If a branch login still sees President controls, check the role displayed in the header and run the read-only `supabase/check_branch_account_roles.sql` in SQL Editor to inspect the linked manager's role and branch. Do not hide an incorrect President role merely with styling; correct the account assignment after identifying the affected user. This UI restriction requires a frontend deployment, with no new migration.
 - **Driver:** a linked login sees only that driver's assigned jobs, their licence information and the minimum vehicle/contact details needed for each job. Drivers can accept ready jobs and report delivery of on-road jobs. The President can create a driver login or link an existing unused Driver-role account from Fleet.
@@ -88,21 +88,17 @@ See [Cashbook setup and behavior](supabase/CASHBOOK.md) for additional details.
 
 The President's Bookings page has a Branch dropdown below its title, styled like the Cashbook account filter. Choose All branches (including head office), Head office, or a named branch. It works together with search and Archive, and retains archived branches for historical records. Branch managers continue to see only their own branch bookings and do not receive this cross-branch filter. This is a frontend change; no SQL migration or Edge Function redeployment is required.
 
-The New Booking form is arranged in this order:
+The New Booking form has one Date, a booking type, trader and route details, a goods amount with a unit (tons, pieces, or cubic metres), and separate vehicle and driver selections. Company-managed transport also requires sender and receiver details (each can be the trader), freight owed, vehicle/driver cost owed, and optional extra expenses owed. All booking amounts use the selected booking currency.
 
-1. Booking date, departure date, expected arrival date, branch and service type: vehicle arrangement or company-managed transport.
-2. Trader first name, surname, contact number, and address. Select an existing trader or register a new one through the booking.
-3. Sender name, contact, and address. **Trader is the sender** fills these details automatically.
-4. Receiver name, contact, and address.
-5. Goods name, weight in tons, and volume in cubic metres (m³). Enter weight, volume, or both.
-6. Origin and destination.
-7. Registered vehicle and registered driver, chosen separately.
+The booking creates one charge in the trader account: commission for vehicle arrangement; commission + freight + vehicle/driver cost + extra expenses for company-managed transport. These amounts are **owed**, not Cashbook income. Enter an optional **Received now** amount to record the cash actually collected when saving; later payments can be recorded from the booking, the trader account, or Cashbook with that trader and booking selected. Each receipt appears once in Cashbook Money In and reduces the trader's balance. Payment amounts may be partial.
 
 Selecting a vehicle loads that vehicle's details. Selecting a driver loads that driver's details. Changing one selection does not change the other. The booking stores the selected pair for that job; a driver is not permanently assigned to a vehicle.
 
 Trader details are saved with the booking without overwriting an existing trader profile. The `save_booking_record` database function saves the trader association and booking in one transaction, with an idempotent request ID and a last-updated check to prevent stale edits.
 
-Bookings follow **Confirmed → On road → Completed**, or **Cancelled**. Only confirmed bookings are editable. Departure and arrival reserve both resources for whole calendar days, inclusively; two jobs cannot share a vehicle or driver on an overlapping day. Confirming requires an active owner, available vehicle and available driver, enough recorded weight/volume capacity, and no entered permit/licence expiry before the expected end. Expiry is rechecked when starting the journey. Register missing capacity values in Fleet first.
+Bookings follow **Confirmed → On road → Completed**, or **Cancelled**. Only confirmed bookings are editable. The single Date currently reserves the vehicle and driver for that calendar day; longer trip duration is not modeled yet. Booking checks the active owner, vehicle and driver, capacity for the selected goods unit, and permit/licence expiry. Register missing capacity values in Fleet first.
+
+Apply `supabase/migrations/202611090007_booking_receivables.sql` and then `202611090008_operations_controls.sql` after `202611090006_trader_password_vault.sql` before deploying the updated frontend. Earlier booking creation automatically wrote commission to Cashbook Money In. Those historical entries are preserved and can be corrected using **Reverse** when a receipt was recorded in error. The disposable database check is `node tests/booking-receivables-database.mjs` with `PEDRAM_PGLITE_PATH` set to PGlite's `dist/index.js`.
 
 Delete moves records to a recoverable Archive. Active work must be completed or cancelled before archiving a resource; a confirmed booking is cancelled when archived. An on-road booking must be cancelled or completed first. Restoring a cancelled/completed booking preserves its status and does not reserve resources again. Linked historical and financial records remain intact.
 
@@ -138,7 +134,7 @@ To change an assignment, edit a **Confirmed** booking, choose another eligible d
 
 The driver then signs in using that connected account and refreshes the portal. To display jobs, select the same driver record when creating a booking. A connected driver with no assignments sees **No jobs assigned yet**, which is different from a missing account link. Inactive/archived driver records cannot use the portal; restore/activate the record and enable its login as needed.
 
-Trader profiles and accounts are managed together in **Traders**. Use the account/wallet icon to open the profile, fares, receipts and remaining balance. Add a fare (optionally linked to a booking), then use Receive payment. A receipt is saved once in the selected admin/branch cashbook and appears in the trader statement automatically. Cashbook entries can also optionally link a trader; outgoing linked entries reduce net payments, for example for refunds. Entries without a trader link cannot be attributed from their description alone.
+The President manages trader profiles and accounts in **Traders**. Open a profile with the wallet icon to see charges, payments and remaining balances by booking and currency. Use **Receive payment** to link a receipt to the account and optionally to a booking. **Print statement** prints the selected currency. A linked Cashbook reversal updates the statement and keeps both receipts visible.
 
 Charges record what the trader owes and do not add cash. Fares can be cancelled when entered by mistake; the cancelled row remains in history. Currency balances never mix. Historical agreed booking totals and explicitly booking-linked receipts are migrated into the combined view. Booking cancellation does not automatically cancel a financial charge; review and cancel the charge separately when appropriate.
 

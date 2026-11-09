@@ -4,10 +4,11 @@ export const roleLabels = {
   departmental_manager: 'Departmental manager',
   branch_manager: 'Branch manager',
   driver: 'Driver',
+  trader: 'Trader',
 }
 
-export const branchModuleIds = Object.freeze(['cashbook','vehicles','bookings','traders'])
-const presidentModuleIds = Object.freeze(['cashbook','branches','vehicles','bookings','traders'])
+export const branchModuleIds = Object.freeze(['cashbook','vehicles','bookings','availability'])
+const presidentModuleIds = Object.freeze(['cashbook','branches','vehicles','bookings','traders','availability'])
 
 // Use the same explicit permissions for navigation and page rendering.
 export function canAccessModule(role, moduleId) {
@@ -17,5 +18,5 @@ export function canAccessModule(role, moduleId) {
 }
 
 export function getDashboardTitle(role) {
-  return `${roleLabels[role] || 'Driver'} Dashboard`
+  return `${roleLabels[role] || 'User'} Dashboard`
 }

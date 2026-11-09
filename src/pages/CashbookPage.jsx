@@ -2,6 +2,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { ArrowDownLeft, ArrowUpRight, RefreshCw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { allRows, cents, currencies, kabulToday, simpleLedger, ledgerPeriod } from '../lib/cashbook'
+import { rpc } from '../lib/operations'
+import { Modal } from '../components/RecordTools'
+import { downloadCsv } from '../lib/recordExports'
 import SolarHijriDateInput from '../components/SolarHijriDateInput'
 import { formatSolarHijri, solarHijriToday, solarHijriToISODate } from '../lib/solarHijri'
 
@@ -22,6 +25,7 @@ export default function CashbookPage({ language, profile }) {
   const president=profile?.role==='president'
   const [data,setData]=useState({branches:[],accounts:[],entries:[]})
   const [traders,setTraders]=useState([])
+  const [bookings,setBookings]=useState([])
   const [loading,setLoading]=useState(true)
   const [loaded,setLoaded]=useState(false)
   const [error,setError]=useState('')
@@ -29,30 +33,105 @@ export default function CashbookPage({ language, profile }) {
   const [scope,setScope]=useState(president?'admin':profile?.branch_id || '')
   const [currency,setCurrency]=useState('AFN')
   const [period,setPeriod]=useState('today')
+  const [customRange,setCustomRange]=useState({start:kabulToday(),end:kabulToday()})
   const [shown,setShown]=useState(20)
-  const [form,setForm]=useState({amount:'',description:'',date:kabulToday(),trader_id:''})
+  const [form,setForm]=useState({amount:'',description:'',date:kabulToday(),trader_id:'',booking_id:''})
   const [request,setRequest]=useState(()=>crypto.randomUUID())
   const [retryDirection,setRetryDirection]=useState('')
   const [busy,setBusy]=useState(false)
   const [uncertain,setUncertain]=useState(false)
+  const [correction,setCorrection]=useState(null)
+  const [reason,setReason]=useState('')
+  const [correctionError,setCorrectionError]=useState('')
+  const loadPayments = useCallback(async () => {
+    if (!president) return []
+    const [entries, operations] = await Promise.all([
+      allRows(supabase,'cashbook_entries'),
+      allRows(supabase,'cashbook_operations','id,receipt_number,mode,reverses_id'),
+    ])
+    const byId = new Map(operations.map(row => [row.id,row]))
+    const reversals = new Map(operations.filter(row => row.reverses_id).map(row => [row.reverses_id,row.receipt_number]))
+    return entries.map(entry => {
+      const operation = byId.get(entry.operation_id)
+      return {
+        ...entry,
+        receipt_number: operation?.receipt_number,
+        reversal: operation?.mode === 'reversal',
+        reverses_receipt: byId.get(operation?.reverses_id)?.receipt_number,
+        reversed_by: reversals.get(entry.operation_id),
+      }
+    })
+  }, [president])
   const load=useCallback(async()=>{
     if(!supabase)throw new Error('Database unavailable')
-    const [branches,accounts,entries,operations]=await Promise.all(['branches','cashbook_accounts','cashbook_entries','cashbook_operations'].map(table=>allRows(supabase,table)))
-    const numbers=new Map(operations.map(row=>[row.id,row.receipt_number]))
-    setData({branches,accounts,entries:entries.map(row=>({...row,receipt_number:numbers.get(row.operation_id)||0}))});setLoaded(true)
-    setTraders(await allRows(supabase,'traders'))
-  },[])
+    const [branches,accounts,entries,links]=await Promise.all([
+      allRows(supabase,'branches'), allRows(supabase,'cashbook_accounts'),
+      president ? loadPayments() : rpc('branch_cashbook_rows',{}),
+      president ? Promise.all([
+        allRows(supabase,'traders'),
+        allRows(supabase,'bookings','id,booking_number,trader_id,branch_id,archived_at,deleted_at'),
+        rpc('booking_finance_rows',{}),
+      ]) : null,
+    ])
+    setData({branches,accounts,entries})
+    setLoaded(true)
+    if (links) {
+      const [traders,bookings,finance]=links
+      const amounts=new Map(finance.map(row=>[row.id,row]))
+      setTraders(traders)
+      setBookings(bookings.map(row=>({...row,...amounts.get(row.id)})))
+    }
+  },[president,loadPayments])
   useEffect(()=>{
     let active=true
     void Promise.resolve().then(load).catch(()=>{if(active)setError(language==='fa'?'روزنامچه بارگیری نشد. اتصال و تنظیمات دیتابیس را بررسی کنید.':'Could not load the cashbook. Check the connection and database setup.')}).finally(()=>{if(active)setLoading(false)})
     return()=>{active=false}
   },[load,language])
   const money=value=>`${(value/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} ${currency}`
-  const name=id=>id?data.branches.find(b=>b.id===id)?.name||'—':t('Admin account','حساب مرکزی')
+  const name=id=>!id||id==='admin'?t('Admin account','حساب مرکزی'):data.branches.find(b=>b.id===id)?.name||'—'
   const ledger=simpleLedger(data.accounts,data.entries,scope,currency)
-  const [periodStart,periodEnd]=periodBounds(period)
+  const [periodStart,periodEnd]=period==='custom'?[customRange.start,customRange.end]:periodBounds(period)
+  const validPeriod=periodStart&&periodEnd&&periodStart<=periodEnd
   const selectedLedger=ledgerPeriod(ledger,periodStart,periodEnd)
   const accountOptions=<>{president&&<option value="admin">{t('Admin account','حساب مرکزی')}</option>}{data.branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</>
+  function description(row) {
+    if (row.opening) return t('Earlier balance','موجودی قبلی')
+    if (row.private_activity) return t('Trader activity total','مجموع معاملات تاجران')
+    return row.description
+  }
+
+  function exportPeriod() {
+    const header=[t('Date','تاریخ'),t('Receipt','رسید'),t('Description','شرح'),t('Currency','واحد پول'),t('Money In','آمد'),t('Money Out','رفت'),t('Balance','موجودی')]
+    const amount=(row,direction)=>row.direction===direction?Number(row.amount):''
+    downloadCsv(`cashbook-${currency}-${periodStart}-${periodEnd}.csv`, [
+      [t('Account','حساب'), name(scope)],
+      [t('Period','بازه زمانی'), period==='all'?t('All time','همه زمان‌ها'):formatSolarHijri(periodStart), formatSolarHijri(periodEnd)],
+      header,
+      ['', '', t('Opening balance','موجودی اول دوره'), currency, '', '', selectedLedger.opening/100],
+      ...selectedLedger.rows.map(row=>[formatSolarHijri(row.entry_date),row.receipt_number||'',description(row),currency,amount(row,'in'),amount(row,'out'),'']),
+      ['', '', t('Period totals','مجموع دوره'), currency, selectedLedger.incoming/100, selectedLedger.outgoing/100, selectedLedger.balance/100],
+    ])
+  }
+
+  async function reverse(event) {
+    event.preventDefault()
+    if (busy || !president || !reason.trim()) return
+    setBusy(true)
+    setCorrectionError('')
+    try {
+      await rpc('reverse_cashbook_entry',{p_operation:correction.operation_id,p_reason:reason.trim()})
+      setCorrection(null)
+      setNotice(t('Reversal recorded.','اصلاح ثبت شد.'))
+      try { await load() }
+      catch { setNotice(t('Reversal recorded. Refresh to see the updated balance.','اصلاح ثبت شد. برای دیدن موجودی، صفحه را تازه کنید.')) }
+    } catch (error) {
+      const messages = {
+        REVERSAL_REASON_REQUIRED: t('Enter a reason of up to 500 characters.','دلیل را حداکثر در ۵۰۰ حرف وارد کنید.'),
+        INVALID_REVERSAL: t('This receipt cannot be reversed.','این رسید قابل اصلاح نیست.'),
+      }
+      setCorrectionError(messages[error.message] || t('Could not confirm the reversal. Try again.','اصلاح تأیید نشد. دوباره کوشش کنید.'))
+    } finally { setBusy(false) }
+  }
   async function refresh(){
     setLoading(true);setError('')
     try{await load();setUncertain(false);setRetryDirection('');setRequest(crypto.randomUUID())}catch{setError(t('Could not load records. Try again.','معلومات بارگیری نشد. دوباره کوشش کنید.'))}finally{setLoading(false)}
@@ -63,15 +142,15 @@ export default function CashbookPage({ language, profile }) {
     if(!['in','out'].includes(direction)||uncertain&&direction!==retryDirection)return
     setBusy(true);setError('')
     try{
-      const {error:failure}=await supabase.rpc('cashbook_simple_post',{p_request:request,p_data:{branch_id:scope==='admin'?null:scope,currency,direction,amount:form.amount,date:form.date,description:form.description.trim(),trader_id:form.trader_id||null}})
+      const {error:failure}=await supabase.rpc('cashbook_simple_post',{p_request:request,p_data:{branch_id:scope==='admin'?null:scope,currency,direction,amount:form.amount,date:form.date,description:form.description.trim(),trader_id:form.trader_id||null,booking_id:form.booking_id||null}})
       if(failure){
-        const messages={ACCESS_DENIED:t('You cannot record money for this account.','شما اجازه ثبت پول در این حساب را ندارید.'),INVALID_AMOUNT:t('Enter a positive amount with up to two decimal places.','یک مبلغ مثبت با حداکثر دو رقم اعشار وارد کنید.'),INVALID_DATE:t('Choose today or an earlier date.','تاریخ امروز یا گذشته را انتخاب کنید.'),DESCRIPTION_REQUIRED:t('Enter a name or description.','نام یا شرح معامله را وارد کنید.')}
+        const messages={ACCESS_DENIED:t('You cannot record money for this account.','شما اجازه ثبت پول در این حساب را ندارید.'),INVALID_AMOUNT:t('Enter a positive amount with up to two decimal places.','یک مبلغ مثبت با حداکثر دو رقم اعشار وارد کنید.'),INVALID_DATE:t('Choose today or an earlier date.','تاریخ امروز یا گذشته را انتخاب کنید.'),DESCRIPTION_REQUIRED:t('Enter a name or description.','نام یا شرح معامله را وارد کنید.'),BOOKING_PAYMENT_UNAVAILABLE:t('Choose an active booking in this currency.','بوکینگ فعال را با همین واحد پول انتخاب کنید.')}
         const key=Object.keys(messages).find(k=>failure.message.includes(k))
         if(key){setUncertain(false);throw new Error(messages[key])}
         setUncertain(true);setRetryDirection(direction);throw new Error(t('Save was not confirmed. Retry the same direction with the same details, or refresh before entering again.','ثبت تأیید نشد. با همان جهت و معلومات دوباره کوشش کنید یا پیش از ثبت مجدد، فهرست را تازه‌سازی کنید.'))
       }
       setRequest(crypto.randomUUID());setRetryDirection('');setUncertain(false)
-      setForm(previous=>({...previous,amount:'',description:'',trader_id:''}))
+      setForm(previous=>({...previous,amount:'',description:'',trader_id:'',booking_id:''}))
       setNotice(t('Saved.','ثبت شد.'))
       try{await load()}catch{setNotice(t('Saved. Refresh the list to see the updated balance.','ثبت شد. برای دیدن موجودی جدید، فهرست را تازه‌سازی کنید.'))}
     }catch(err){setError(err.message)}finally{setBusy(false)}
@@ -79,9 +158,14 @@ export default function CashbookPage({ language, profile }) {
   return <div className="simple-cashbook">
     <div className="booking-page-header"><h1>{t('Cashbook','روزنامچه')}</h1><button className="registry-secondary" aria-label={t('Refresh','تازه‌سازی')} title={t('Refresh','تازه‌سازی')} disabled={loading||busy} onClick={refresh}><RefreshCw size={17}/></button></div>
     <div className="simple-cashbook-toolbar">
-      {president?<label><span>{t('Account','حساب')}</span><select value={scope} disabled={busy||uncertain} onChange={e=>{setScope(e.target.value);setForm(previous=>({...previous,trader_id:''}));setShown(20)}}>{accountOptions}</select></label>:<strong>{name(profile?.branch_id)}</strong>}
-      <label><span>{t('Currency','واحد پول')}</span><select value={currency} disabled={busy||uncertain} onChange={e=>setCurrency(e.target.value)}>{currencies.map(c=><option key={c}>{c}</option>)}</select></label>
-      <label><span>{t('Period','بازه زمانی')}</span><select value={period} onChange={e=>{setPeriod(e.target.value);setShown(20)}}><option value="today">{t('Today','امروز')}</option><option value="yesterday">{t('Yesterday','دیروز')}</option><option value="week">{t('Last 7 days','۷ روز گذشته')}</option><option value="month">{t('This month','این ماه')}</option><option value="year">{t('This year','امسال')}</option><option value="all">{t('All time','همه زمان‌ها')}</option></select></label>
+      {president?<label><span>{t('Account','حساب')}</span><select value={scope} disabled={busy||uncertain} onChange={e=>{setScope(e.target.value);setForm(previous=>({...previous,trader_id:'',booking_id:''}));setShown(20)}}>{accountOptions}</select></label>:<strong>{name(profile?.branch_id)}</strong>}
+      <label><span>{t('Currency','واحد پول')}</span><select value={currency} disabled={busy||uncertain} onChange={e=>{setCurrency(e.target.value);setForm(previous=>({...previous,booking_id:''}))}}>{currencies.map(c=><option key={c}>{c}</option>)}</select></label>
+      <label><span>{t('Period','بازه زمانی')}</span><select value={period} onChange={e=>{setPeriod(e.target.value);setShown(20)}}><option value="today">{t('Today','امروز')}</option><option value="yesterday">{t('Yesterday','دیروز')}</option><option value="week">{t('Last 7 days','۷ روز گذشته')}</option><option value="month">{t('This month','این ماه')}</option><option value="year">{t('This year','امسال')}</option><option value="all">{t('All time','همه زمان‌ها')}</option><option value="custom">{t('Custom dates','تاریخ دلخواه')}</option></select></label>
+      {period==='custom'&&<>
+        <label><span>{t('From','از تاریخ')}</span><SolarHijriDateInput language={language} value={customRange.start} ariaLabel={t('From','از تاریخ')} onChange={start=>{setCustomRange(current=>({...current,start}));setShown(20)}}/></label>
+        <label><span>{t('Through','تا تاریخ')}</span><SolarHijriDateInput language={language} value={customRange.end} ariaLabel={t('Through','تا تاریخ')} onChange={end=>{setCustomRange(current=>({...current,end}));setShown(20)}}/></label>
+      </>}
+      <button type="button" className="registry-secondary" disabled={!loaded||loading||!validPeriod} onClick={exportPeriod}>{t('Export CSV','دریافت CSV')}</button>
     </div>
     {notice&&<p className="registry-notice success" role="status">{notice}</p>}
     {error&&<p className="registry-notice error" role="alert">{error}</p>}
@@ -89,14 +173,33 @@ export default function CashbookPage({ language, profile }) {
       <label className="cashbook-description-field"><span>{t('Name / description','نام / شرح معامله')} *</span><input required placeholder={t('Who or what is this for?','نام شخص یا دلیل معامله')} value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label>
       <label className="cashbook-amount-field"><span>{t('Amount','مبلغ')} ({currency}) *</span><input required type="number" inputMode="decimal" min="0.01" max="999999999999.99" step="0.01" placeholder="0.00" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})}/></label>
       <label className="cashbook-date-field"><span>{t('Date','تاریخ')} *</span><SolarHijriDateInput required max={kabulToday()} language={language} value={form.date} onChange={date=>setForm({...form,date})} ariaLabel={t('Date','تاریخ')}/></label>
-      {traders.length>0&&<details className="simple-cashbook-description"><summary>{t('Link to a trader (optional)','وصل به حساب تاجر (اختیاری)')}</summary><label><span>{t('Trader','تاجر')}</span><select value={form.trader_id||''} onChange={e=>setForm({...form,trader_id:e.target.value})}><option value="">—</option>{traders.filter(r=>!r.archived_at&&(!r.branch_id||r.branch_id===scope)).map(r=><option key={r.id} value={r.id}>{r.full_name} · {r.phone}</option>)}</select></label></details>}
+      {traders.length>0&&<details className="simple-cashbook-description"><summary>{t('Link to a trader (optional)','وصل به حساب تاجر (اختیاری)')}</summary><label><span>{t('Trader','تاجر')}</span><select value={form.trader_id||''} onChange={e=>setForm({...form,trader_id:e.target.value,booking_id:''})}><option value="">—</option>{traders.filter(r=>!r.archived_at&&(!r.branch_id||r.branch_id===scope)).map(r=><option key={r.id} value={r.id}>{r.full_name} · {r.phone}</option>)}</select></label>{form.trader_id&&<label><span>{t('Booking (optional)','بوکینگ (اختیاری)')}</span><select value={form.booking_id} onChange={e=>setForm({...form,booking_id:e.target.value})}><option value="">{t('General trader payment','پرداخت عمومی تاجر')}</option>{bookings.filter(row=>row.trader_id===form.trader_id&&!row.archived_at&&!row.deleted_at&&row.branch_id===(scope==='admin'?null:scope)&&row.commission_currency===currency).map(row=><option key={row.id} value={row.id}>#{row.booking_number}</option>)}</select></label>}</details>}
     </fieldset><div className="simple-cashbook-buttons"><button type="submit" value="out" className="cashbook-out" disabled={loading||!loaded||busy||uncertain&&retryDirection!=='out'||(!president&&!profile?.branch_id)}><ArrowUpRight size={20}/>{busy&&retryDirection==='out'?t('Saving…','در حال ثبت…'):uncertain&&retryDirection==='out'?t('Retry Money Out','کوشش مجدد رفت'):t('Save Money Out','ثبت پول رفت')}</button><button type="submit" value="in" className="cashbook-in" disabled={loading||!loaded||busy||uncertain&&retryDirection!=='in'||(!president&&!profile?.branch_id)}><ArrowDownLeft size={20}/>{busy&&retryDirection==='in'?t('Saving…','در حال ثبت…'):uncertain&&retryDirection==='in'?t('Retry Money In','کوشش مجدد آمد'):t('Save Money In','ثبت پول آمد')}</button></div></form>
-    {loading?<p role="status">{t('Loading…','در حال بارگیری…')}</p>:loaded&&<>
+    {loading?<p role="status">{t('Loading…','در حال بارگیری…')}</p>:loaded&&!validPeriod?<p role="status">{t('Choose a valid start and end date.','تاریخ آغاز و پایان درست انتخاب کنید.')}</p>:loaded&&<>
       <div className="cashbook-summary"><div><span>{t('Opening balance','موجودی اول دوره')}</span><strong>{money(selectedLedger.opening)}</strong></div><div><span>{t('Money In','آمد')}</span><strong className="simple-money-in">{money(selectedLedger.incoming)}</strong></div><div><span>{t('Money Out','رفت')}</span><strong className="simple-money-out">{money(selectedLedger.outgoing)}</strong></div><div className="cashbook-summary-balance"><span>{t('Closing balance','موجودی پایان دوره')}</span><strong>{money(selectedLedger.balance)}</strong></div></div>
-      <section className="cashbook-ledger" aria-label={t('Cashbook records','معاملات روزنامچه')}><h2>{t('Records','معاملات')}</h2><div className="simple-cashbook-list"><table><thead><tr><th scope="col">{t('Date','تاریخ')}</th><th scope="col">{t('Description','شرح معامله')}</th><th scope="col">{t('Money In','آمد')}</th><th scope="col">{t('Money Out','رفت')}</th></tr></thead><tbody>
-        {selectedLedger.rows.slice(0,shown).map(e=><tr key={e.id} className={e.direction==='in'?'cashbook-row-in':'cashbook-row-out'}><td>{formatSolarHijri(e.entry_date)}</td><td>{e.opening?t('Earlier balance','موجودی قبلی'):e.description}</td><td className={e.direction==='in'?'simple-money-in':'cashbook-empty-amount'}>{e.direction==='in'?money(cents(e.amount)):'—'}</td><td className={e.direction==='out'?'simple-money-out':'cashbook-empty-amount'}>{e.direction==='out'?money(cents(e.amount)):'—'}</td></tr>)}
-        {!selectedLedger.rows.length&&<tr><td colSpan={4} className="simple-cashbook-empty">{t('No records for this period.','در این بازه معامله‌ای ثبت نشده است.')}</td></tr>}
+      <section className="cashbook-ledger" aria-label={t('Cashbook records','معاملات روزنامچه')}><h2>{t('Records','معاملات')}</h2><div className="simple-cashbook-list"><table><thead><tr><th scope="col">{t('Date','تاریخ')}</th><th scope="col">{t('Description','شرح معامله')}</th><th scope="col">{t('Money In','آمد')}</th><th scope="col">{t('Money Out','رفت')}</th>{president&&<th scope="col">{t('Correction','اصلاح')}</th>}</tr></thead><tbody>
+        {selectedLedger.rows.slice(0,shown).map(row=><tr key={row.id} className={row.direction==='in'?'cashbook-row-in':'cashbook-row-out'}>
+          <td>{formatSolarHijri(row.entry_date)}</td>
+          <td>{row.receipt_number ? `#${row.receipt_number} · ` : ''}{description(row)}</td>
+          <td className="simple-money-in">{row.direction==='in'?money(cents(row.amount)):'—'}</td>
+          <td className="simple-money-out">{row.direction==='out'?money(cents(row.amount)):'—'}</td>
+          {president&&<td>
+            {row.reversed_by ? `${t('Reversed by','اصلاح‌شده با')} #${row.reversed_by}`
+              : row.reversal ? `${t('Reversal of','اصلاح رسید')} #${row.reverses_receipt}`
+              : row.operation_id && <button type="button" className="registry-secondary" disabled={busy||uncertain} onClick={()=>{setCorrection(row);setReason('');setCorrectionError('')}}>{t('Reverse','اصلاح')}</button>}
+          </td>}
+        </tr>)}
+        {!selectedLedger.rows.length&&<tr><td colSpan={president?5:4} className="simple-cashbook-empty">{t('No records for this period.','در این بازه معامله‌ای ثبت نشده است.')}</td></tr>}
       </tbody></table></div>{selectedLedger.rows.length>shown&&<button type="button" className="cashbook-see-more" onClick={()=>setShown(current=>current+20)}>{t('See more','نمایش بیشتر')}</button>}</section>
     </>}
+    {correction&&president&&<Modal title={`${t('Reverse receipt','اصلاح رسید')} #${correction.receipt_number}`} busy={busy} onClose={()=>setCorrection(null)}>
+      <form className="registry-form" onSubmit={reverse}>
+        <p className="wide">{description(correction)} · {money(cents(correction.amount))}</p>
+        <p className="wide booking-help">{t('An opposite entry will be recorded today. The original receipt stays in the history.','یک معامله معکوس به تاریخ امروز ثبت می‌شود. رسید اصلی در تاریخچه باقی می‌ماند.')}</p>
+        <label className="wide"><span>{t('Reason','دلیل')} *</span><textarea value={reason} maxLength={500} required disabled={busy} onChange={event=>setReason(event.target.value)}/></label>
+        {correctionError&&<p className="wide registry-notice error" role="alert">{correctionError}</p>}
+        <div className="registry-form-actions"><button type="button" disabled={busy} onClick={()=>setCorrection(null)}>{t('Cancel','انصراف')}</button><button className="registry-primary" disabled={busy||!reason.trim()}>{t('Record reversal','ثبت اصلاح')}</button></div>
+      </form>
+    </Modal>}
   </div>
 }

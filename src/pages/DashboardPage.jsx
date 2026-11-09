@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Building2,
+  CalendarDays,
   ClipboardList,
   BookOpen,
   Truck,
@@ -17,6 +18,9 @@ import BookingsPage from './BookingsPage'
 import CashbookPage from './CashbookPage'
 import TradersPage from './TradersPage'
 import DriverBookingsPage from './DriverBookingsPage'
+import TraderPortalPage from './TraderPortalPage'
+import AvailabilityPage from './AvailabilityPage'
+import OperationsSummary from '../components/OperationsSummary'
 
 const moduleDefinitions = [
   { id: 'cashbook', icon: BookOpen, titleKey: 'cashbook', color: 'green' },
@@ -24,7 +28,10 @@ const moduleDefinitions = [
   { id: 'vehicles', icon: Truck, titleKey: 'vehicles', pageKey: 'vehiclesPage', color: 'green' },
   { id: 'bookings', icon: ClipboardList, titleKey: 'bookings', pageKey: 'bookingsPage', color: 'red' },
   { id: 'traders', icon: Users, titleKey: 'traders', color: 'cyan' },
+  { id: 'availability', icon: CalendarDays, titleKey: 'availability', color: 'blue' },
 ]
+
+const registryModules = ['vehicles', 'bookings', 'cashbook', 'traders', 'availability']
 
 function getModuleFromHash() {
   const raw = window.location.hash.replace('#/', '')
@@ -82,12 +89,12 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
         <section className="module-page">
           <button className="module-back" onClick={closeModule}><Icon name="back" size={17} /> {role === 'president' ? text.presidentDashboard : text.roles.branch_manager}</button>
           {activeModule.id === 'vehicles' && <h1 className="fleet-page-title">{text[activeModule.titleKey]}</h1>}
-          <div className={`module-shell ${activeModule.id === 'branches' ? 'branch-shell' : ['vehicles', 'bookings', 'cashbook', 'traders'].includes(activeModule.id) ? 'fleet-shell' : ''}`}>
-            {!['branches', 'vehicles', 'bookings', 'cashbook', 'traders'].includes(activeModule.id) && <div className="module-heading">
+          <div className={`module-shell ${activeModule.id === 'branches' ? 'branch-shell' : registryModules.includes(activeModule.id) ? 'fleet-shell' : ''}`}>
+            {activeModule.id !== 'branches' && !registryModules.includes(activeModule.id) && <div className="module-heading">
               <div className={`module-icon ${activeModule.color}`}><ActiveModuleIcon size={38} strokeWidth={1.8} /></div>
               <div><span className="section-label">{text.managementModule}</span><h1>{text[activeModule.titleKey]}</h1><p>{text[activeModule.pageKey]}</p></div>
             </div>}
-            {activeModule.id === 'traders' ? <TradersPage language={language} profile={profile} /> : activeModule.id === 'cashbook' ? <CashbookPage language={language} profile={profile} /> : activeModule.id === 'branches' ? <BranchesPage language={language} profile={profile} /> : activeModule.id === 'vehicles' ? <VehiclesPage language={language} profile={profile} /> : activeModule.id === 'bookings' ? <BookingsPage language={language} profile={profile} /> : <div className="empty-state">
+            {activeModule.id === 'availability' ? <AvailabilityPage language={language} /> : activeModule.id === 'traders' ? <TradersPage language={language} profile={profile} /> : activeModule.id === 'cashbook' ? <CashbookPage language={language} profile={profile} /> : activeModule.id === 'branches' ? <BranchesPage language={language} profile={profile} /> : activeModule.id === 'vehicles' ? <VehiclesPage language={language} profile={profile} /> : activeModule.id === 'bookings' ? <BookingsPage language={language} profile={profile} /> : <div className="empty-state">
               <div className="empty-state-mark"><Icon name="layers" size={27} /></div>
               <h2>{text.readyTitle}</h2>
               <p>{text.readyText}</p>
@@ -97,6 +104,8 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
       ) : (
         <section className="dashboard-content">
           {['president', 'branch_manager'].includes(role) ? (
+            <>
+            <OperationsSummary language={language} president={role === 'president'} />
             <div className="module-grid">
               {moduleDefinitions.filter(module => canAccessModule(role, module.id)).map(module => {
                 const ModuleIcon = module.icon
@@ -108,8 +117,9 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
                 )
               })}
             </div>
+            </>
           ) : (
-            role === 'driver' ? <DriverBookingsPage language={language} /> : <h1 className="role-title">{text.roles[role] || text.roles.driver}</h1>
+            role === 'driver' ? <DriverBookingsPage language={language} /> : role === 'trader' ? <TraderPortalPage language={language} /> : <h1 className="role-title">{text.roles[role] || text.roles.driver}</h1>
           )}
         </section>
       )}

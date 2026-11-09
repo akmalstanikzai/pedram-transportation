@@ -41,6 +41,7 @@ export const translations = {
     driversPage: 'Driver profiles, assignments and documents will be added here.',
     bookings: 'Bookings',
     traders: 'Traders',
+    availability: 'Fleet availability',
     bookingsPage: 'Bookings with commission included in the total freight.',
     tripPlans: 'Trip Plans',
     tripPlansPage: 'Branch plans, routes and driver assignments will be added here.',
@@ -62,6 +63,7 @@ export const translations = {
       departmental_manager: 'Departmental manager',
       branch_manager: 'Branch manager',
       driver: 'Driver',
+      trader: 'Trader',
     },
   },
   fa: {
@@ -106,6 +108,7 @@ export const translations = {
     driversPage: 'مشخصات، وظایف و اسناد رانندگان در این بخش اضافه می‌شود.',
     bookings: 'برنامه',
     traders: 'تاجران',
+    availability: 'دسترسی وسایط و رانندگان',
     bookingsPage: 'ثبت بوکینگ با کمیشن شامل کرایه مجموعی.',
     tripPlans: 'برنامه‌های سفر',
     tripPlansPage: 'برنامه شعبه، مسیر و تعیین راننده در این بخش اضافه می‌شود.',
@@ -127,6 +130,7 @@ export const translations = {
       departmental_manager: 'مدیر بخش',
       branch_manager: 'مدیر شعبه',
       driver: 'راننده',
+      trader: 'تاجر',
     },
   },
 }

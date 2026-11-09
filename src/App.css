@@ -365,7 +365,7 @@ html[dir='rtl'] .brand strong { font-family: var(--font-dari); letter-spacing: 0
 .logout-button:hover { border-color: #e5b5bc; color: var(--red); }
 
 .dashboard-content, .module-page { width: min(1080px, calc(100% - 44px)); margin: 0 auto; padding: 38px 0 80px; }
-.module-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 18px; justify-content: start; }
+.module-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 18px; justify-content: start; }
 
 .module-card {
   min-height: 175px;
@@ -657,6 +657,19 @@ html[dir='rtl'] .brand strong { font-family: var(--font-dari); letter-spacing: 0
 .branch-manager-documents { display: grid; gap: 8px; margin-top: 10px; }
 .branch-manager-documents > div { display: flex; justify-content: space-between; gap: 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
 .branch-manager-documents a { overflow-wrap: anywhere; }
+.trader-portal { max-width: 1200px; margin: 20px auto; padding: 0 20px 36px; }
+.trader-portal .booking-page-header p { margin: 6px 0 0; color: #60727f; }
+.trader-portal-currency { display: flex; justify-content: flex-end; margin: 18px 0; }
+.trader-portal-currency label { display: grid; gap: 6px; font-size: 12px; font-weight: 700; }
+.trader-portal-currency select { min-width: 110px; min-height: 40px; border: 1px solid var(--line); border-radius: 8px; background: white; padding: 7px; }
+.trader-portal-section { margin-top: 24px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: white; }
+.trader-portal-section h2 { display: flex; align-items: center; gap: 9px; margin: 0 0 12px; font-size: 18px; }
+.trader-login h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
+.trader-login-current { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 12px; border-radius: 9px; background: #f4f8f7; }
+.trader-login-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+.trader-login-actions button { min-height: 42px; padding: 9px 14px; font-size: 13px; }
+.trader-login-saved { display: grid; gap: 7px; margin: 14px 0; font-size: 12px; font-weight: 700; }
+.trader-login-form { display: grid; gap: 12px; padding: 15px; border: 1px solid var(--line); border-radius: 10px; background: #fafcfb; }
 .branch-table-icon { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 8px; color: #236d9a; background: #e7f3f9; }
 .branch-table-empty { height: 130px; text-align: center; }
 .branch-table-empty > svg, .branch-table-empty > strong { display: block; margin: 0 auto 8px; color: #87949e; }
@@ -896,3 +909,10 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
   .driver-licence-details { grid-template-columns: minmax(0, 1fr); padding: 16px; }
   .solar-date-popover { max-width: calc(100vw - 24px); }
 }
+.operations-overview { margin-block-end: 1.5rem; }
+.operations-overview h1 { margin-block: 0 0.75rem; }
+.operations-summary small, .operation-note { display: block; margin-top: 0.25rem; }
+.operations-summary { grid-template-columns: repeat(auto-fit,minmax(min(100%,180px),1fr)); }
+.operations-summary small { font-size: 0.85rem; }
+.availability-jobs { margin: 0; padding: 0; list-style: none; }
+.availability-jobs li + li { margin-top: 0.55rem; padding-top: 0.55rem; border-top: 1px solid #d7e2ee; }

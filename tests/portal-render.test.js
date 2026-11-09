@@ -15,6 +15,11 @@ test('branch navigation and direct Branches URL never render branch management c
     const html = renderToStaticMarkup(React.createElement(Dashboard, { language: 'en', profile, session: { user: {} }, onLanguageChange() {}, onSignOut() {} }))
     assert.equal((html.match(/class="module-card"/g) || []).length, 4)
     assert.doesNotMatch(html, />Branches<|Add Branch|Create branch and account/)
+    assert.match(html, /Fleet availability|Operations overview/)
+    assert.doesNotMatch(html, />Traders<|Traders with overdue balances/)
+    globalThis.window.location.hash = '#/trader-accounts'
+    const traderUrl = renderToStaticMarkup(React.createElement(Dashboard, { language: 'en', profile }))
+    assert.doesNotMatch(traderUrl, /Search traders|Register trader|>Traders</)
     assert.equal(renderToStaticMarkup(React.createElement(Branches, { language: 'en', profile })), '')
     const presidentHtml = renderToStaticMarkup(React.createElement(Branches, { language: 'en', profile: { ...profile, role: 'president' } }))
     assert.match(presidentHtml, /Add Branch/)

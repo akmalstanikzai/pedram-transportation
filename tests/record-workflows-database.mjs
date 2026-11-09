@@ -1,4 +1,5 @@
-// Disposable PostgreSQL verification against the full ordered migration history.
+// Disposable PostgreSQL verification of the original registry and driver workflows.
+// Later booking finance migrations are covered by booking-receivables-database.mjs.
 import assert from 'node:assert/strict'
 import {readFile,readdir} from 'node:fs/promises'
 import {pathToFileURL} from 'node:url'
@@ -15,7 +16,7 @@ await db.exec(`create schema auth;create schema storage;create role anon;create 
  create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
  create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text,metadata jsonb default '{}',unique(bucket_id,name));
  alter table storage.objects enable row level security;grant select,insert,delete on storage.objects to authenticated;grant select on storage.buckets to authenticated;`)
-for(const name of(await readdir(new URL('../supabase/migrations/',import.meta.url))).filter(n=>n.endsWith('.sql')).sort()){
+for(const name of(await readdir(new URL('../supabase/migrations/',import.meta.url))).filter(n=>n.endsWith('.sql')&&n<='202611030001_vehicle_model_year.sql').sort()){
  try{await db.exec(await readFile(new URL(`../supabase/migrations/${name}`,import.meta.url),'utf8'))}catch(e){throw new Error(`${name}: ${e.message}`,{cause:e})}
 }
 await db.query('insert into auth.users(id) values($1),($2),($3)',[president,manager,driverUser])
