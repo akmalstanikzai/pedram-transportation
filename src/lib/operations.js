@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-export const bookingColumns='id,booking_number,trader_id,vehicle_id,driver_id,service_type,origin,destination,goods,quantity,departure_date,created_by,created_at,booking_date,trader_first_name,trader_last_name,trader_address,trader_phone,sender_is_trader,sender_name,sender_phone,sender_address,receiver_name,receiver_phone,receiver_address,weight_tons,volume_m3,branch_id,status,arrival_date,updated_at,archived_at,driver_accepted_at,driver_delivered_at'
+export const bookingColumns='id,booking_number,trader_id,vehicle_id,driver_id,service_type,origin,destination,goods,quantity,quantity_unit,quantity_amount,departure_date,created_by,created_at,booking_date,trader_first_name,trader_last_name,trader_address,trader_phone,sender_is_trader,sender_name,sender_phone,sender_address,receiver_is_trader,receiver_name,receiver_phone,receiver_address,weight_tons,volume_m3,branch_id,status,arrival_date,updated_at,archived_at,driver_accepted_at,driver_delivered_at'
 export async function rpc(name,args){const {data,error}=await supabase.rpc(name,args);if(error)throw error;return data}
 const messages={
  DRIVER_FUNCTION_MISSING:['Deploy create-driver-account in this app’s Supabase project, then reopen this form.','تابع create-driver-account را در پروژه Supabase این سیستم نشر کنید و فورم را دوباره باز کنید.'],
