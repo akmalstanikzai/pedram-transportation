@@ -105,7 +105,6 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
         <section className="dashboard-content">
           {['president', 'branch_manager'].includes(role) ? (
             <>
-            <OperationsSummary language={language} president={role === 'president'} />
             <div className="module-grid">
               {moduleDefinitions.filter(module => canAccessModule(role, module.id)).map(module => {
                 const ModuleIcon = module.icon
@@ -117,6 +116,7 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
                 )
               })}
             </div>
+            <OperationsSummary language={language} president={role === 'president'} />
             </>
           ) : (
             role === 'driver' ? <DriverBookingsPage language={language} /> : role === 'trader' ? <TraderPortalPage language={language} /> : <h1 className="role-title">{text.roles[role] || text.roles.driver}</h1>

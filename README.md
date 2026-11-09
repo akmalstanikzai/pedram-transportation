@@ -19,7 +19,7 @@ The database also defines Vice-president and Departmental Manager roles. The app
 
 ## Operations dashboard and fleet availability
 
-The home dashboard lists active journeys, today's Cashbook Money In and Money Out by currency, and documents expiring within 30 days in a compact table. The President also sees a count of traders with unpaid charges older than 30 days. The calculation applies net payments to the oldest charges first within each currency.
+The home dashboard lists active journeys, today's Cashbook Money In and Money Out by currency, and documents expiring within 30 days in a compact strip below the main icons. The President also sees a count of traders with unpaid charges older than 30 days. The calculation applies net payments to the oldest charges first within each currency.
 
 Open **Fleet Availability** from the dashboard before creating a booking. Select vehicles or drivers, choose a start date and a 7, 14, or 30 day window, and search by plate or name. Each row shows the resource status, document expiry when recorded, and confirmed or on-road work in the selected window. A shared resource can show a booking from another branch as **Busy at another branch**, with its booked dates.
 
