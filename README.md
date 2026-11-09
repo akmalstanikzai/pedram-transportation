@@ -77,6 +77,10 @@ Username sign-in maps to an internal `username@users.pedram.local` address. Use 
 
 **Fleet** has separate Vehicles, Drivers, and Owners tabs. A vehicle requires an active owner. Drivers are registered independently and can have a previous company recorded. When archiving a departing driver, staff can record the driver's next company and keep the employment and assignment history.
 
+If a vehicle appears for the President but a branch cannot select it, open **Fleet** as President and use the **Branch access** icon on the vehicle, owner, and driver records. Choose that branch or **Shared with all branches**. A vehicle's owner must be shared or assigned to the same branch. Branch staff can also register their own vehicles, owners, and drivers. Refresh Fleet or Bookings after a change.
+
+Booking dropdowns require available records and check any recorded permit or licence expiry against the booking date. An available vehicle still needs an active owner and a driver. Use Fleet Availability to check scheduling conflicts. If every Fleet count is empty, verify the branch manager account and the eligible record counts with the [read-only branch check](supabase/check_branch_account_roles.sql).
+
 Fleet records support optional profile photos. Drivers can upload a passport scan, and vehicles have dedicated slots for a permit scan, card, booklet, and another document. The **Documents** panel manages private files, downloads, and document expiry dates. Uploads support files up to 5 MB. Record archiving is recoverable. Confirmed document deletion removes the file permanently.
 
 1. As President, use **Fleet → Drivers** and the key icon to create or link an eligible Driver login. Use the same icon to update its password.
@@ -114,7 +118,7 @@ Open the URL printed by Vite, typically `http://localhost:5173`. Restart Vite af
 ## Supabase setup and upgrades
 
 1. Apply [the SQL migrations](supabase/migrations) in filename order. For an existing project, apply only pending migrations. With a linked Supabase CLI project, use `supabase db push`.
-2. Apply [booking receivables](supabase/migrations/202611090007_booking_receivables.sql), [operations controls](supabase/migrations/202611090008_operations_controls.sql), and [Cashbook amount corrections](supabase/migrations/202611090009_cashbook_amount_corrections.sql) in that order. Deploy the frontend after applying the migrations.
+2. Apply [booking receivables](supabase/migrations/202611090007_booking_receivables.sql), [operations controls](supabase/migrations/202611090008_operations_controls.sql), [Cashbook amount corrections](supabase/migrations/202611090009_cashbook_amount_corrections.sql), and [fleet branch scope](supabase/migrations/202611090010_fleet_branch_scope.sql) in that order. Deploy the frontend after applying the migrations.
 3. For a fresh setup or an account function update, deploy these current functions to the same project used by the frontend:
 
    ```powershell

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Archive, Plus, Search, Truck, UserRound, Users } from 'lucide-react'
+import { Archive, Plus, RefreshCw, Search, Truck, UserRound, Users } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { allRows } from '../lib/cashbook'
 import { rpc, explain } from '../lib/operations'
-import { ConfirmArchive, Modal, RecordTools } from '../components/RecordTools'
+import { ConfirmArchive, IconButton, Modal, RecordTools } from '../components/RecordTools'
 import DocumentsPanel from '../components/DocumentsPanel'
 import DriverAccount from '../components/DriverAccount'
 import SolarHijriDateInput from '../components/SolarHijriDateInput'
@@ -22,17 +22,55 @@ const fields={
 }
 export default function VehiclesPage({language,profile}){
  const branchManager=profile?.role==='branch_manager'
- const canManage=row=>!branchManager||row.branch_id===profile.branch_id
+ const president=profile?.role==='president'
+ const canManage=row=>president||(branchManager&&!!profile.branch_id&&row.branch_id===profile.branch_id)
  const t=(en,fa)=>language==='fa'?fa:en
  const [data,setData]=useState({vehicle:[],owner:[],driver:[]}),[photos,setPhotos]=useState({}),[photoFile,setPhotoFile]=useState(null),[passportFile,setPassportFile]=useState(null),[vehicleFiles,setVehicleFiles]=useState({}),[typeCustom,setTypeCustom]=useState(false),[conditionCustom,setConditionCustom]=useState(false),[capacity,setCapacity]=useState(capacityEntry(null)),[queries,setQueries]=useState({vehicle:'',driver:'',owner:''}),[archives,setArchives]=useState({vehicle:false,driver:false,owner:false}),[editor,setEditor]=useState(null),[detail,setDetail]=useState(null),[account,setAccount]=useState(null),[deletion,setDeletion]=useState(null),[destinationCompany,setDestinationCompany]=useState(''),[form,setForm]=useState({}),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState('')
  const [active,setActive]=useState('vehicle')
+ const [loadFailure,setLoadFailure]=useState(null)
+ const [scopeEditor,setScopeEditor]=useState(null)
+ const [branches,setBranches]=useState([])
  const kinds=['vehicle','driver','owner']
  const icons={vehicle:Truck,driver:UserRound,owner:Users}
  const ActiveIcon=icons[active]
  const query=queries[active],archived=archives[active]
  const request=useRef(null)
- const load=useCallback(async()=>{const [vehicle,owner,driver,images]=await Promise.all([...Object.values(tables).map(table=>allRows(supabase,table)),loadFleetPhotos()]);setData({vehicle,owner,driver});setPhotos(images);return{vehicle,owner,driver}},[])
- useEffect(()=>{void Promise.resolve().then(load).catch(e=>setError(explain(e,language))).finally(()=>setLoading(false))},[load,language])
+ const load=useCallback(async()=>{
+  const [vehicle,owner,driver]=await Promise.all(Object.values(tables).map(table=>allRows(supabase,table)))
+  const records={vehicle,owner,driver}
+  setData(records)
+  void loadFleetPhotos().then(setPhotos).catch(()=>setPhotos({}))
+  return records
+ },[])
+ const refresh=useCallback(async()=>{
+  setLoading(true)
+  setLoadFailure(null)
+  try { await load() } catch (error) { setLoadFailure(error) }
+  finally { setLoading(false) }
+ },[load])
+ useEffect(()=>{void Promise.resolve().then(refresh)},[refresh])
+ async function openScope(kind,row){
+  setBusy(true)
+  setError('')
+  setScopeEditor({kind,row,branch:row.branch_id||''})
+  setBranches([])
+  try { setBranches(await allRows(supabase,'branches','id,name,archived_at')) }
+  catch (error) { setError(explain(error,language)) }
+  finally { setBusy(false) }
+ }
+ async function saveScope(event){
+  event.preventDefault()
+  if(busy||!scopeEditor||!president)return
+  const {kind,row,branch}=scopeEditor
+  setBusy(true)
+  setError('')
+  try {
+   await rpc('set_fleet_branch_scope',{p_kind:kind,p_id:row.id,p_branch:branch||null,p_expected:row.updated_at})
+   setScopeEditor(null)
+   await refresh()
+  } catch (error) { setError(explain(error,language)) }
+  finally { setBusy(false) }
+ }
  const title=kind=>kind==='vehicle'?t('Vehicles','وسایط'):kind==='driver'?t('Drivers','رانندگان'):t('Owners','مالکان')
  const statusLabel=id=>({available:t('Available','آماده'),assigned:t('Assigned','تعیین‌شده'),on_trip:t('On trip','در سفر'),under_repair:t('Under repair','در ترمیم'),inactive:t('Inactive','غیرفعال')})[id]||id
  function edit(kind,row=null){setEditor({kind,row});setPhotoFile(null);setPassportFile(null);setVehicleFiles({});setTypeCustom(!!row?.vehicle_type&&!vehicleTypes.some(([id])=>id===row.vehicle_type));setConditionCustom(!!row?.vehicle_condition&&!vehicleConditions.some(([id])=>id===row.vehicle_condition));setCapacity(capacityEntry(row?.capacity_tons));setError('');request.current=null;setForm(row?{...row}:{status:'available',branch_id:branchManager?profile.branch_id:null})}
@@ -45,16 +83,38 @@ export default function VehiclesPage({language,profile}){
  const noOwners=!data.owner.some(o=>!o.archived_at)
  function tabKey(e){const index=kinds.indexOf(active),forward=language==='fa'?'ArrowLeft':'ArrowRight',back=language==='fa'?'ArrowRight':'ArrowLeft';let next;if(e.key===forward)next=kinds[(index+1)%kinds.length];else if(e.key===back)next=kinds[(index+kinds.length-1)%kinds.length];else if(e.key==='Home')next=kinds[0];else if(e.key==='End')next=kinds.at(-1);if(next){e.preventDefault();setActive(next);document.getElementById(`fleet-tab-${next}`)?.focus()}}
  return <div className="registry-page fleet-registry">
- {branchManager&&<p className="booking-help">{t('Head-office profiles can be used for bookings. Edit and documents are available for your branch records.','مشخصات دفتر مرکزی برای بوکینگ قابل استفاده است. ویرایش و اسناد برای معلومات شعبه شما موجود است.')}</p>}
- <div className="fleet-tabs" role="tablist" aria-label={t('Fleet sections','بخش‌های وسایط')} onKeyDown={tabKey}>{kinds.map(kind=>{const Icon=icons[kind];return <button type="button" role="tab" id={`fleet-tab-${kind}`} aria-selected={active===kind} aria-controls={`fleet-panel-${kind}`} tabIndex={active===kind?0:-1} className={active===kind?'active':''} key={kind} onClick={()=>setActive(kind)}><Icon size={25}/><strong>{title(kind)}</strong><span>{loading?'—':data[kind].filter(r=>!r.archived_at).length}</span></button>})}</div>
+ <div className="registry-toolbar">
+  <p className="booking-help">{president?t('Use the branch icon to assign a record to one branch or share it with all branches.','با آیکن شعبه، ریکارد را به یک شعبه اختصاص دهید یا با همه شعبه‌ها شریک کنید.'):t('Fleet shows your branch records and records shared from head office.','وسایط، ریکاردهای شعبه شما و ریکاردهای مشترک دفتر مرکزی را نشان می‌دهد.')}</p>
+  <IconButton icon={RefreshCw} label={t('Refresh fleet','تازه‌سازی وسایط')} disabled={loading||busy} onClick={refresh}/>
+ </div>
+ {branchManager&&!profile.branch_id&&<p role="alert" className="registry-notice error">{t('Your login has no assigned branch. Ask the President to check the branch manager account.','حساب شما به شعبه وصل نیست. از رئیس بخواهید حساب مدیر شعبه را بررسی کند.')}</p>}
+ {loadFailure&&<p role="alert" className="registry-notice error">{t('Fleet records could not load. Use Refresh fleet to try again.','ریکاردهای وسایط بارگیری نشد. برای کوشش دوباره، وسایط را تازه‌سازی کنید.')}</p>}
+ <div className="fleet-tabs" role="tablist" aria-label={t('Fleet sections','بخش‌های وسایط')} onKeyDown={tabKey}>{kinds.map(kind=>{const Icon=icons[kind];return <button type="button" role="tab" id={`fleet-tab-${kind}`} aria-selected={active===kind} aria-controls={`fleet-panel-${kind}`} tabIndex={active===kind?0:-1} className={active===kind?'active':''} key={kind} onClick={()=>setActive(kind)}><Icon size={25}/><strong>{title(kind)}</strong><span>{loading||loadFailure?'—':data[kind].filter(r=>!r.archived_at).length}</span></button>})}</div>
  <section className="fleet-panel" id={`fleet-panel-${active}`} role="tabpanel" aria-labelledby={`fleet-tab-${active}`} tabIndex={0}>
- <div className="fleet-panel-heading"><h2><ActiveIcon size={22}/>{title(active)}</h2><button className="registry-primary" disabled={loading||busy||(active==='vehicle'&&noOwners)} onClick={()=>edit(active)}><Plus size={18}/>{active==='vehicle'?t('Add vehicle','افزودن واسطه'):active==='driver'?t('Add driver','افزودن راننده'):t('Add owner','افزودن مالک')}</button></div>
+ <div className="fleet-panel-heading"><h2><ActiveIcon size={22}/>{title(active)}</h2><button className="registry-primary" disabled={loading||!!loadFailure||busy||(branchManager&&!profile.branch_id)||(active==='vehicle'&&noOwners)} onClick={()=>edit(active)}><Plus size={18}/>{active==='vehicle'?t('Add vehicle','افزودن واسطه'):active==='driver'?t('Add driver','افزودن راننده'):t('Add owner','افزودن مالک')}</button></div>
  <div className="registry-toolbar"><label className="registry-search"><Search size={18}/><input aria-label={active==='vehicle'?t('Search vehicles','جستجوی وسایط'):active==='driver'?t('Search drivers','جستجوی رانندگان'):t('Search owners','جستجوی مالکان')} placeholder={active==='vehicle'?t('Search plate, type or VIN','جستجوی پلیت، نوع یا شاسی'):t('Search name or mobile','جستجوی نام یا موبایل')} value={query} onChange={e=>setQueries({...queries,[active]:e.target.value})}/></label><button className="registry-secondary" onClick={()=>setArchives({...archives,[active]:!archived})} aria-pressed={archived}><Archive size={18}/>{archived?t('Archived','بایگانی‌شده'):t('Archive','بایگانی')}</button></div>
- {active==='vehicle'&&noOwners&&!loading&&<p className="booking-help fleet-owner-help">{t('Register an owner before adding a vehicle.','قبل از افزودن واسطه، مالک را ثبت کنید.')} <button type="button" onClick={()=>{setActive('owner');document.getElementById('fleet-tab-owner')?.focus()}}>{t('Owners','مالکان')}</button></p>}
- {error&&!editor&&!deletion&&<p className="registry-notice error" role="alert">{error}</p>}{loading&&<p role="status">{t('Loading…','در حال بارگیری…')}</p>}
- <div className="record-list">{rows.map(row=><article className="record-row" key={row.id}>{photos[row.id]?<img className="fleet-profile-thumb" src={photos[row.id]} alt=""/>:<span className="fleet-profile-thumb placeholder"><ActiveIcon size={23}/></span>}<div className="record-row-main"><strong>{rowName(row)}</strong><small>{active==='vehicle'?`${row.vehicle_type} · ${data.owner.find(o=>o.id===row.owner_id)?.full_name||'—'}`:row.phone}{active==='driver'&&row.archived_at&&row.destination_company?` · ${t('Moved to','رفت به')} ${row.destination_company}`:''}</small></div>{row.status&&<span className={`status-pill ${row.status}`}>{statusLabel(row.status)}</span>}<RecordTools language={language} archived={row.archived_at} disabled={busy} onView={()=>setDetail({kind:active,row})} onEdit={canManage(row)?()=>edit(active,row):undefined} onDocuments={canManage(row)?()=>setDetail({kind:active,row,documents:true}):undefined} onAccount={active==='driver'&&profile?.role==='president'?()=>setAccount(row):undefined} onArchive={canManage(row)?()=>{setError('');setDestinationCompany('');request.current=null;setDeletion({kind:active,row})}:undefined}/></article>)}</div>
- {!rows.length&&!loading&&<div className="registry-empty"><ActiveIcon size={34}/><strong>{query?t('No matching records.','معلومات مطابق یافت نشد.'):archived?t('No archived records in this section.','در این بخش معلومات بایگانی‌شده موجود نیست.'):t('No records in this section yet.','هنوز در این بخش معلومات ثبت نشده است.')}</strong></div>}
+ {active==='vehicle'&&noOwners&&!loading&&!loadFailure&&<p className="booking-help fleet-owner-help">{t('Register an owner before adding a vehicle.','قبل از افزودن واسطه، مالک را ثبت کنید.')} <button type="button" onClick={()=>{setActive('owner');document.getElementById('fleet-tab-owner')?.focus()}}>{t('Owners','مالکان')}</button></p>}
+ {error&&!editor&&!deletion&&!scopeEditor&&<p className="registry-notice error" role="alert">{error}</p>}{loading&&<p role="status">{t('Loading…','در حال بارگیری…')}</p>}
+ <div className="record-list">{rows.map(row=><article className="record-row" key={row.id}>{photos[row.id]?<img className="fleet-profile-thumb" src={photos[row.id]} alt=""/>:<span className="fleet-profile-thumb placeholder"><ActiveIcon size={23}/></span>}<div className="record-row-main"><strong>{rowName(row)}</strong><small>{active==='vehicle'?`${row.vehicle_type} · ${data.owner.find(o=>o.id===row.owner_id)?.full_name||'—'}`:row.phone}{active==='driver'&&row.archived_at&&row.destination_company?` · ${t('Moved to','رفت به')} ${row.destination_company}`:''}</small></div>{row.status&&<span className={`status-pill ${row.status}`}>{statusLabel(row.status)}</span>}<RecordTools language={language} archived={row.archived_at} disabled={busy} onView={()=>setDetail({kind:active,row})} onScope={president?()=>openScope(active,row):undefined} onEdit={canManage(row)?()=>edit(active,row):undefined} onDocuments={canManage(row)?()=>setDetail({kind:active,row,documents:true}):undefined} onAccount={active==='driver'&&profile?.role==='president'?()=>setAccount(row):undefined} onArchive={canManage(row)?()=>{setError('');setDestinationCompany('');request.current=null;setDeletion({kind:active,row})}:undefined}/></article>)}</div>
+ {!rows.length&&!loading&&!loadFailure&&<div className="registry-empty"><ActiveIcon size={34}/><strong>{query?t('No matching records.','معلومات مطابق یافت نشد.'):archived?t('No archived records in this section.','در این بخش معلومات بایگانی‌شده موجود نیست.'):branchManager?t('No branch or shared records in this section. Add a branch record or ask the President to share one.','در این بخش ریکارد شعبه یا مشترک وجود ندارد. ریکارد شعبه اضافه کنید یا از رئیس بخواهید ریکاردی را شریک کند.'):t('No records in this section yet.','هنوز در این بخش معلومات ثبت نشده است.')}</strong></div>}
  </section>
+ {scopeEditor&&president&&<Modal title={`${t('Branch access','دسترسی شعبه')} · ${rowName(scopeEditor.row)}`} busy={busy} onClose={()=>setScopeEditor(null)}>
+  <form className="registry-form" onSubmit={saveScope}>
+   <label className="wide"><span>{t('Available to','در دسترس برای')}</span>
+    <select disabled={busy} value={scopeEditor.branch} onChange={event=>setScopeEditor(current=>({...current,branch:event.target.value}))}>
+     <option value="">{t('Shared with all branches','مشترک با همه شعبه‌ها')}</option>
+     {branches.filter(branch=>!branch.archived_at||branch.id===scopeEditor.row.branch_id).map(branch=><option key={branch.id} value={branch.id} disabled={!!branch.archived_at}>{branch.name}</option>)}
+    </select>
+   </label>
+   <p className="wide booking-help">{t('Select one branch to keep the record within that branch. Choose shared to make it available for bookings from any branch.','برای محدود کردن ریکارد، یک شعبه را انتخاب کنید. برای استفاده در بوکینگ همه شعبه‌ها، گزینه مشترک را انتخاب کنید.')}</p>
+   {scopeEditor.kind==='vehicle'&&<p className="wide booking-help">{t('The owner must be shared or assigned to the same branch.','مالک باید مشترک باشد یا به همان شعبه اختصاص داشته باشد.')}</p>}
+   {error&&<p role="alert" className="wide registry-notice error">{error}</p>}
+   <div className="registry-form-actions">
+    <button type="button" disabled={busy} onClick={()=>setScopeEditor(null)}>{t('Cancel','انصراف')}</button>
+    <button className="registry-primary" disabled={busy||scopeEditor.branch===(scopeEditor.row.branch_id||'')}>{t('Save branch access','ثبت دسترسی شعبه')}</button>
+   </div>
+  </form>
+ </Modal>}
  {editor&&<Modal title={editor.row?t('Edit','ویرایش'):t('Register','ثبت')} onClose={()=>setEditor(null)} busy={busy}><form className="registry-form" onSubmit={save}><fieldset className="booking-fields wide" disabled={busy}>
  {editor.kind==='vehicle'&&<label><span>{t('Owner','مالک')} *</span><select required value={form.owner_id||''} onChange={e=>setForm({...form,owner_id:e.target.value})}><option value="">—</option>{data.owner.filter(o=>(!o.archived_at||o.id===form.owner_id)&&(!o.branch_id||o.branch_id===(form.branch_id||null))).map(o=><option key={o.id} value={o.id}>{o.full_name} · {o.phone}</option>)}</select></label>}
  {fields[editor.kind].map(([key,en,fa,type='text',required=false])=>type==='capacity'?<CapacityField key={key} language={language} value={capacity} onChange={setCapacity}/>:type==='vehicle_type'||type==='vehicle_condition'?<VehicleChoiceField key={key} label={t(en,fa)} required={required} language={language} options={type==='vehicle_type'?vehicleTypes:vehicleConditions} value={form[key]||''} custom={type==='vehicle_type'?typeCustom:conditionCustom} onCustom={type==='vehicle_type'?setTypeCustom:setConditionCustom} onChange={value=>setForm(current=>({...current,[key]:value}))}/>:<label key={key}><span>{t(en,fa)}{required?' *':''}</span>{type==='date'?<SolarHijriDateInput required={required} language={language} value={form[key]??''} onChange={value=>setForm({...form,[key]:value})} ariaLabel={t(en,fa)}/>:<input required={required} type={type} inputMode={key==='model_year'?'numeric':undefined} pattern={key==='model_year'?'[0-9]+':undefined} step={type==='number'?'0.001':undefined} min={type==='number'?'0.001':undefined} value={form[key]??''} onChange={e=>setForm({...form,[key]:e.target.value})}/>}</label>)}

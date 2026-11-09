@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react'
-import { Archive, Eye, FileText, KeyRound, Pencil, RotateCcw, X } from 'lucide-react'
+import { Archive, Building2, Eye, FileText, KeyRound, Pencil, RotateCcw, X } from 'lucide-react'
 
 export function IconButton({icon:Icon,label,onClick,disabled=false}){return <button type="button" className="record-icon-button" title={label} aria-label={label} onClick={onClick} disabled={disabled}><Icon size={19}/></button>}
-export function RecordTools({language,archived,onView,onEdit,onArchive,onDocuments,onAccount,disabled}){
+export function RecordTools({language,archived,onView,onEdit,onArchive,onDocuments,onAccount,onScope,disabled}){
  const t=(en,fa)=>language==='fa'?fa:en
- return <div className="record-tools">{onView&&<IconButton icon={Eye} label={t('Details','جزئیات')} onClick={onView} disabled={disabled}/>} {onEdit&&!archived&&<IconButton icon={Pencil} label={t('Edit','ویرایش')} onClick={onEdit} disabled={disabled}/>} {onDocuments&&<IconButton icon={FileText} label={t('Documents','اسناد')} onClick={onDocuments} disabled={disabled}/>} {onAccount&&!archived&&<IconButton icon={KeyRound} label={t('Login account','حساب ورود')} onClick={onAccount} disabled={disabled}/>} {onArchive&&<IconButton icon={archived?RotateCcw:Archive} label={archived?t('Restore','بازیابی'):t('Delete / archive','حذف / بایگانی')} onClick={onArchive} disabled={disabled}/>}</div>
+ return <div className="record-tools">{onView&&<IconButton icon={Eye} label={t('Details','جزئیات')} onClick={onView} disabled={disabled}/>} {onEdit&&!archived&&<IconButton icon={Pencil} label={t('Edit','ویرایش')} onClick={onEdit} disabled={disabled}/>} {onScope&&!archived&&<IconButton icon={Building2} label={t('Branch access','دسترسی شعبه')} onClick={onScope} disabled={disabled}/>} {onDocuments&&<IconButton icon={FileText} label={t('Documents','اسناد')} onClick={onDocuments} disabled={disabled}/>} {onAccount&&!archived&&<IconButton icon={KeyRound} label={t('Login account','حساب ورود')} onClick={onAccount} disabled={disabled}/>} {onArchive&&<IconButton icon={archived?RotateCcw:Archive} label={archived?t('Restore','بازیابی'):t('Delete / archive','حذف / بایگانی')} onClick={onArchive} disabled={disabled}/>}</div>
 }
 export function Modal({title,children,onClose,busy=false,className=''}){
  const ref=useRef(null)
