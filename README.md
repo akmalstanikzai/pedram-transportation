@@ -1,197 +1,129 @@
 # Pedram Transportation Management System
 
-A bilingual English/Dari management application for Pedram Transportation Company, built with React, Vite, Supabase, and Lucide icons.
+A bilingual English and Dari application for managing bookings, fleet records, branches, trader accounts, and cash. The app uses React, Vite, and Supabase.
 
-Switching language translates labels and changes layout direction; displayed numbers continue to use English digits (0–9), including money amounts and totals.
-
-The Dari interface uses [Vazirmatn](https://github.com/rastikerdar/vazirmatn), bundled locally through `@fontsource-variable/vazirmatn` with variable weights for body text, forms, headings, tables and dialogs. The standard font variant preserves English digits; no Farsi-digits substitution is used. English continues to use DM Sans and Space Grotesk. The font's SIL Open Font License and attribution are included in `public/fonts/vazirmatn-OFL.txt`. Deploy the updated frontend to publish typography changes; no database or Edge Function changes are needed.
-
-All user-facing dates use the Solar Hijri calendar with English digits, for example `1405/08/16`. Each compact date field opens a Solar Hijri calendar: choose a day instead of typing it. Date selections save their equivalent existing ISO date internally, so booking conflicts, expiry checks, sorting, and existing Supabase records remain correct. Bookings, cashbook entries, trader accounts, vehicle permits, driver licences, and document expiries use this calendar. This is a frontend update only; no data migration is required./
-
-Project documentation updated: **3 November 2026**. The current source includes record management, branch password controls and a focused driver portal. Apply the ordered migrations through `202611020005_driver_portal.sql` and use the current account Edge Functions. Source changes do not automatically update live Supabase..
-
-## Current features
-
-Vehicle model years accept digits without a calendar-year range, including leading zeroes and long values. Apply `202611030001_vehicle_model_year.sql` after the driver portal migration to remove the old 1950–2100 restriction and update the Fleet save API. Existing model years are preserved. No Edge Function redeployment is needed for this change.
-
-| Module | Current implementation |
-| --- | --- |-
-| Login | Split-screen layout with company branding and real cargo-aircraft, road-freight and container-terminal imagery, email or username sign-in, English/Dari switch, and right-to-left Dari layout. Artwork adapts to phone screens; the sign-in form keeps its established placement. |
-| Branches | Create, edit, view, archive/restore, and enable/disable the manager's login. Assign credentials when creating a branch; use the key icon in the Password column to view its login and set a new password. |
-| Fleet | Independent owner, vehicle and driver records, with edit, detail, status, archive/restore, documents and driver login management. |
-| Traders | Create, edit and archive/restore traders; open their profile and account together. Record fares and receipts, and see money owed, credit and payment history by currency. |
-| Bookings | Create, edit, view, cancel, start, complete and archive/restore. Capacity, expiry, schedule conflict and duplicate-request checks. No money fields. |.
-| Cashbook / روزنامچه | Simple Money In / آمد and Money Out / رفت records for the admin account and branches, with separate tables and automatic totals. |.
-| Driver portal | Icon-led assigned jobs, route/maps, dates, load, assigned vehicle, sender/receiver/branch calls, licence expiry, job acceptance and delivery reporting. Recent history is separate. |
-..
-The President menu contains only working pages: Cashbook, Branches, Fleet, Bookings, and Traders. Empty Trip Plans, Customs, Finance and Reports pages have been removed, along with the duplicate Trader Accounts page. Old Trader Accounts links resolve to Traders. No business records were deleted when removing these menu items.
+Dari uses a right-to-left layout and the bundled Vazirmatn font. Both languages display English digits and Solar Hijri dates. Date pickers save the corresponding ISO date. Cashbook periods and daily dashboard totals use Kabul time.
 
 ## Roles and access
 
-The database defines five roles: President, Vice-president, Departmental Manager, Branch Manager, and Driver.
+| Role | Access |
+| --- | --- |
+| President | Operations dashboard, Bookings, Fleet, Fleet Availability, Cashbook, Branches, and Traders. Manages trader records, payments, and staff and trader logins. Can reverse Cashbook receipts. |
+| Branch Manager | Branch dashboard, Bookings, Fleet, Fleet Availability, and the assigned branch's Cashbook. Can use traders in bookings, including registering a new trader while saving a booking. Can manage branch fleet records and select eligible shared records. |
+| Driver | Assigned jobs, the driver's licence details, job acceptance, and delivery reports. |
+| Trader | A read-only view of the trader's own bookings, charges, payments, balances, and credit. |
 
-- **President:** accesses the implemented President modules and views cashbook records for the admin account, one branch, or all accounts.
-- **Branch Manager:** accesses Cashbook, Fleet, Bookings and Fleet Availability. They can select traders and register a new trader through a booking. The President manages trader profiles, statements and payments. The branch cashbook includes combined trader activity totals for reconciliation.
+The Traders directory, trader statements, and trader payment controls are President only for staff. A branch manager's Cashbook groups trader activity by account, date, and direction so it can reconcile without exposing individual trader payments. Branch managers can record ordinary branch cash transactions. Shared fleet bookings from other branches show as busy time in Fleet Availability.
 
-Branches is President-only in the module menu, navigation guard and Branches component. A branch login opening `#/branches` is returned to its allowed module menu. If a branch login still sees President controls, check the role displayed in the header and run the read-only `supabase/check_branch_account_roles.sql` in SQL Editor to inspect the linked manager's role and branch. Do not hide an incorrect President role merely with styling; correct the account assignment after identifying the affected user. This UI restriction requires a frontend deployment, with no new migration.
-- **Driver:** a linked login sees only that driver's assigned jobs, their licence information and the minimum vehicle/contact details needed for each job. Drivers can accept ready jobs and report delivery of on-road jobs. The President can create a driver login or link an existing unused Driver-role account from Fleet.
-- **Vice-president / Departmental Manager:** exist in the role model, but their working portals have not yet been implemented.
+The database also defines Vice-president and Departmental Manager roles. The app has no dedicated portal for these roles. New Auth users default to Driver. The app checks account status on focus and every 30 seconds. Restoring an archived branch, driver, or trader record does not automatically re-enable its login.
 
-Disabled accounts cannot use the new operational APIs. The app rechecks account status on focus and every 30 seconds. Branch archiving disables its manager's login; driver archiving or setting the driver inactive disables that driver's login. Restoring a record does not automatically re-enable the account.
+## Operations dashboard and fleet availability
 
-New authenticated users receive the least-privileged `driver` role. The first President must be assigned through a trusted Supabase admin session; the browser cannot assign roles.
+The home dashboard shows active journeys, today's Cashbook Money In and Money Out by currency, and permits, licences, and fleet documents expiring within 30 days. The President also sees a count of traders with unpaid charges older than 30 days. The calculation applies net payments to the oldest charges first within each currency.
 
-Branch selection is automatic in the branch portal; changing a request in the browser cannot assign work or money to another branch. Only the President manages branches and creates, links or enables/disables login accounts. The President keeps all five working pages and a full view across branches. Branch trader statements show only that branch's charges and receipts, even when the trader profile is shared with head office.
+Open **Fleet Availability** from the dashboard before creating a booking. Select vehicles or drivers, choose a start date and a 7, 14, or 30 day window, and search by plate or name. Each row shows the resource status, document expiry when recorded, and confirmed or on-road work in the selected window. A shared resource can show a booking from another branch as **Busy at another branch**, with its booked dates.
 
-## Branch passwords
+## Bookings
 
-In **President → Branches → Add Branch**, enter the manager's email/username, password and confirmation. The manager signs in on the normal login page using those credentials.
+1. Open **Bookings → New booking**. Choose the date and booking type.
+2. Select a trader or enter their details to register a new trader when saving. The booking keeps a snapshot of the trader details. Editing the snapshot leaves the existing trader profile intact.
+3. Enter the route and goods. Choose a goods unit (tons, pieces, or cubic metres) and enter the quantity.
+4. Select a registered vehicle and driver separately. The save checks resource availability, scheduling conflicts, capacity, and applicable permit or licence expiry.
+5. Enter the commission amount and booking currency. For company-managed transport, also enter sender and receiver details, freight, vehicle or driver costs, and any extra expenses. Use **Trader is the sender** or **Trader is the receiver** to reuse trader contact details.
 
-For an existing branch, click the **key icon in the Password column**, enter a new password (at least 8 characters), repeat it, and select **Save password**. The dialog shows the correct username or email for that manager. Password changes do not enable a disabled login; use the existing power icon to enable it if needed. Archived branches must be restored first.
+| Booking type | Charge to the trader |
+| --- | --- |
+| Vehicle arrangement | Commission |
+| Company-managed transport | Commission, freight, vehicle or driver costs, and extra expenses |
 
-The self-contained **`manage-branch-account` Edge Function** checks that the caller is an enabled President and that the target account is the selected branch's registered Branch Manager. It updates the password through the server-only Supabase Auth admin API; passwords are never saved in branch/profile tables. Deploy this function before using the key button.
+The booking charge records the amount owed. When money is collected at booking time, the President can enter the amount in **Received now**. The President can record a later or partial payment using **Receive payment** in Bookings or Traders, or by selecting the trader and booking in Cashbook. Each recorded receipt appears in **Cashbook Money In** and reduces the trader's balance. Booking amounts share one currency.
 
-### Protected branch password vault
+Bookings follow **Confirmed → On road → Completed** and can be cancelled. Confirmed bookings can be edited. The single Date field reserves the vehicle and driver for that calendar day. A booking can be opened to print a confirmation with the route, cargo, contacts, vehicle, and driver. Choose **Print confirmation**, then select a printer or save as PDF in the browser.
 
-The President can select **View saved password** in the branch key dialog. The same dialog displays the branch email/username and lets the President change it. The vault is not a branch column and is inaccessible to browser roles: it stores an AES-GCM encrypted password, its IV, the last-changing President, and a private audit event every time a password is stored or viewed. Only `manage-branch-account`, after checking an enabled President session and the branch-manager relationship, can decrypt and return it.
-
-Before using it:
-
-1. Run `supabase/migrations/202611070001_branch_password_vault.sql` once.
-2. Deploy the latest `manage-branch-account` function. It derives the vault key from Supabase's server-only service credential, so no separate `BRANCH_PASSWORD_VAULT_KEY` setup is needed for new or updated passwords. Keep the service credential in Supabase only; never put it in the frontend, SQL, Git, or a branch record.
-3. Deploy the current `manage-branch-account` function and frontend.
-
-New branch creation immediately stores the assigned password in the vault. Existing passwords created before the vault cannot be recovered; use the key dialog to set a new password once, then it becomes viewable. Vault records use version 2 for the derived key. Legacy version 1 records still use `BRANCH_PASSWORD_VAULT_KEY` when available. Rotating the Supabase service credential without first migrating version 2 records makes them unreadable; plan credential rotation with vault re-encryption.
-
-The new-branch form checks vault readiness before creating the branch. A branch created while vault storage failed already exists; set its password once in the key dialog after deploying the new function. If an older password reports `VAULT_LEGACY_UNREADABLE`, set a new password once. Do not delete the old custom secret until any readable version 1 records have been migrated.
+The President can filter bookings across all branches, head office, or one branch. Select multiple completed bookings to use **Clear selection**, **Archive selected**, or **Delete selected** above the list. Archive is recoverable. Bulk delete hides completed bookings from the booking list and retains their financial history. Cancelling a booking leaves its recorded charges and receipts in the account for review.
 
 ## Cashbook / روزنامچه
 
-The page follows a simple ledger layout:
+Choose an **Account**, **Currency**, and **Period**. The President can switch between the admin ledger and individual branches. Branch managers use their assigned branch. Currencies are tracked separately in AFN, USD, PKR, and IRR.
 
-- **Right table: Money In / آمد.** Date, description, amount, and total received.
-- **Left table: Money Out / رفت.** Date, description, amount, and total paid.
-- Large, bold headings and a central divider separate the tables. On smaller screens, the tables stack with a horizontal divider.
-- The balance below both tables equals total received minus total paid.
+- **Add a record** takes a description, amount, and date. Use **Save Money In** or **Save Money Out** to post it.
+- Select Today, Yesterday, Last 7 days, This month, This year, All time, or Custom dates. The page shows opening balance, Money In, Money Out, and closing balance for the selected period above the entries.
+- Newer records appear first. Use **See more** to show older rows within the period.
+- **Export CSV** downloads the complete selected period, with its account, currency, receipts, and totals.
 
-To record a transaction, choose **Money In** or **Money Out**, enter the date, name/description, and amount, then save. The President can choose the admin account or a branch. Accounts are created automatically; there is no manual account setup.
+### Correct a mistaken receipt
 
-The account filter offers **All accounts**, **Admin account**, and individual branches to the President. Currency totals remain separate for AFN, USD, PKR, and IRR; the application does not convert currencies. A negative balance is shown as a deficit.
+As President, select **Reverse** beside the original receipt, enter a reason, and confirm. Cashbook adds an opposite entry dated today and displays the reference between the two receipts. Both remain in history, and any linked booking or trader balance reflects the correction. The same original receipt can be reversed once.
 
-Transfer, opening-balance setup, cash/bank selection, reversal controls, and booking-payment configuration have been removed from the current cashbook interface. Previous cash/bank records are preserved and displayed together in their branch's ledger; historical opening funds appear as **Earlier balance**.
+Older versions posted commission automatically when a booking was created. Those entries remain in the ledger. Compare them with actual receipts and reverse any entry recorded in error.
 
-The `cashbook_simple_post` database function checks account access and valid amounts, saves entries atomically, and prevents duplicate entries when the same request is retried. Direct ledger updates and deletes are not granted to browser users.
+## Trader accounts
 
-See [Cashbook setup and behavior](supabase/CASHBOOK.md) for additional details.
+As President, open **Traders** and select the wallet icon beside a trader. The currency selector controls the statement totals. Each booking shows its charge, net payments, and remaining balance. The account also shows total charges, payments, debt or credit, and transaction history. Select **Print statement** to print the selected currency or save it as a PDF.
 
-## Booking workflow
+Use the trader's key icon to create a login, change its password, or enable or disable access. **View saved password** shows passwords previously stored by the protected trader account function. If a password predates the vault, set a new one to make it available there. Traders sign in on the same login page and see their own information and balances.
 
-The President's Bookings page has a Branch dropdown below its title, styled like the Cashbook account filter. Choose All branches (including head office), Head office, or a named branch. It works together with search and Archive, and retains archived branches for historical records. Branch managers continue to see only their own branch bookings and do not receive this cross-branch filter. This is a frontend change; no SQL migration or Edge Function redeployment is required.
+## Branches and account management
 
-The New Booking form has one Date, a booking type, trader and route details, a goods amount with a unit (tons, pieces, or cubic metres), and separate vehicle and driver selections. Company-managed transport also requires sender and receiver details (each can be the trader), freight owed, vehicle/driver cost owed, and optional extra expenses owed. All booking amounts use the selected booking currency.
+The President creates branches and assigns manager credentials in **Branches → Add Branch**. Each branch profile supports a manager photo and four generic document slots. Files are private. The photo accepts JPG, PNG, or WebP, and documents also accept PDF. Each upload is limited to 5 MB.
 
-The booking creates one charge in the trader account: commission for vehicle arrangement; commission + freight + vehicle/driver cost + extra expenses for company-managed transport. These amounts are **owed**, not Cashbook income. Enter an optional **Received now** amount to record the cash actually collected when saving; later payments can be recorded from the booking, the trader account, or Cashbook with that trader and booking selected. Each receipt appears once in Cashbook Money In and reduces the trader's balance. Payment amounts may be partial.
+The branch key icon shows the manager's sign-in name and lets the President set a new password of at least eight characters. The power control manages whether the login is enabled. **View saved password** is available for credentials stored in the encrypted branch vault. Set a new password if an older credential has no vault entry. Branch and trader password storage and reveal actions are audited. Plan vault key migration or password resets before rotating the server credential used for encryption.
 
-Selecting a vehicle loads that vehicle's details. Selecting a driver loads that driver's details. Changing one selection does not change the other. The booking stores the selected pair for that job; a driver is not permanently assigned to a vehicle.
+Username sign-in maps to an internal `username@users.pedram.local` address. Use an actual email address when an email identity is needed. If a branch login shows President controls, check the role in its header and use the read-only [branch account role check](supabase/check_branch_account_roles.sql) in Supabase.
 
-Trader details are saved with the booking without overwriting an existing trader profile. The `save_booking_record` database function saves the trader association and booking in one transaction, with an idempotent request ID and a last-updated check to prevent stale edits.
+## Fleet and driver workflow
 
-Bookings follow **Confirmed → On road → Completed**, or **Cancelled**. Only confirmed bookings are editable. The single Date currently reserves the vehicle and driver for that calendar day; longer trip duration is not modeled yet. Booking checks the active owner, vehicle and driver, capacity for the selected goods unit, and permit/licence expiry. Register missing capacity values in Fleet first.
+**Fleet** has separate Vehicles, Drivers, and Owners tabs. A vehicle requires an active owner. Drivers are registered independently and can have a previous company recorded. When archiving a departing driver, staff can record the driver's next company and keep the employment and assignment history.
 
-Apply `supabase/migrations/202611090007_booking_receivables.sql` and then `202611090008_operations_controls.sql` after `202611090006_trader_password_vault.sql` before deploying the updated frontend. Earlier booking creation automatically wrote commission to Cashbook Money In. Those historical entries are preserved and can be corrected using **Reverse** when a receipt was recorded in error. The disposable database check is `node tests/booking-receivables-database.mjs` with `PEDRAM_PGLITE_PATH` set to PGlite's `dist/index.js`.
+Fleet records support optional profile photos. Drivers can upload a passport scan, and vehicles have dedicated slots for a permit scan, card, booklet, and another document. The **Documents** panel manages private files, downloads, and document expiry dates. Uploads support files up to 5 MB. Record archiving is recoverable. Confirmed document deletion removes the file permanently.
 
-Delete moves records to a recoverable Archive. Active work must be completed or cancelled before archiving a resource; a confirmed booking is cancelled when archived. An on-road booking must be cancelled or completed first. Restoring a cancelled/completed booking preserves its status and does not reserve resources again. Linked historical and financial records remain intact.
+1. As President, use **Fleet → Drivers** and the key icon to create or link an eligible Driver login. Use the same icon to update its password.
+2. Staff select that driver and a vehicle in **Bookings**. The linked driver sees the assignment in **Jobs**.
+3. The driver reviews the route and contacts and selects **Accept job**. Changes to the assignment can require fresh acceptance.
+4. Staff start the journey. The driver can report delivery while the booking is on the road, then staff verify it and complete the booking.
+5. Drivers can open recent completed or cancelled jobs in **History** and check their licence details in **My licence**.
 
-## Driver portal
-
-Keep one working **Jobs / برنامه‌ها** screen with large Lucide icons and short English/Dari labels. It shows the route, departure/arrival dates, goods and weight/volume, the vehicle assigned to that particular booking, and sender/receiver details. Call buttons use the phone's dialler; map buttons search the entered address and city in Google Maps. They do not provide live tracking or verified GPS coordinates. The office call uses the branch phone, falling back to its manager's phone; it is hidden when no valid number is registered.
-
-1. President creates/links the driver's login in **Fleet → Drivers → Login account**. Register the licence number and expiry there too.
-2. Branch or President assigns a vehicle and driver separately in **Bookings**. That job appears automatically in the driver's portal.
-3. Driver taps **Accept job / پذیرفتن برنامه**. Staff see the acceptance on the existing booking. Editing assignment details clears acceptance so the driver must review the changed job.
-4. Staff start the journey. When the receiver has received the goods, the driver taps **Delivered / بار تحویل شد** and confirms.
-5. The booking displays the delivery report to staff, who verify it and mark the journey complete. A driver report alone does not complete a booking, cancel it, or release the vehicle's reserved schedule.
-
-Both portals refresh job information on focus and every 30 seconds while visible; a refresh icon is also available. **History / سابقه** shows the latest 20 completed/cancelled jobs. **My licence / لایسنس من** shows the driver's own basic details; missing, expired or soon-expiring licence dates are flagged. Licence changes remain in Fleet. Numbers remain English in both languages.
-
-The `get_driver_portal` API returns a limited operational projection for the authenticated driver's linked record. It omits trader accounts, fare/commission values and ID scans. `driver_booking_action` checks assignment ownership, active account, booking status and the version the driver saw. Repeated acceptance/delivery requests do not create duplicate reports. Drivers have no direct booking write access. No road-expense or payment workflow is added to this portal.
-
-Apply **`202611020005_driver_portal.sql`** after the branch portal migration before using this version of the frontend. It adds two nullable report timestamps and the driver APIs; it preserves existing bookings. No additional Edge Function deployment is needed.
-
-### If the driver portal says “Contact the office to link your driver record”
-
-The signed-in account has no linked active Fleet driver record. Creating an Auth user or giving it the Driver role alone does not create that link; matching names do not link accounts automatically.
-
-As President, open **Fleet → Drivers**, register or locate the actual driver, and click that driver's **key icon**. Choose **Create login** with a new username/email and password, or expand **Link an existing driver login** and select the driver's unused eligible account. Existing-account choices must be enabled Driver-role accounts in the same branch scope and not already linked to another driver. If the driver is already using an eligible account, link that account rather than creating a second login. The record's `user_id` stores the link to the Auth/profile ID.
-
-For an already linked driver, the same key icon shows the current sign-in name and **New password / Confirm password / Save password**. Only the President can change it. The existing account, assignments and enabled/disabled state are preserved. The next password sign-in uses the newly assigned password; this is not a forced logout of an already open session. Passwords are updated through Supabase Auth and are not stored in Fleet tables. Redeploy the latest **create-driver-account** Edge Function to enable its new `details` and `password` actions. No new SQL migration is needed for password changes, and no additional function name is introduced.
-
-### Assign a job and vehicle
-
-No separate task or trip-plan page is required. Use **Bookings → New booking** in the President or Branch portal: enter the booking, route, dates and load, select a registered vehicle, then select a registered driver independently, and save. The saved booking is the driver's job. If that driver's Fleet record has a linked enabled login, it appears in **Driver portal → Jobs**, including the vehicle selected for that booking. The two assignments are not a permanent driver/vehicle pairing. Bookings warns when the chosen driver has no linked login.
-
-To change an assignment, edit a **Confirmed** booking, choose another eligible driver and/or vehicle, and save. The former driver loses access to the job, and the new driver sees it on refresh. Changing assignment details clears earlier acceptance. On-road bookings are locked against editing. Existing capacity, licence/permit expiry, date overlap and branch-scope checks apply. Staff start/complete the journey; the driver accepts the job and reports delivery. Jobs refresh on focus or every 30 seconds while visible, with a manual refresh icon available.
-
-The driver then signs in using that connected account and refreshes the portal. To display jobs, select the same driver record when creating a booking. A connected driver with no assignments sees **No jobs assigned yet**, which is different from a missing account link. Inactive/archived driver records cannot use the portal; restore/activate the record and enable its login as needed.
-
-The President manages trader profiles and accounts in **Traders**. Open a profile with the wallet icon to see charges, payments and remaining balances by booking and currency. Use **Receive payment** to link a receipt to the account and optionally to a booking. **Print statement** prints the selected currency. A linked Cashbook reversal updates the statement and keeps both receipts visible.
-
-Charges record what the trader owes and do not add cash. Fares can be cancelled when entered by mistake; the cancelled row remains in history. Currency balances never mix. Historical agreed booking totals and explicitly booking-linked receipts are migrated into the combined view. Booking cancellation does not automatically cancel a financial charge; review and cancel the charge separately when appropriate.
-
-## Fleet and documents
-
-Fleet has three separate icon tabs: Vehicles, Drivers, and Owners. Each tab has its own list, search, archive filter, and Add button. Search and archive choices are kept separately when switching tabs. Record counts use English digits. Vehicle registration requires an existing active owner; the page provides a shortcut to Owners when none are registered.
-
-- **Vehicles:** owner, plate, optional foreign plate, type, color, VIN/chassis number, weight capacity (tons), volume capacity (m³), model year, permit details and expiry. Registration expiry has been removed.
-- **Owners:** name, father's name, mobile/contact details, residence information, and Tazkira/CNIC scan upload.
-- **Drivers:** personal/contact details, licence details, and document uploads. Driver registration does not require selecting a vehicle or vehicle owner.
-- **Vehicle document categories:** photos, جواز سیر, کارت, کتابچه, and international certificate.
-- **Driver document categories:** Tazkira/CNIC, driving licence, health card, and contract.
-
-Save the parent record first, then use the document icon. Documents have type, filename, size, MIME type, expiry and upload state, stored alongside the private file in `fleet-documents`. The panel lists documents, opens temporary private view links, downloads files, updates expiry dates, and flags expired documents.
-
-PDF, PNG, JPG/JPEG, WebP, HEIC/HEIF and TIFF are accepted, up to 5 MB per file. Pending uploads can be finished if the file reached storage, or retried with the same file. Incomplete deletions can also be retried. The migration recovers metadata associations for old files whose paths match known parents; original filenames cannot be recovered if the old uploader never stored them.
-
-Business record deletion is recoverable archiving. Document file deletion is permanent and asks for confirmation. Deleting a document first marks its metadata, removes the object, then finishes the metadata deletion, so interruptions stay visible for recovery.
+If the driver portal asks the driver to contact the office, check that the active Fleet driver record is linked to the correct enabled Driver login. Job information refreshes on focus, periodically while visible, and via the refresh button.
 
 ## Local development
 
-Install Node.js and npm, then install the project's locked dependencies:
+Use Node.js 24 and install the locked dependencies:
 
 ```powershell
 npm ci
+Copy-Item .env.example .env
 ```
 
-Create `.env` from [.env.example](.env.example), and fill in your Supabase project's public configuration:
+Set the public project values in `.env`:
 
 ```dotenv
 VITE_SUPABASE_URL=YOUR_SUPABASE_PROJECT_URL
 VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_SUPABASE_PUBLISHABLE_KEY
 ```
 
-Never put a Supabase service-role key in a `VITE_` variable or browser code.
-
-Start the development server:
+Keep the service role key in server or Edge Function configuration. The browser uses only the project's public values.
 
 ```powershell
 npm run dev
 ```
 
-Open the local URL printed by Vite, normally `http://localhost:5173`. Restart Vite after changing `.env`.
+Open the URL printed by Vite, typically `http://localhost:5173`. Restart Vite after changing `.env`.
 
 ## Supabase setup and upgrades
 
-1. Apply the SQL files in [supabase/migrations](supabase/migrations) in filename order. For an existing database, apply only pending migrations. With an installed, authenticated, initialized and linked Supabase CLI project, `supabase db push` is an alternative to SQL Editor.
-2. Apply both cashbook migrations: `202611010001_branch_cashbooks.sql`, then `202611010002_simplify_cashbook.sql`. The second migration removes the earlier transfer API and enables the current simplified admin/branch ledgers. Do not stop at the first migration.
-3. Apply the later migrations in order, including the historical operations migrations and rollback, then **`202611020002_simple_record_workflows.sql`**, **`202611020003_combined_trader_accounts.sql`**, **`202611020004_branch_portal.sql`**, and **`202611020005_driver_portal.sql`**. They provide the record APIs, combined trader ledger, branch permissions and driver portal without restoring removed workspace widgets or transfer UI. Deploy the account Edge Functions using your project reference:
+1. Apply [the SQL migrations](supabase/migrations) in filename order. For an existing project, apply only pending migrations. With a linked Supabase CLI project, use `supabase db push`.
+2. Make sure [booking receivables](supabase/migrations/202611090007_booking_receivables.sql) is applied before [operations controls](supabase/migrations/202611090008_operations_controls.sql). The latter adds staff permissions, Cashbook reversals, fleet availability, and dashboard totals. Deploy the frontend after applying the migrations.
+3. For a fresh setup or an account function update, deploy these current functions to the same project used by the frontend:
 
    ```powershell
    supabase functions deploy create-branch-with-manager --project-ref YOUR_PROJECT_REF --use-api
-   supabase functions deploy create-driver-account --project-ref YOUR_PROJECT_REF --use-api
    supabase functions deploy manage-branch-account --project-ref YOUR_PROJECT_REF --use-api
+   supabase functions deploy create-driver-account --project-ref YOUR_PROJECT_REF --use-api
+   supabase functions deploy manage-trader-account --project-ref YOUR_PROJECT_REF --use-api
    ```
 
-4. Create the initial user in Supabase Authentication. Its profile is created automatically. From a trusted admin SQL session, assign that user's UUID to the President role:
+   For Dashboard deployment, use the full `index.ts` from each matching directory in [supabase/functions](supabase/functions).
+4. For a fresh project, create the first President in Supabase Authentication. The signup trigger creates their profile. Assign the role from a trusted SQL session using the Auth user UUID:
 
    ```sql
    update public.profiles
@@ -199,77 +131,38 @@ Open the local URL printed by Vite, normally `http://localhost:5173`. Restart Vi
    where id = 'REPLACE_WITH_AUTH_USER_UUID';
    ```
 
-5. Sign in as President and create branches and manager accounts through the Branches page.
-
-Username sign-in maps to an internal `username@users.pedram.local` authentication address. Use a regular email address when an actual email identity is required.
-
-The removed `202610310002_booking_payments.sql` is not needed for a fresh setup. Its rollback migration, `202610310003_rollback_booking_payments.sql`, remains in the migration history and safely handles an absent legacy payment table/function.
-
-Keep the account Edge Functions and database schema in sync. The creation functions use server-side service-role access, verify the active President, and use request-tagged Auth metadata to recover account creation after a network interruption. They never reuse an unrelated account just because an email matches. `manage-branch-account` provides the separate President-only password workflow. Applying a local migration file does not itself update the hosted database, and editing an Edge Function locally does not deploy it.
-
-For Dashboard editor deployments, paste each function's complete `index.ts` file into that function. All three entrypoints are self-contained and do not import a local `_shared` file. The shared provisioning source is retained only as a consistency reference for the two creation functions. See [Dashboard deployment instructions](supabase/README.md#deploy-through-the-dashboard-editor).
-
-See [Supabase setup notes](supabase/README.md).
+5. Sign in as President to configure branches, fleet records, and accounts.
 
 ## Build and verification
+
+From the project root in PowerShell:
 
 ```powershell
 npm run build
 npm run lint
-node --test tests/cashbook.test.js
-node --test tests/branch-account-function.test.js
-node --test tests/driver-password-function.test.js
+$testFiles = rg --files tests -g '*.test.js'
+node --test $testFiles
 ```
 
-`npm run build` generates `dist/`. Use `npm run preview` to serve the production build locally. The Node tests check admin/branch totals, currency separation, earlier balances, and deficits.
+The production build is written to `dist/`. Use `npm run preview` to serve it locally.
 
-An optional integration test runs the SQL migration path in disposable PGlite PostgreSQL. Install `@electric-sql/pglite` separately, set `CASHBOOK_PGLITE_PATH` to its `dist/index.js`, then run:
-
-```powershell
-node tests/verify-cashbook-database.mjs
-```
-
-That test checks preserved historical records, removal of the old API, automatic ledgers, duplicate-request handling, and branch isolation. It does not connect to live Supabase. Successful local tests do not confirm live migrations or deployment.
-
-For record-management SQL tests, set `PEDRAM_PGLITE_PATH` to the same PGlite module path and run:
+The database suites use a disposable PostgreSQL instance. Install `@electric-sql/pglite` in a separate test directory and point `PEDRAM_PGLITE_PATH` to its `dist/index.js`:
 
 ```powershell
+$env:PEDRAM_PGLITE_PATH = 'C:\path\to\node_modules\@electric-sql\pglite\dist\index.js'
+node tests/booking-receivables-database.mjs
 node tests/record-workflows-database.mjs
-node tests/rollback-database.mjs
 ```
 
-The workflow suite applies the real migration history and tests lifecycle actions, stale edits, trader duplicates, booking request replay, capacity/expiry/conflicts, document metadata and recovery, linked/disabled accounts, driver-only assignment access, report retries, fresh acceptance after edits, and staff-verified delivery. The rollback suite remains pinned to its historical migration boundary.
+The receivables suite checks the current migration path, booking charges, partial payments, reversals, staff access, fleet availability, dashboard totals, and the trader portal. The record workflow suite checks the earlier registry and driver migration path, including assignments, document handling, and account status.
 
-## Main project files
+## Project layout
 
-```text
-src/
-  App.jsx                     Authentication, profile loading, and language direction
-  App.css                     Application styling and responsive layouts
-  components/                 Branding, fields, and reusable icons
-  lib/
-    supabase.js               Supabase browser client
-    i18n.js                   Shared English/Dari translations
-    cashbook.js               Ledger calculations and data loading
-  pages/
-    LoginPage.jsx
-    DashboardPage.jsx
-    BranchesPage.jsx
-    VehiclesPage.jsx
-    BookingsPage.jsx
-    CashbookPage.jsx
-    TradersPage.jsx
-    DriverBookingsPage.jsx
-supabase/
-  migrations/                 Ordered database changes
-  functions/                  Branch/driver account provisioning and shared helper
-tests/                        Cashbook calculation and database integration checks
-```
-
-### Fleet profile photos
-
-Vehicle, owner, and driver forms accept an optional JPG, PNG, or WebP profile photo up to 5 MB. Photos use the existing private `fleet-documents` bucket and `vehicle_documents` metadata, with `profile_photo` as a dedicated type. The latest ready photo appears as a thumbnail in Fleet lists and beside the record details; signed URLs are refreshed when the page loads. Photos can also be uploaded and managed from the Documents panel. Apply `supabase/migrations/202611080001_fleet_profile_photos.sql` before deploying the updated frontend. Existing records and documents remain intact.
-
-The driver form also accepts an optional passport scan (PDF, JPG, PNG, or WebP, up to 5 MB). It is listed under driver Documents and requires `supabase/migrations/202611080002_driver_passport_document.sql`. The driver form no longer asks for Status or Licence expiry; saved values remain unchanged when editing. Apply `supabase/migrations/202611080003_fleet_upload_limit_5mb.sql` to enforce the 5 MB limit in storage and the reservation RPC; files already uploaded remain available.
-
-The vehicle form uses separate **نوعیت** (Landi, Trailer, or a custom name) and **حالت** (refrigerated, flatbed, tarpaulin, container, tanker, or a custom name). Its operational Status and Permit expiry are no longer edited in this form. Four optional document slots upload the permit scan, card, booklet, and another document to the private Fleet bucket. Apply `supabase/migrations/202611080005_vehicle_form_options.sql` before deploying the updated frontend.
+| Path | Purpose |
+| --- | --- |
+| [src/pages](src/pages) | Login, dashboard, registries, availability, Cashbook, and driver and trader portals |
+| [src/components](src/components) | Shared controls, account dialogs, and dashboard summary |
+| [src/lib](src/lib) | Supabase client, permissions, ledger calculations, dates, and exports |
+| [supabase/migrations](supabase/migrations) | Ordered database schema and access changes |
+| [supabase/functions](supabase/functions) | Account provisioning and management |
+| [tests](tests) | Frontend and disposable database checks |
