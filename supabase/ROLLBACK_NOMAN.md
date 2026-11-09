@@ -9,7 +9,7 @@ The matching Edge Function source is
 
 1. Confirm the Supabase project matches the `VITE_SUPABASE_URL` used by the app.
    Take a current database backup before the cutover. Keep the latest data:
-   restoring a backup from before Noman's release would discard later records.
+   restoring a backup from before Noman's release would discard later records..
 2. Coordinate a short cutover for the database, Edge Function, and frontend.
    The new frontend uses RPCs that this rollback removes; the old frontend needs
    direct write grants that the operations migration revoked.

@@ -565,6 +565,16 @@ html[dir='rtl'] .brand strong { font-family: var(--font-dari); letter-spacing: 0
 .booking-preview dd { margin: 4px 0 0; font-size: 13px; font-weight: 650; overflow-wrap: anywhere; }
 .booking-contact-details summary { cursor: pointer; font-size: 13px; font-weight: 700; padding: 8px 0; color: #277658; }
 .simple-cashbook-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-bottom: 12px; }
+.simple-cashbook { max-width: 1500px; margin: 0 auto; }
+.simple-cashbook-toolbar { padding: 15px; border: 1px solid var(--line); border-radius: 12px; background: white; }
+.cashbook-summary { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; margin: 20px 0; }
+.cashbook-summary > div { display: grid; gap: 7px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: white; }
+.cashbook-summary span { color: #60727f; font-size: 12px; font-weight: 700; }
+.cashbook-summary strong { font-size: clamp(16px,1.7vw,22px); white-space: nowrap; }
+.cashbook-summary-balance { background: #eaf2f7 !important; border-color: #bfd1dd !important; }
+.cashbook-see-more { display: block; margin: 16px auto 0; border: 1px solid var(--line); border-radius: 8px; padding: 9px 18px; background: white; color: var(--ink); font-weight: 700; cursor: pointer; }
+@media(max-width:800px) { .cashbook-summary { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media(max-width:480px) { .cashbook-summary { gap: 8px; } .cashbook-summary > div { padding: 12px; } .cashbook-summary strong { font-size: 15px; white-space: normal; overflow-wrap: anywhere; } }
 .simple-cashbook label { display: grid; gap: 7px; font-size: 12px; font-weight: 700; }
 .simple-cashbook input, .simple-cashbook select { min-width: 0; width: 100%; min-height: 43px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: white; }
 .simple-cashbook-toolbar > label { min-width: 130px; }
