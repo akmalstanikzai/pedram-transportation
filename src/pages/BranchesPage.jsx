@@ -5,6 +5,9 @@ import { rpc, explain } from '../lib/operations'
 import { ConfirmArchive, IconButton, Modal, RecordTools } from '../components/RecordTools'
 import BranchPassword from '../components/BranchPassword'
 import { branchAccountError } from '../lib/branchAccountError'
+import { loadBranchManagerFiles, uploadBranchManagerFile } from '../lib/branchManagerFiles'
+
+const managerSlots=[['doc1','Document 1','سند ۱'],['doc2','Document 2','سند ۲'],['doc3','Document 3','سند ۳'],['doc4','Document 4','سند ۴']]
 
 const labels = {
   en: {
@@ -56,6 +59,8 @@ function BranchRegistry({ language }) {
   const [deletion,setDeletion]=useState(null)
   const [archived,setArchived]=useState(false)
   const [passwordBranch,setPasswordBranch]=useState(null)
+  const [files,setFiles]=useState({})
+  const [selectedFiles,setSelectedFiles]=useState({})
   const request=useRef(null)
 
   const loadBranches = useCallback(async () => {
@@ -63,13 +68,15 @@ function BranchRegistry({ language }) {
     setLoading(false)
     if (error) return setMessage({ type: 'error', text: text.loadError })
     setBranches(data || [])
-  }, [text.loadError])
+    try{setFiles(await loadBranchManagerFiles())}catch{setMessage({type:'error',text:language==='fa'?'فایل‌های مدیر بارگیری نشد.':'Manager files could not be loaded.'})}
+  }, [text.loadError,language])
 
   // oxlint-disable-next-line react/set-state-in-effect
   useEffect(() => { void loadBranches() }, [loadBranches])
 
   function update(name, value) { setForm(current => ({ ...current, [name]: value })) }
-  function edit(row){setEditing(row);setForm({name:row.name,province:row.province,city:row.city,address:row.address||'',branchPhone:row.phone||'',managerName:row.manager?.full_name||'',fatherName:row.manager?.father_name||'',managerPhone:row.manager?.phone||'',nationalId:row.manager?.national_id||'',managerAddress:row.manager?.address||'',login:row.manager?.username||'',password:'',confirm:''});setMessage(null);request.current=null;setOpen(true)}
+  function edit(row){setEditing(row);setSelectedFiles({});setForm({name:row.name,province:row.province,city:row.city,address:row.address||'',branchPhone:row.phone||'',managerName:row.manager?.full_name||'',fatherName:row.manager?.father_name||'',managerPhone:row.manager?.phone||'',nationalId:row.manager?.national_id||'',managerAddress:row.manager?.address||'',login:row.manager?.username||'',password:'',confirm:''});setMessage(null);request.current=null;setOpen(true)}
+  async function uploadSelected(branchId){for(const [type,file] of Object.entries(selectedFiles))if(file)await uploadBranchManagerFile(branchId,type,file)}
   async function archiveBranch(){setSaving(true);setMessage(null);try{await rpc('save_branch_record',{p_id:deletion.id,p_request:crypto.randomUUID(),p_expected:deletion.updated_at,p_data:{...deletion,archived:!deletion.archived_at,manager_enabled:deletion.manager?.account_enabled??false}});setDeletion(null);await loadBranches()}catch(e){setMessage({type:'error',text:explain(e,language)})}finally{setSaving(false)}}
 
   async function submit(event) {
@@ -79,7 +86,7 @@ function BranchRegistry({ language }) {
       try{
         const payload={name:form.name,province:form.province,city:form.city,address:form.address,phone:form.branchPhone,manager_user_id:editing.manager_user_id,manager_name:form.managerName,manager_phone:form.managerPhone,father_name:form.fatherName,national_id:form.nationalId,manager_address:form.managerAddress,manager_enabled:editing.manager?.account_enabled??false}
         const key=JSON.stringify(payload);if(request.current?.key!==key)request.current={key,id:crypto.randomUUID()}
-        await rpc('save_branch_record',{p_id:editing.id,p_request:request.current.id,p_data:payload,p_expected:editing.updated_at});setOpen(false);setEditing(null);await loadBranches()
+        await rpc('save_branch_record',{p_id:editing.id,p_request:request.current.id,p_data:payload,p_expected:editing.updated_at});await uploadSelected(editing.id);setOpen(false);setEditing(null);setSelectedFiles({});await loadBranches()
       }catch(e){setMessage({type:'error',text:explain(e,language)})}finally{setSaving(false)}
       return
     }
@@ -102,25 +109,26 @@ function BranchRegistry({ language }) {
       manager: { full_name: form.managerName, father_name: form.fatherName, phone: form.managerPhone, national_id: form.nationalId, address: form.managerAddress },
       credentials: { login: form.login, password: form.password },
     } })
-    setSaving(false)
     if (error || data?.error) {
+      setSaving(false)
       const failure = await branchAccountError(data, error)
       return setMessage({ type: 'error', text: explain(failure, language) })
     }
+    try{await uploadSelected(data.branch_id)}catch(e){setSaving(false);setOpen(false);setSelectedFiles({});await loadBranches();return setMessage({type:'error',text:`${text.success} ${explain(e,language)}`})}
     const { data: vaultData, error: vaultError } = await supabase.functions.invoke('manage-branch-account', { body: { branch_id: data.branch_id, action: 'password', password: form.password } })
     if (vaultError || vaultData?.error) {
       const failure = await branchAccountError(vaultData, vaultError)
-      setForm(initialForm); setOpen(false); setMessage({ type: 'error', text: `${text.success} ${explain(failure,language)}` }); loadBranches(); return
+      setSaving(false);setForm(initialForm); setOpen(false); setMessage({ type: 'error', text: `${text.success} ${explain(failure,language)}` }); loadBranches(); return
     }
-    setForm(initialForm); setOpen(false); setMessage({ type: 'success', text: text.success }); loadBranches()
+    setSaving(false);setSelectedFiles({});setForm(initialForm); setOpen(false); setMessage({ type: 'success', text: text.success }); loadBranches()
   }
 
   return <div className="registry-page branch-registry">
-    <div className="registry-actions"><button className="registry-primary" onClick={() => { setMessage(null); setEditing(null);setForm(initialForm);request.current=null;setOpen(true) }}><Plus size={18} />{text.add}</button><button className="registry-secondary" aria-pressed={archived} onClick={()=>setArchived(!archived)}><Archive size={18}/>{language==='fa'?'بایگانی':'Archive'}</button></div>
+    <div className="registry-actions"><button className="registry-primary" onClick={() => { setMessage(null); setEditing(null);setForm(initialForm);setSelectedFiles({});request.current=null;setOpen(true) }}><Plus size={18} />{text.add}</button><button className="registry-secondary" aria-pressed={archived} onClick={()=>setArchived(!archived)}><Archive size={18}/>{language==='fa'?'بایگانی':'Archive'}</button></div>
     {message && <div className={`registry-notice ${message.type}`}>{message.code?text[message.code]:message.text}</div>}
     <div className="branch-table-wrap"><table className="branch-table"><thead><tr><th>{text.name}</th><th>{text.location}</th><th>{text.manager}</th><th>{text.branchPhone}</th><th>{text.username}</th><th>{text.password}</th><th>{language==='fa'?'حالت':'Account'}</th><th>{language==='fa'?'عملیات':'Actions'}</th></tr></thead><tbody>
       {loading ? <tr><td colSpan="8" className="branch-table-empty"><span className="spinner dark" /></td></tr> : branches.filter(b=>!!b.archived_at===archived).length ? branches.filter(b=>!!b.archived_at===archived).map(branch => <tr key={branch.id}>
-        <td><span className="branch-name-cell"><span className="branch-table-icon"><Building2 size={18} /></span><strong>{branch.name}</strong></span></td>
+        <td><span className="branch-name-cell">{files[`${branch.id}:photo`]?.url?<img className="branch-manager-thumb" src={files[`${branch.id}:photo`].url} alt=""/>:<span className="branch-table-icon"><Building2 size={18} /></span>}<strong>{branch.name}</strong></span></td>
         <td>{branch.city}, {branch.province}</td>
         <td>{branch.manager?.full_name || '—'}</td>
         <td>{branch.phone || branch.manager?.phone || '—'}</td>
@@ -147,6 +155,9 @@ function BranchRegistry({ language }) {
           <Field label={text.managerPhone} required value={form.managerPhone} onChange={value => update('managerPhone', value)} />
           <Field label={text.nationalId} value={form.nationalId} onChange={value => update('nationalId', value)} />
           <Field label={text.managerAddress} value={form.managerAddress} onChange={value => update('managerAddress', value)} wide />
+          <label className="wide"><span>{language==='fa'?'عکس پروفایل مدیر':'Manager profile photo'}</span><input type="file" accept=".jpg,.jpeg,.png,.webp" onChange={event=>setSelectedFiles(current=>({...current,photo:event.target.files?.[0]||null}))}/>{editing&&files[`${editing.id}:photo`]&&<small>{language==='fa'?'عکس فعلی ثبت شده است':'Current photo saved'}</small>}</label>
+          {managerSlots.map(([key,en,fa])=><label key={key}><span>{language==='fa'?fa:en}</span><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={event=>setSelectedFiles(current=>({...current,[key]:event.target.files?.[0]||null}))}/>{editing&&files[`${editing.id}:${key}`]&&<small>{files[`${editing.id}:${key}`].file_name}</small>}</label>)}
+          <p className="wide booking-help">{language==='fa'?'فایل‌ها اختیاری اند. عکس و اسناد تا ۵ MB؛ سند جدید جای سند قبلی را در نمای شعبه می‌گیرد.':'Files are optional. Each photo or document can be up to 5 MB. A new upload replaces the file shown in the branch profile.'}</p>
         </FormSection>
         {!editing&&<FormSection title={text.credentials} icon={<KeyRound size={18} />}>
           <Field label={text.login} required value={form.login} onChange={value => update('login', value)} wide />
@@ -157,7 +168,7 @@ function BranchRegistry({ language }) {
         <div className="registry-form-actions branch-actions"><button type="button" disabled={saving} onClick={() => setOpen(false)}>{text.cancel}</button><button className="registry-primary" disabled={saving}>{saving ? <span className="spinner" /> : editing?(language==='fa'?'ثبت':'Save'):text.create}</button></div>
       </form>
     </div></div>}
-    {details&&<Modal title={details.name} onClose={()=>setDetails(null)}><dl className="record-details record-modal-body">{[[text.province,details.province],[text.city,details.city],[text.address,details.address],[text.branchPhone,details.phone],[text.managerName,details.manager?.full_name],[text.fatherName,details.manager?.father_name],[text.managerPhone,details.manager?.phone],[text.nationalId,details.manager?.national_id],[text.managerAddress,details.manager?.address]].map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value||'—'}</dd></div>)}</dl></Modal>}
+    {details&&<Modal title={details.name} onClose={()=>setDetails(null)}><div className="record-modal-body">{files[`${details.id}:photo`]?.url&&<img className="branch-manager-photo" src={files[`${details.id}:photo`].url} alt={language==='fa'?'عکس مدیر شعبه':'Branch manager'}/>}<dl className="record-details">{[[text.province,details.province],[text.city,details.city],[text.address,details.address],[text.branchPhone,details.phone],[text.managerName,details.manager?.full_name],[text.fatherName,details.manager?.father_name],[text.managerPhone,details.manager?.phone],[text.nationalId,details.manager?.national_id],[text.managerAddress,details.manager?.address]].map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value||'—'}</dd></div>)}</dl><h3>{language==='fa'?'اسناد مدیر':'Manager documents'}</h3><div className="branch-manager-documents">{managerSlots.map(([key,en,fa])=>{const file=files[`${details.id}:${key}`];return <div key={key}><strong>{language==='fa'?fa:en}</strong>{file?.url?<a href={file.url} target="_blank" rel="noreferrer">{file.file_name}</a>:<span>—</span>}</div>})}</div></div></Modal>}
     {deletion&&<ConfirmArchive language={language} busy={saving} error={message?.text} restore={!!deletion.archived_at} onClose={()=>setDeletion(null)} onConfirm={archiveBranch}/>}
     {passwordBranch&&<BranchPassword key={passwordBranch.id} branch={passwordBranch} language={language} onClose={()=>setPasswordBranch(null)} onSaved={()=>{setPasswordBranch(null);setMessage({type:'success',code:passwordBranch.manager?.account_enabled?'passwordSaved':'passwordSavedDisabled'})}}/>}
   </div>

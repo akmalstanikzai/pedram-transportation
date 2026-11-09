@@ -652,6 +652,11 @@ html[dir='rtl'] .brand strong { font-family: var(--font-dari); letter-spacing: 0
 .branch-table td { padding: 12px 14px; border-bottom: 1px solid #edf1f3; color: #536572; font-size: 11px; white-space: nowrap; }
 .branch-table tbody tr:last-child td { border-bottom: 0; }
 .branch-name-cell { display: flex; align-items: center; gap: 9px; color: var(--ink); }
+.branch-manager-thumb { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex: none; }
+.branch-manager-photo { display: block; width: 110px; height: 110px; border-radius: 14px; object-fit: cover; margin-bottom: 16px; border: 1px solid var(--line); }
+.branch-manager-documents { display: grid; gap: 8px; margin-top: 10px; }
+.branch-manager-documents > div { display: flex; justify-content: space-between; gap: 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.branch-manager-documents a { overflow-wrap: anywhere; }
 .branch-table-icon { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 8px; color: #236d9a; background: #e7f3f9; }
 .branch-table-empty { height: 130px; text-align: center; }
 .branch-table-empty > svg, .branch-table-empty > strong { display: block; margin: 0 auto 8px; color: #87949e; }
