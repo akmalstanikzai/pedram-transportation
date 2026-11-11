@@ -7,7 +7,7 @@ import { IconButton, Modal } from './RecordTools'
 import SolarHijriDateInput from './SolarHijriDateInput'
 import { formatSolarHijri } from '../lib/solarHijri'
 
-const types={vehicle:[['profile_photo','Profile photo','عکس پروفایل'],['photos','Photos','عکس‌ها'],['permit','Road permit','جواز سیر'],['card','Card','کارت'],['booklet','Booklet','کتابچه'],['other','Other','سایر'],['international','International certificate','سرتفیکت بین المللی']],owner:[['profile_photo','Profile photo','عکس پروفایل'],['identity','Tazkira / CNIC','تذکره']],driver:[['profile_photo','Photo of Driver','عکس راننده'],['identity','Tazkira / CNIC','تذکره'],['passport','Passport','پاسپورت'],['licence','Licence','لایسنس'],['health','Health card','کارت صحت'],['other','Other Document','اسناد دیگر'],['contract','Contract','قرارداد']]}
+const types={vehicle:[['profile_photo','Profile photo','عکس پروفایل'],['photos','Photos','عکس‌ها'],['permit','Road permit','جواز سیر'],['card','Card','کارت'],['booklet','Booklet','کتابچه'],['other','Other','سایر'],['international','International certificate','سرتفیکت بین المللی']],owner:[['profile_photo','Person Photo','عکس شخص'],['identity','Tazkira / CNIC','تذکره']],driver:[['profile_photo','Photo of Driver','عکس راننده'],['identity','Tazkira / CNIC','تذکره'],['passport','Passport','پاسپورت'],['licence','Licence','لایسنس'],['health','Health card','کارت صحت'],['other','Other Document','اسناد دیگر'],['contract','Contract','قرارداد']]}
 const mimes={pdf:'application/pdf',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp',heic:'image/heic',heif:'image/heif',tif:'image/tiff',tiff:'image/tiff'}
 export default function DocumentsPanel({kind,parentId,language,archived=false,onChanged}){
  const t=(en,fa)=>language==='fa'?fa:en

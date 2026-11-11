@@ -1020,7 +1020,23 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 .driver-upload-field input::file-selector-button { max-width: 100%; white-space: normal; }
 .driver-upload-field small { font-size: 11px; font-weight: 400; }
 .driver-upload-field .driver-file-name { display: block; margin-top: 6px; overflow-wrap: anywhere; }
+.owner-registration-form .booking-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.owner-registration-form .booking-fields > .wide { grid-column: 1 / -1; }
+.owner-registration-form .booking-fields > label { display: flex; flex-direction: column; justify-content: flex-end; min-width: 0; }
+.owner-registration-form .owner-address-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; min-width: 0; padding: 0; margin: 0; border: 0; }
+.owner-address-row legend { margin-bottom: 10px; color: #455460; font-size: 13px; font-weight: 800; }
+.owner-address-row label { min-width: 0; }
+.owner-registration-form input { min-width: 0; font-family: inherit; }
+.owner-registration-form label > span { font-size: 13px; line-height: 1.5; }
+.owner-registration-form .owner-upload-field { justify-content: flex-start; }
+.owner-registration-form .owner-upload-field > span { min-height: 3em; }
+.owner-registration-form .owner-upload-field input { height: auto; min-height: 46px; padding: 8px; font-size: 12px; }
+.owner-upload-field input::file-selector-button { max-width: 100%; white-space: normal; }
+.owner-upload-field small { font-size: 11px; font-weight: 400; }
+.owner-upload-field .owner-file-name { display: block; margin-top: 6px; overflow-wrap: anywhere; }
 @media (max-width: 640px) {
+  .owner-registration-form .booking-fields { gap: 16px 10px; }
+  .owner-registration-form input:not([type='file']) { min-height: 46px; padding-inline: 8px; font-size: 16px; }
   .driver-registration-form .booking-fields { gap: 16px 10px; }
   .driver-registration-form input:not([type='file']) { min-height: 46px; padding-inline: 8px; font-size: 16px; }
   .vehicle-registration-form .booking-fields { gap: 16px 10px; }

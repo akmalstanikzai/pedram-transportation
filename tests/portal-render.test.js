@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { initialBranchForm } from '../src/lib/branchForm.js'
 import { capacityEntry } from '../src/lib/capacity.js'
 import { driverFormFromRow } from '../src/lib/driverForm.js'
+import { ownerFormFromRow } from '../src/lib/ownerForm.js'
 
 test('branch navigation and direct Branches URL never render branch management controls', async () => {
   const server = await createServer({ server: { middlewareMode: true }, appType: 'custom' })
@@ -36,7 +37,15 @@ test('branch navigation and direct Branches URL never render branch management c
     assert.match(legacyFields, /existing.pdf/)
     const { VehicleRegistrationFields, CapacityField } = await server.ssrLoadModule('/src/pages/VehiclesPage.jsx')
     const { default: DriverRegistrationFields } = await server.ssrLoadModule('/src/components/DriverRegistrationFields.jsx')
+    const { default: OwnerRegistrationFields } = await server.ssrLoadModule('/src/components/OwnerRegistrationFields.jsx')
     for (const language of ['en','fa']) {
+      const ownerFields = renderToStaticMarkup(React.createElement(OwnerRegistrationFields, { language, form: ownerFormFromRow(null), onChange() {}, onFilesChange() {} }))
+      assert.equal((ownerFields.match(/type="file"/g)||[]).length, 2)
+      assert.equal((ownerFields.match(/type="tel"/g)||[]).length, 1)
+      assert.match(ownerFields, /class="owner-address-row wide"/)
+      assert.doesNotMatch(ownerFields, /Profile photo|Tazkira number|عکس پروفایل|نمبر تذکره/)
+      const ownerLabels = language === 'en' ? ['Name','Surname','Father name','Mobile','Province','District','Village','Notes','Person Photo','Tazkira'] : ['نام','تخلص','نام پدر','موبایل','ولایت','ولسوالی','قریه','ملاحظات','عکس شخص','تذکره']
+      for (let i=1;i<ownerLabels.length;i++) assert.ok(ownerFields.indexOf(ownerLabels[i-1]) < ownerFields.indexOf(ownerLabels[i]), `${ownerLabels[i-1]} before ${ownerLabels[i]}`)
       const driverFields = renderToStaticMarkup(React.createElement(DriverRegistrationFields, { language, form: driverFormFromRow(null), onChange() {}, onFilesChange() {} }))
       assert.equal((driverFields.match(/type="tel"/g)||[]).length, 2)
       assert.equal((driverFields.match(/type="file"/g)||[]).length, 6)
