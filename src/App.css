@@ -1006,7 +1006,23 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 .vehicle-registration-form input, .vehicle-registration-form select { min-width: 0; font-family: inherit; }
 .vehicle-registration-form .capacity-fraction { width: min(150px, 100%); }
 .vehicle-registration-form .capacity-fraction input { min-height: 44px; }
+.driver-registration-form .booking-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.driver-registration-form .booking-fields > .wide { grid-column: 1 / -1; }
+.driver-registration-form .booking-fields > label { min-width: 0; }
+.driver-registration-form .booking-fields > label:not(.driver-upload-field) { display: flex; flex-direction: column; justify-content: flex-end; }
+.driver-registration-form .driver-address-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; min-width: 0; padding: 0; margin: 0; border: 0; }
+.driver-address-row legend { margin-bottom: 10px; color: #455460; font-size: 13px; font-weight: 800; }
+.driver-address-row label { min-width: 0; }
+.driver-registration-form input { min-width: 0; font-family: inherit; }
+.driver-registration-form label > span { font-size: 13px; line-height: 1.5; }
+.driver-registration-form .driver-upload-field input { height: auto; min-height: 46px; padding: 8px; font-size: 12px; }
+.driver-registration-form .driver-upload-field > span { min-height: 3em; }
+.driver-upload-field input::file-selector-button { max-width: 100%; white-space: normal; }
+.driver-upload-field small { font-size: 11px; font-weight: 400; }
+.driver-upload-field .driver-file-name { display: block; margin-top: 6px; overflow-wrap: anywhere; }
 @media (max-width: 640px) {
+  .driver-registration-form .booking-fields { gap: 16px 10px; }
+  .driver-registration-form input:not([type='file']) { min-height: 46px; padding-inline: 8px; font-size: 16px; }
   .vehicle-registration-form .booking-fields { gap: 16px 10px; }
   .vehicle-registration-form label > span, .vehicle-registration-form .capacity-entry legend { font-size: 13px; line-height: 1.5; }
   .vehicle-registration-form input:not([type='file']), .vehicle-registration-form select { min-height: 46px; padding-inline: 8px; font-size: 16px; }

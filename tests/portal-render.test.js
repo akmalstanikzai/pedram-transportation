@@ -5,6 +5,7 @@ import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { initialBranchForm } from '../src/lib/branchForm.js'
 import { capacityEntry } from '../src/lib/capacity.js'
+import { driverFormFromRow } from '../src/lib/driverForm.js'
 
 test('branch navigation and direct Branches URL never render branch management controls', async () => {
   const server = await createServer({ server: { middlewareMode: true }, appType: 'custom' })
@@ -34,7 +35,15 @@ test('branch navigation and direct Branches URL never render branch management c
     const legacyFields = renderToStaticMarkup(React.createElement(BranchDetailsFields, { language: 'en', form: initialBranchForm, update() {}, setSelectedFiles() {}, editing: { id: 'old' }, files: { 'old:doc1': { file_name: 'existing.pdf', url: 'https://example.test/file' } } }))
     assert.match(legacyFields, /existing.pdf/)
     const { VehicleRegistrationFields, CapacityField } = await server.ssrLoadModule('/src/pages/VehiclesPage.jsx')
+    const { default: DriverRegistrationFields } = await server.ssrLoadModule('/src/components/DriverRegistrationFields.jsx')
     for (const language of ['en','fa']) {
+      const driverFields = renderToStaticMarkup(React.createElement(DriverRegistrationFields, { language, form: driverFormFromRow(null), onChange() {}, onFilesChange() {} }))
+      assert.equal((driverFields.match(/type="tel"/g)||[]).length, 2)
+      assert.equal((driverFields.match(/type="file"/g)||[]).length, 6)
+      assert.doesNotMatch(driverFields, /National ID|Tazkira number|Licence number|Previous company|Profile photo|نمبر تذکره|نمبر لایسنس|شرکت قبلی|عکس پروفایل/)
+      assert.match(driverFields, /class="driver-address-row wide"/)
+      const driverLabels = language === 'en' ? ['Name','Surname','Father name','Mobile','Second mobile','Province','District','Village','Photo of Driver','Tazkira','License','Passport','Health Card','Other Document'] : ['نام','تخلص','نام پدر','موبایل','موبایل دوم','ولایت','ولسوالی','قریه','عکس راننده','تذکره','لایسنس','پاسپورت','کارت صحت','اسناد دیگر']
+      for (let i=1;i<driverLabels.length;i++) assert.ok(driverFields.indexOf(driverLabels[i-1]) < driverFields.indexOf(driverLabels[i]), `${driverLabels[i-1]} before ${driverLabels[i]}`)
       const vehicleFields = renderToStaticMarkup(React.createElement(VehicleRegistrationFields, { language, form: {}, capacity: capacityEntry(null), onChange() {}, onCapacityChange() {} }))
       assert.match(vehicleFields, /Owner \(optional\)|مالک \(اختیاری\)/)
       assert.match(vehicleFields, /<option value=""[^>]*>(Optional|اختیاری)</)
