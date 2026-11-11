@@ -999,3 +999,18 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
   .branch-form .branch-home-address { gap: 8px; }
   .branch-form-section h3 { font-size: 14px; line-height: 1.5; }
 }
+
+.vehicle-registration-form .booking-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.vehicle-registration-form .booking-fields > .wide { grid-column: 1 / -1; }
+.vehicle-registration-form .booking-fields > label { min-width: 0; }
+.vehicle-registration-form input, .vehicle-registration-form select { min-width: 0; font-family: inherit; }
+.vehicle-registration-form .capacity-fraction { width: min(150px, 100%); }
+.vehicle-registration-form .capacity-fraction input { min-height: 44px; }
+@media (max-width: 640px) {
+  .vehicle-registration-form .booking-fields { gap: 16px 10px; }
+  .vehicle-registration-form label > span, .vehicle-registration-form .capacity-entry legend { font-size: 13px; line-height: 1.5; }
+  .vehicle-registration-form input:not([type='file']), .vehicle-registration-form select { min-height: 46px; padding-inline: 8px; font-size: 16px; }
+  .vehicle-registration-form input[type='file'] { height: auto; min-height: 46px; padding: 8px; }
+  .vehicle-registration-form small { display: block; margin-top: 6px; overflow-wrap: anywhere; }
+  .vehicle-registration-form .vehicle-document-fields { grid-template-columns: minmax(0, 1fr); }
+}

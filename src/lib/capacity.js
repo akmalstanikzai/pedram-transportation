@@ -1,5 +1,14 @@
 export function capacityEntry(value) {
-  return { mode: 'number', number: value == null ? '' : String(value), numerator: '', denominator: '' }
+  const empty = { mode: 'fraction', number: '', numerator: '', denominator: '' }
+  if (value == null || value === '') return empty
+  const amount = Number(value)
+  if (!Number.isFinite(amount) || amount <= 0 || amount >= 1000000) throw new Error('INVALID_CAPACITY')
+  // Stored capacities have six decimal places. Restore them exactly rather
+  // than clearing or rounding an existing capacity when editing a vehicle.
+  const numerator = Math.round(amount * 1000000)
+  const gcd = (a, b) => b ? gcd(b, a % b) : a
+  const divisor = gcd(numerator, 1000000)
+  return { ...empty, numerator: String(numerator / divisor), denominator: String(1000000 / divisor) }
 }
 
 export function capacityFromEntry({ mode, number, numerator, denominator }) {

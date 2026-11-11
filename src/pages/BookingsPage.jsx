@@ -116,7 +116,7 @@ export default function BookingsPage({ language, profile }) {
   const canBookForBranch = !branchManager || branches.some(branch => branch.id === profile.branch_id && !branch.archived_at)
   const belongsToBookingBranch = row => row.branch_id == null || row.branch_id === form.branch_id
   const availableVehicles = vehicles.filter(row => belongsToBookingBranch(row) && !row.archived_at && row.status === 'available'
-    && row.vehicle_owners && !row.vehicle_owners.archived_at && (!row.permit_expiry || row.permit_expiry >= form.booking_date))
+    && (!row.owner_id || row.vehicle_owners && !row.vehicle_owners.archived_at) && (!row.permit_expiry || row.permit_expiry >= form.booking_date))
   const availableDrivers = drivers.filter(row => belongsToBookingBranch(row) && !row.archived_at && row.status === 'available'
     && (!row.license_expiry || row.license_expiry >= form.booking_date))
   const sender = form.sender_is_trader ? { sender_name: `${form.trader_first_name} ${form.trader_last_name}`.trim(), sender_phone: form.trader_phone, sender_address: form.trader_address } : { sender_name: form.sender_name, sender_phone: form.sender_phone, sender_address: form.sender_address }
