@@ -1,5 +1,7 @@
 # Pedram Transportation Supabase setup
 
+For the revised branch form, apply `202611110001_branch_form_details.sql` after all preceding migrations, then redeploy `create-branch-with-manager` using its current standalone `index.ts`. This saves branch codes, separate manager names, and province/district/village home addresses. It adds named manager uploads (photo, Tazkira, CV, educational documents, contract, extra documents). Existing branch phone numbers, national ID values, free-text addresses, and generic document uploads are preserved. Deploy the frontend after the database and function update.
+
 Apply `202611030001_vehicle_model_year.sql` after the migrations below for unrestricted digit-only vehicle model years. It preserves existing values, removes the 1950–2100 range, stores year labels as text to preserve leading zeroes/precision, and updates only the model-year conversion in the installed Fleet save function. The script is safe to rerun. No Edge Function changes are required.
 
 The current release requires `202611020002_simple_record_workflows.sql` after

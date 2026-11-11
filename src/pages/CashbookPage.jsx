@@ -14,7 +14,7 @@ function periodBounds(period){
   const solar=solarHijriToday()
   if(period==='today')return [today,today]
   if(period==='yesterday')return [daysAgo(1),daysAgo(1)]
-  if(period==='week')return [daysAgo(6),today]
+  if(period==='week')return [daysAgo((day.getUTCDay()+1)%7),today]
   if(period==='month')return [solarHijriToISODate(solar.year,solar.month,1),today]
   if(period==='year')return [solarHijriToISODate(solar.year,1,1),today]
   return ['0001-01-01',today]
@@ -30,7 +30,8 @@ export default function CashbookPage({ language, profile }) {
   const [loaded,setLoaded]=useState(false)
   const [error,setError]=useState('')
   const [notice,setNotice]=useState('')
-  const [scope,setScope]=useState(president?'admin':profile?.branch_id || '')
+  const [selectedScope,setScope]=useState('admin')
+  const scope=president?selectedScope:profile?.branch_id || ''
   const [currency,setCurrency]=useState('AFN')
   const [period,setPeriod]=useState('today')
   const [customRange,setCustomRange]=useState({start:kabulToday(),end:kabulToday()})
@@ -99,9 +100,9 @@ export default function CashbookPage({ language, profile }) {
     return()=>{active=false}
   },[load,language])
   const money=value=>`${(value/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} ${currency}`
-  const name=id=>!id||id==='admin'?t('Admin account','حساب مرکزی'):data.branches.find(b=>b.id===id)?.name||'—'
+  const name=id=>id==='admin'?t('Admin account','حساب مرکزی'):!id?t('No branch assigned','شعبه تعیین نشده است'):data.branches.find(b=>b.id===id)?.name||'—'
   const ledger=simpleLedger(data.accounts,data.entries,scope,currency)
-  const [periodStart,periodEnd]=period==='custom'?[customRange.start,customRange.end]:periodBounds(period)
+  const [periodStart,periodEnd]=period==='date'?[customRange.start,customRange.start]:period==='custom'?[customRange.start,customRange.end]:periodBounds(period)
   const validPeriod=periodStart&&periodEnd&&periodStart<=periodEnd
   const selectedLedger=ledgerPeriod(ledger,periodStart,periodEnd)
   const accountOptions=<>{president&&<option value="admin">{t('Admin account','حساب مرکزی')}</option>}{data.branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</>
@@ -120,7 +121,7 @@ export default function CashbookPage({ language, profile }) {
         ? `${t('Reversed by','اصلاح‌شده با')} #${row.reversed_by}`
         : row.corrections?.length ? t('Amount corrected','مبلغ اصلاح شد') : ''
       return [
-        formatSolarHijri(row.entry_date), row.receipt_number ? `#${row.receipt_number}` : '',
+        formatSolarHijri(row.entry_date),
         [description(row),annotation].filter(Boolean).join(' · '),
         row.direction === 'in' ? money(cents(row.amount)) : '',
         row.direction === 'out' ? money(cents(row.amount)) : '',
@@ -137,9 +138,9 @@ export default function CashbookPage({ language, profile }) {
           [t('Money Out','رفت'),money(selectedLedger.outgoing)],
           [t('Closing balance','موجودی پایان دوره'),money(selectedLedger.balance)],
         ] },
-        { title: t('Transactions','معاملات'), widths: [15,11,42,16,16], numeric: [3,4],
-          headers: [t('Date','تاریخ'),t('Receipt','رسید'),t('Description','شرح'),t('Money In','آمد'),t('Money Out','رفت')],
-          rows: entries.length ? entries : [['','',t('No records for this period.','در این بازه معامله‌ای ثبت نشده است.'),'','']],
+        { title: t('Transactions','معاملات'), widths: [16,48,18,18], numeric: [2,3],
+          headers: [t('Date','تاریخ'),t('Description','شرح'),t('Money In','آمد'),t('Money Out','رفت')],
+          rows: entries.length ? entries : [['',t('No records for this period.','در این بازه معامله‌ای ثبت نشده است.'),'','']],
         },
       ],
       note: `${t('Printed on','تاریخ چاپ')} ${formatSolarHijri(kabulToday())}`,
@@ -211,9 +212,9 @@ export default function CashbookPage({ language, profile }) {
   return <div className="simple-cashbook">
     <div className="booking-page-header"><h1>{t('Cashbook','روزنامچه')}</h1><button className="registry-secondary" aria-label={t('Refresh','تازه‌سازی')} title={t('Refresh','تازه‌سازی')} disabled={loading||busy} onClick={refresh}><RefreshCw size={17}/></button></div>
     <div className="simple-cashbook-toolbar">
-      {president?<label><span>{t('Account','حساب')}</span><select value={scope} disabled={busy||uncertain} onChange={e=>{setScope(e.target.value);setForm(previous=>({...previous,trader_id:'',booking_id:''}));setShown(20)}}>{accountOptions}</select></label>:<strong>{name(profile?.branch_id)}</strong>}
-      <label><span>{t('Currency','واحد پول')}</span><select value={currency} disabled={busy||uncertain} onChange={e=>{setCurrency(e.target.value);setForm(previous=>({...previous,booking_id:''}))}}>{currencies.map(c=><option key={c}>{c}</option>)}</select></label>
-      <label><span>{t('Period','بازه زمانی')}</span><select value={period} onChange={e=>{setPeriod(e.target.value);setShown(20)}}><option value="today">{t('Today','امروز')}</option><option value="yesterday">{t('Yesterday','دیروز')}</option><option value="week">{t('Last 7 days','۷ روز گذشته')}</option><option value="month">{t('This month','این ماه')}</option><option value="year">{t('This year','امسال')}</option><option value="all">{t('All time','همه زمان‌ها')}</option><option value="custom">{t('Custom dates','تاریخ دلخواه')}</option></select></label>
+      {president?<label><span>{t('Account','حساب')}</span><select value={scope} disabled={busy||uncertain} onChange={e=>{setScope(e.target.value);setForm(previous=>({...previous,trader_id:'',booking_id:''}));setShown(20)}}>{accountOptions}</select></label>:<div className="cashbook-account-display"><span>{t('Account','حساب')}</span><strong>{name(scope)}</strong></div>}
+      <label><span>{t('Date','تاریخ')}</span><SolarHijriDateInput required language={language} value={period==='date'?customRange.start:periodEnd} ariaLabel={t('Statement date','تاریخ صورت حساب')} onChange={date=>{setCustomRange({start:date,end:date});setPeriod('date');setShown(20)}}/></label>
+      <label><span>{t('Period','بازه زمانی')}</span><select value={period} onChange={e=>{setPeriod(e.target.value);setShown(20)}}><option value="today">{t('Today','امروز')}</option><option value="yesterday">{t('Yesterday','دیروز')}</option><option value="week">{t('This week','این هفته')}</option><option value="month">{t('This month','این ماه')}</option><option value="year">{t('This year','امسال')}</option><option value="date">{t('Selected date','تاریخ انتخاب‌شده')}</option><option value="all">{t('All time','همه زمان‌ها')}</option><option value="custom">{t('Custom dates','تاریخ دلخواه')}</option></select></label>
       {period==='custom'&&<>
         <label><span>{t('From','از تاریخ')}</span><SolarHijriDateInput language={language} value={customRange.start} ariaLabel={t('From','از تاریخ')} onChange={start=>{setCustomRange(current=>({...current,start}));setShown(20)}}/></label>
         <label><span>{t('Through','تا تاریخ')}</span><SolarHijriDateInput language={language} value={customRange.end} ariaLabel={t('Through','تا تاریخ')} onChange={end=>{setCustomRange(current=>({...current,end}));setShown(20)}}/></label>
@@ -222,21 +223,22 @@ export default function CashbookPage({ language, profile }) {
     </div>
     {notice&&<p className="registry-notice success" role="status">{notice}</p>}
     {error&&<p className="registry-notice error" role="alert">{error}</p>}
+    {!loading&&loaded&&validPeriod&&(<div className="cashbook-summary"><div><span>{t('Opening balance','موجودی اول دوره')}</span><strong>{money(selectedLedger.opening)}</strong></div><div><span>{t('Money In','آمد')}</span><strong className="simple-money-in">{money(selectedLedger.incoming)}</strong></div><div><span>{t('Money Out','رفت')}</span><strong className="simple-money-out">{money(selectedLedger.outgoing)}</strong></div><div className="cashbook-summary-balance"><span>{t('Closing balance','موجودی پایان دوره')}</span><strong>{money(selectedLedger.balance)}</strong></div></div>)}
     <form className="simple-cashbook-form" onSubmit={save}><div className="simple-cashbook-form-heading"><h2>{t('Add a record','ثبت معامله')}</h2><p>{name(scope)} · {currency}</p></div><fieldset disabled={busy||uncertain}>
-      <label className="cashbook-description-field"><span>{t('Name / description','نام / شرح معامله')} *</span><input required placeholder={t('Who or what is this for?','نام شخص یا دلیل معامله')} value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label>
-      <label className="cashbook-amount-field"><span>{t('Amount','مبلغ')} ({currency}) *</span><input required type="number" inputMode="decimal" min="0.01" max="999999999999.99" step="0.01" placeholder="0.00" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})}/></label>
       <label className="cashbook-date-field"><span>{t('Date','تاریخ')} *</span><SolarHijriDateInput required max={kabulToday()} language={language} value={form.date} onChange={date=>setForm({...form,date})} ariaLabel={t('Date','تاریخ')}/></label>
+      <label className="cashbook-currency-field"><span>{t('Currency','واحد پول')} *</span><select value={currency} onChange={e=>{setCurrency(e.target.value);setForm(previous=>({...previous,booking_id:''}))}}>{currencies.map(c=><option key={c}>{c}</option>)}</select></label>
+      <label className="cashbook-amount-field"><span>{t('Amount','مبلغ')} ({currency}) *</span><input required type="number" inputMode="decimal" min="0.01" max="999999999999.99" step="0.01" placeholder="0.00" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})}/></label>
+      <label className="cashbook-description-field"><span>{t('Name / description','نام / شرح معامله')} *</span><input required placeholder={t('Who or what is this for?','نام شخص یا دلیل معامله')} value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label>
       {traders.length>0&&<details className="simple-cashbook-description"><summary>{t('Link to a trader (optional)','وصل به حساب تاجر (اختیاری)')}</summary><label><span>{t('Trader','تاجر')}</span><select value={form.trader_id||''} onChange={e=>setForm({...form,trader_id:e.target.value,booking_id:''})}><option value="">—</option>{traders.filter(r=>!r.archived_at&&(!r.branch_id||r.branch_id===scope)).map(r=><option key={r.id} value={r.id}>{r.full_name} · {r.phone}</option>)}</select></label>{form.trader_id&&<label><span>{t('Booking (optional)','بوکینگ (اختیاری)')}</span><select value={form.booking_id} onChange={e=>setForm({...form,booking_id:e.target.value})}><option value="">{t('General trader payment','پرداخت عمومی تاجر')}</option>{bookings.filter(row=>row.trader_id===form.trader_id&&!row.archived_at&&!row.deleted_at&&row.branch_id===(scope==='admin'?null:scope)&&row.commission_currency===currency).map(row=><option key={row.id} value={row.id}>#{row.booking_number}</option>)}</select></label>}</details>}
-    </fieldset><div className="simple-cashbook-buttons"><button type="submit" value="out" className="cashbook-out" disabled={loading||!loaded||busy||uncertain&&retryDirection!=='out'||(!president&&!profile?.branch_id)}><ArrowUpRight size={20}/>{busy&&retryDirection==='out'?t('Saving…','در حال ثبت…'):uncertain&&retryDirection==='out'?t('Retry Money Out','کوشش مجدد رفت'):t('Save Money Out','ثبت پول رفت')}</button><button type="submit" value="in" className="cashbook-in" disabled={loading||!loaded||busy||uncertain&&retryDirection!=='in'||(!president&&!profile?.branch_id)}><ArrowDownLeft size={20}/>{busy&&retryDirection==='in'?t('Saving…','در حال ثبت…'):uncertain&&retryDirection==='in'?t('Retry Money In','کوشش مجدد آمد'):t('Save Money In','ثبت پول آمد')}</button></div></form>
+    </fieldset><div className="simple-cashbook-buttons"><button type="submit" value="in" className="cashbook-in" disabled={loading||!loaded||busy||uncertain&&retryDirection!=='in'||(!president&&!profile?.branch_id)}><ArrowDownLeft size={20}/>{busy&&retryDirection==='in'?t('Saving…','در حال ثبت…'):uncertain&&retryDirection==='in'?t('Retry Money In','کوشش مجدد آمد'):t('Save Money In','ثبت پول آمد')}</button><button type="submit" value="out" className="cashbook-out" disabled={loading||!loaded||busy||uncertain&&retryDirection!=='out'||(!president&&!profile?.branch_id)}><ArrowUpRight size={20}/>{busy&&retryDirection==='out'?t('Saving…','در حال ثبت…'):uncertain&&retryDirection==='out'?t('Retry Money Out','کوشش مجدد رفت'):t('Save Money Out','ثبت پول رفت')}</button></div></form>
     {loading?<p role="status">{t('Loading…','در حال بارگیری…')}</p>:loaded&&!validPeriod?<p role="status">{t('Choose a valid start and end date.','تاریخ آغاز و پایان درست انتخاب کنید.')}</p>:loaded&&<>
-      <div className="cashbook-summary"><div><span>{t('Opening balance','موجودی اول دوره')}</span><strong>{money(selectedLedger.opening)}</strong></div><div><span>{t('Money In','آمد')}</span><strong className="simple-money-in">{money(selectedLedger.incoming)}</strong></div><div><span>{t('Money Out','رفت')}</span><strong className="simple-money-out">{money(selectedLedger.outgoing)}</strong></div><div className="cashbook-summary-balance"><span>{t('Closing balance','موجودی پایان دوره')}</span><strong>{money(selectedLedger.balance)}</strong></div></div>
       <section className="cashbook-ledger" aria-label={t('Cashbook records','معاملات روزنامچه')}><h2>{t('Records','معاملات')}</h2><div className="simple-cashbook-list"><table><thead><tr><th scope="col">{t('Date','تاریخ')}</th><th scope="col">{t('Description','شرح معامله')}</th><th scope="col">{t('Money In','آمد')}</th><th scope="col">{t('Money Out','رفت')}</th>{president&&<th scope="col">{t('Correction','اصلاح')}</th>}</tr></thead><tbody>
         {selectedLedger.rows.slice(0,shown).map(row=><tr key={row.id} className={row.direction==='in'?'cashbook-row-in':'cashbook-row-out'}>
-          <td>{formatSolarHijri(row.entry_date)}</td>
-          <td>{row.receipt_number ? `#${row.receipt_number} · ` : ''}{description(row)}</td>
-          <td className="simple-money-in">{row.direction==='in'?money(cents(row.amount)):'—'}</td>
-          <td className="simple-money-out">{row.direction==='out'?money(cents(row.amount)):'—'}</td>
-          {president&&<td>
+          <td data-label={t('Date','تاریخ')}>{formatSolarHijri(row.entry_date)}</td>
+          <td data-label={t('Description','شرح معامله')}>{row.receipt_number ? `#${row.receipt_number} · ` : ''}{description(row)}</td>
+          <td data-label={t('Money In','آمد')} className="simple-money-in">{row.direction==='in'?money(cents(row.amount)):'—'}</td>
+          <td data-label={t('Money Out','رفت')} className="simple-money-out">{row.direction==='out'?money(cents(row.amount)):'—'}</td>
+          {president&&<td data-label={t('Correction','اصلاح')}>
             {row.reversed_by ? `${t('Reversed by','اصلاح‌شده با')} #${row.reversed_by}`
               : row.reversal ? `${t('Reversal of','اصلاح رسید')} #${row.reverses_receipt}`
               : row.operation_id && <div className="cashbook-correction-actions">

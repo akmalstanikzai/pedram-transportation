@@ -67,7 +67,7 @@ Use the trader's key icon to create a login, change its password, or enable or d
 
 ## Branches and account management
 
-The President creates branches and assigns manager credentials in **Branches → Add Branch**. Each branch profile supports a manager photo and four generic document slots. Files are private. The photo accepts JPG, PNG, or WebP, and documents also accept PDF. Each upload is limited to 5 MB.
+The President creates branches and assigns manager credentials in **Branches → Add Branch**. The form pairs branch name/code, province/district, manager name/surname, and father name/mobile, including on phones. Home address has province, district, and village fields. Each branch profile supports a manager photo, Tazkira, CV, educational documents, contract, and extra documents. Existing generic uploads remain available as previous documents. Files are private. The photo accepts JPG, PNG, or WebP, and documents also accept PDF. Each upload is limited to 5 MB. Apply `202611110001_branch_form_details.sql` and redeploy `create-branch-with-manager` before using the revised form.
 
 The branch key icon shows the manager's sign-in name and lets the President set a new password of at least eight characters. The power control manages whether the login is enabled. **View saved password** is available for credentials stored in the encrypted branch vault. Set a new password if an older credential has no vault entry. Branch and trader password storage and reveal actions are audited. Plan vault key migration or password resets before rotating the server credential used for encryption.
 

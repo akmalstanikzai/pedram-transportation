@@ -22,3 +22,34 @@ for (const [name, kind] of [['create-branch-with-manager','branch'],['create-dri
     assert.equal((await denied.json()).error,'ACCESS_DENIED')
   })
 }
+
+test('branch creation forwards code, separate manager names and home address to the atomic save', async () => {
+  const source = await readFile(new URL('../supabase/functions/create-branch-with-manager/index.ts', import.meta.url), 'utf8')
+  const js = stripTypeScriptTypes(source).replace(/^import[^\n]*\n/m, '')
+  let handler, saved
+  const actor = '00000000-0000-0000-0000-000000000001'
+  const managerId = '00000000-0000-0000-0000-000000000002'
+  const caller = { auth: { async getUser() { return { data: { user: { id: actor } } } } } }
+  const query = { select() { return this }, eq() { return this }, async single() { return { data: { role: 'president', account_enabled: true } } } }
+  const admin = { from() { return query }, async rpc(name, args) {
+    if (name === 'find_branch_provisioning_account') return { data: managerId }
+    assert.equal(name, 'provision_branch')
+    saved = args
+    return { data: 'new-branch' }
+  } }
+  runInNewContext(js, { Response, Request, console, Deno: { env: { get: () => 'configured' }, serve: fn => { handler = fn } }, createClient: (_url, _key, options) => options.global ? caller : admin })
+  const response = await handler(new Request('https://example.test', { method: 'POST', headers: { Authorization: 'Bearer example', 'Content-Type': 'application/json' }, body: JSON.stringify({
+    request_id: '00000000-0000-0000-0000-000000000003', credentials: { login: 'new.manager', password: 'password123' },
+    branch: { name: 'Branch', code: 'KBL-01', province: 'Kabul', city: 'District', address: 'Location' },
+    manager: { full_name: 'Ahmad Ahmadi', first_name: 'Ahmad', surname: 'Ahmadi', phone: '0700000000', home_province: 'Bamyan', home_district: 'Yakawlang', home_village: 'Village' },
+  }) }))
+  assert.equal(response.status, 200)
+  assert.equal(saved.p_actor, actor)
+  assert.equal(saved.p_manager, managerId)
+  assert.equal(saved.p_data.code, 'KBL-01')
+  assert.equal(saved.p_data.manager_first_name, 'Ahmad')
+  assert.equal(saved.p_data.manager_surname, 'Ahmadi')
+  assert.equal(saved.p_data.home_province, 'Bamyan')
+  assert.equal(saved.p_data.home_district, 'Yakawlang')
+  assert.equal(saved.p_data.home_village, 'Village')
+})

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { createServer } from 'vite'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { initialBranchForm } from '../src/lib/branchForm.js'
 
 test('branch navigation and direct Branches URL never render branch management controls', async () => {
   const server = await createServer({ server: { middlewareMode: true }, appType: 'custom' })
@@ -24,6 +25,27 @@ test('branch navigation and direct Branches URL never render branch management c
     const presidentHtml = renderToStaticMarkup(React.createElement(Branches, { language: 'en', profile: { ...profile, role: 'president' } }))
     assert.match(presidentHtml, /Add Branch/)
     assert.equal(renderToStaticMarkup(React.createElement(Branches, { language: 'en', profile: { ...profile, role: 'president', account_enabled: false } })), '')
+    const { BranchDetailsFields } = await server.ssrLoadModule('/src/pages/BranchesPage.jsx')
+    const branchFields = renderToStaticMarkup(React.createElement(BranchDetailsFields, { language: 'fa', form: initialBranchForm, update() {}, setSelectedFiles() {} }))
+    for (const label of ['نام شعبه','کد شعبه','ولایت','ولسوالی','موقعیت','نام','تخلص','نام پدر','موبایل','قریه','عکس مدیر','تذکره','سی وی','سند تحصیلی','قرارداد','اسناد دیگر']) assert.ok(branchFields.includes(label), label)
+    assert.doesNotMatch(branchFields, /شهر یا ولسوالی|آدرس کامل|شماره شعبه|شماره تماس مدیر|نمبر تذکره|سند ۱|سند ۲/)
+    assert.equal((branchFields.match(/type="file"/g) || []).length, 6)
+    const legacyFields = renderToStaticMarkup(React.createElement(BranchDetailsFields, { language: 'en', form: initialBranchForm, update() {}, setSelectedFiles() {}, editing: { id: 'old' }, files: { 'old:doc1': { file_name: 'existing.pdf', url: 'https://example.test/file' } } }))
+    assert.match(legacyFields, /existing.pdf/)
+    const { default: Cashbook } = await server.ssrLoadModule('/src/pages/CashbookPage.jsx')
+    for (const language of ['en','fa']) {
+      const branchCashbook = renderToStaticMarkup(React.createElement(Cashbook, { language, profile }))
+      const toolbar = branchCashbook.split('simple-cashbook-toolbar')[1].split('<form')[0]
+      assert.ok(toolbar.indexOf('cashbook-account-display') < toolbar.indexOf('solar-date-picker'))
+      assert.doesNotMatch(branchCashbook, /value="admin"|Admin account|حساب مرکزی|Edit amount|Reverse receipt|Link to a trader/)
+      assert.match(branchCashbook, /value="in"/)
+      assert.match(branchCashbook, /value="out"/)
+      assert.match(toolbar, /value="custom"/)
+      assert.match(toolbar, /Print \/ Save PDF|چاپ \/ ذخیره PDF/)
+      const presidentCashbook = renderToStaticMarkup(React.createElement(Cashbook, { language, profile: { ...profile, role: 'president' } }))
+      const presidentToolbar = presidentCashbook.split('simple-cashbook-toolbar')[1].split('<form')[0]
+      assert.ok(presidentToolbar.indexOf('value="admin"') < presidentToolbar.indexOf('solar-date-picker'))
+    }
   } finally {
     if (previousWindow === undefined) delete globalThis.window
     else globalThis.window = previousWindow

@@ -61,7 +61,7 @@ export async function provision(kind:'branch'|'driver',request:Request){
   }
   const manager=body.manager,branch=body.branch
   stage='save_branch'
-  const {data,error}=await admin.rpc('provision_branch',{p_actor:user.id,p_request:id,p_manager:account,p_username:username,p_data:{name:branch.name,province:branch.province,city:branch.city,address:branch.address,phone:branch.phone,manager_name:manager.full_name,manager_phone:manager.phone,father_name:manager.father_name,national_id:manager.national_id,manager_address:manager.address}})
+  const {data,error}=await admin.rpc('provision_branch',{p_actor:user.id,p_request:id,p_manager:account,p_username:username,p_data:{name:branch.name,code:branch.code,province:branch.province,city:branch.city,address:branch.address,phone:branch.phone,manager_name:manager.full_name,manager_first_name:manager.first_name,manager_surname:manager.surname,home_province:manager.home_province,home_district:manager.home_district,home_village:manager.home_village,manager_phone:manager.phone,father_name:manager.father_name,national_id:manager.national_id,manager_address:manager.address}})
   if(error)throw error
   return new Response(JSON.stringify({branch_id:data,username,email}),{headers})
  }catch(error){const message=error instanceof Error?error.message:(error as {message?:string})?.message||'Unable to create account';console.error('branch provisioning failed',{stage,code:(error as {code?:string})?.code||'',message});return new Response(JSON.stringify({error:message,stage}),{status:400,headers})}
