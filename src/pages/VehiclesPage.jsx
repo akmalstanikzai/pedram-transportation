@@ -134,10 +134,10 @@ export default function VehiclesPage({language,profile}){
 
 export function CapacityField({language,value,onChange}) {
  const t=(en,fa)=>language==='fa'?fa:en
- return <fieldset className="capacity-entry wide"><legend>{t('Weight capacity','ظرفیت')}</legend><div className="vehicle-weight-fields">
-  <label><span>{t('Gross permitted weight (kg)','وزن مجموعی مجاز (کیلوگرام)')}</span><input type="number" min="0.001" step="0.001" inputMode="decimal" value={value.gross??''} onChange={e=>onChange({...value,gross:e.target.value})}/></label>
-  <label><span>{t('Empty vehicle weight (kg)','وزن خالی موتر (کیلوگرام)')}</span><input type="number" min="0" step="0.001" inputMode="decimal" value={value.empty??''} onChange={e=>onChange({...value,empty:e.target.value})}/></label>
- </div>{value.legacyCapacityTons!=null&&!value.gross&&!value.empty&&<p className="booking-help">{t('Saved cargo capacity (tons):','ظرفیت بار ثبت‌شده (تن):')} {value.legacyCapacityTons}</p>}</fieldset>
+ return <fieldset className="capacity-entry wide"><legend>{t('Capacity','ظرفیت')}</legend><div className="vehicle-weight-fields">
+  <input aria-label={t('Gross permitted weight (kg)','وزن مجموعی مجاز (کیلوگرام)')} type="number" min="0.001" step="0.001" inputMode="decimal" value={value.gross??''} onChange={e=>onChange({...value,gross:e.target.value})}/>
+  <input aria-label={t('Empty vehicle weight (kg)','وزن خالی موتر (کیلوگرام)')} type="number" min="0" step="0.001" inputMode="decimal" value={value.empty??''} onChange={e=>onChange({...value,empty:e.target.value})}/>
+ </div></fieldset>
 }
 
 function VehicleChoiceField({label,required,language,options,value,custom,onCustom,onChange,wide=false}) {

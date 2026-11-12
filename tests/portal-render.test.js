@@ -69,10 +69,12 @@ test('branch navigation and direct Branches URL never render branch management c
       assert.match(vehicleFields, /<option value=""[^>]*>(Optional|اختیاری)</)
       assert.doesNotMatch(vehicleFields.split('</select>')[0], /required/)
       assert.doesNotMatch(vehicleFields, /VIN|نمبر شاسی|Model year|سال ساخت|Permit number|نمبر جواز/)
-      const fieldLabels = language === 'en' ? ['Plate number','Province','Foreign plate','Vehicle type','Body style','Model','Color','Weight capacity'] : ['نمبر پلیت','ولایت','پلیت خارجی','نوعیت','حالت','ماډل','رنگ','ظرفیت']
+      const fieldLabels = language === 'en' ? ['Plate number','Province','Foreign plate','Vehicle type','Body style','Model','Color','Capacity'] : ['نمبر پلیت','ولایت','پلیت خارجی','نوعیت','حالت','ماډل','رنگ','ظرفیت']
       for (let i=1;i<fieldLabels.length;i++) assert.ok(vehicleFields.indexOf(fieldLabels[i-1]) < vehicleFields.indexOf(fieldLabels[i]), `${fieldLabels[i-1]} before ${fieldLabels[i]}`)
       const capacityFields = renderToStaticMarkup(React.createElement(CapacityField, { language, value: vehicleWeightsFromRow({ gross_weight_kg: 53000, empty_weight_kg: 15000 }), onChange() {} }))
       assert.doesNotMatch(capacityFields, /<button|>Number<|>Fraction<|>عدد<|>کسر</)
+      assert.match(capacityFields, /<legend>(Capacity|ظرفیت)<\/legend>/)
+      assert.doesNotMatch(capacityFields, /<span|<label|<p/)
       assert.equal((capacityFields.match(/type="number"/g)||[]).length, 2)
       assert.match(capacityFields, /value="53000"/)
       assert.match(capacityFields, /value="15000"/)

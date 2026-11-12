@@ -1007,10 +1007,8 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 .vehicle-registration-form .capacity-fraction { width: min(150px, 100%); }
 .vehicle-registration-form .capacity-fraction input { min-height: 44px; }
 .vehicle-registration-form .vehicle-weight-fields, .vehicle-registration-form .vehicle-upload-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 10px; }
-.vehicle-weight-fields > label, .vehicle-upload-grid > label { min-width: 0; }
-.vehicle-registration-form .vehicle-weight-fields label { display: flex; flex-direction: column; justify-content: flex-end; }
+.vehicle-weight-fields > input, .vehicle-upload-grid > label { min-width: 0; }
 .vehicle-registration-form .booking-fields > .vehicle-choice-field { display: flex; flex-direction: column; justify-content: flex-start; }
-.vehicle-registration-form .vehicle-weight-fields label > span { min-height: 3em; }
 .vehicle-upload-grid > .wide { grid-column: 1/-1; }
 .vehicle-upload-grid input { min-width: 0; }
 .vehicle-upload-grid label > span { min-height: 1.5em; }
