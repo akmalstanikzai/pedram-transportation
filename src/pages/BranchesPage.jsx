@@ -149,7 +149,7 @@ function BranchRegistry({ language }) {
         <div className="registry-form-actions branch-actions"><button type="button" disabled={saving} onClick={() => setOpen(false)}>{text.cancel}</button><button className="registry-primary" disabled={saving}>{saving ? <span className="spinner" /> : editing?(language==='fa'?'ثبت':'Save'):text.create}</button></div>
       </form>
     </div></div>}
-    {details&&<Modal title={details.name} onClose={()=>setDetails(null)}><div className="record-modal-body">{files[`${details.id}:photo`]?.url&&<img className="branch-manager-photo" src={files[`${details.id}:photo`].url} alt={language==='fa'?'عکس مدیر شعبه':'Branch manager'}/>}<dl className="record-details">{[[text.code,details.code],[text.province,details.province],[text.city,details.city],[text.address,details.address],[text.branchPhone,details.phone],[text.managerName,details.manager?.first_name??details.manager?.full_name],[text.managerSurname,details.manager?.surname],[text.fatherName,details.manager?.father_name],[text.managerPhone,details.manager?.phone],[text.nationalId,details.manager?.national_id],[text.managerAddress,details.manager?.address]].map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value||'—'}</dd></div>)}</dl><h3>{language==='fa'?'اسناد مدیر':'Manager documents'}</h3><div className="branch-manager-documents">{[...managerSlots,...legacyManagerSlots.filter(([key])=>files[`${details.id}:${key}`])].map(([key,en,fa])=>{const file=files[`${details.id}:${key}`];return <div key={key}><strong>{language==='fa'?fa:en}</strong>{file?.url?<a href={file.url} target="_blank" rel="noreferrer">{file.file_name}</a>:<span>—</span>}</div>})}</div></div></Modal>}
+    {details&&<Modal title={details.name} onClose={()=>setDetails(null)}><BranchInformation language={language} details={details} files={files}/></Modal>}
     {deletion&&<ConfirmArchive language={language} busy={saving} error={message?.text} restore={!!deletion.archived_at} onClose={()=>setDeletion(null)} onConfirm={archiveBranch}/>}
     {passwordBranch&&<BranchPassword key={passwordBranch.id} branch={passwordBranch} language={language} onClose={()=>setPasswordBranch(null)} onSaved={()=>{setPasswordBranch(null);setMessage({type:'success',code:passwordBranch.manager?.account_enabled?'passwordSaved':'passwordSavedDisabled'})}}/>}
   </div>
@@ -185,4 +185,39 @@ export function BranchDetailsFields({ language, form, update, editing = null, fi
           <p className="wide booking-help">{language==='fa'?'فایل‌ها اختیاری اند. عکس و اسناد تا ۵ MB؛ سند جدید جای سند قبلی را در نمای شعبه می‌گیرد.':'Files are optional. Each photo or document can be up to 5 MB. A new upload replaces the file shown in the branch profile.'}</p>
         </FormSection>
   </>
+}
+
+export function BranchInformation({ language, details, files = {} }) {
+  const text = labels[language] || labels.en
+  const manager = details.manager || {}
+  const item = (key,label,value,wide=false) => <div key={key} className={wide?'wide':''}><dt>{label}</dt><dd>{value||'—'}</dd></div>
+  return <div className="record-modal-body branch-details-view">
+    {files[`${details.id}:photo`]?.url&&<img className="branch-manager-photo" src={files[`${details.id}:photo`].url} alt={text.managerPhoto}/>}
+    <section aria-label={text.branchInfo}>
+      <h3>{text.branchInfo}</h3>
+      <dl className="record-details branch-information-grid">
+        <div className="wide branch-details-code"><dt>{text.code}</dt><dd>{details.code||'—'}</dd></div>
+        {item('province',text.province,details.province)}
+        {item('district',text.city,details.city)}
+        {item('location',text.address,details.address,true)}
+      </dl>
+    </section>
+    <section aria-label={text.managerInfo}>
+      <h3>{text.managerInfo}</h3>
+      <dl className="record-details branch-information-grid">
+        {item('name',text.managerName,manager.first_name??manager.full_name)}
+        {item('surname',text.managerSurname,manager.surname)}
+        {item('father',text.fatherName,manager.father_name)}
+        {item('mobile',text.managerPhone,manager.phone)}
+        {item('home',text.managerAddress,manager.address,true)}
+      </dl>
+    </section>
+    <h3>{language==='fa'?'اسناد مدیر':'Manager documents'}</h3>
+    <div className="branch-manager-documents">
+      {[...managerSlots,...legacyManagerSlots.filter(([key])=>files[`${details.id}:${key}`])].map(([key,en,fa])=>{
+        const file=files[`${details.id}:${key}`]
+        return <div key={key}><strong>{language==='fa'?fa:en}</strong>{file?.url?<a href={file.url} target="_blank" rel="noreferrer">{file.file_name}</a>:<span>—</span>}</div>
+      })}
+    </div>
+  </div>
 }

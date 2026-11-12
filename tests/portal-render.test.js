@@ -28,7 +28,14 @@ test('branch navigation and direct Branches URL never render branch management c
     const presidentHtml = renderToStaticMarkup(React.createElement(Branches, { language: 'en', profile: { ...profile, role: 'president' } }))
     assert.match(presidentHtml, /Add Branch/)
     assert.equal(renderToStaticMarkup(React.createElement(Branches, { language: 'en', profile: { ...profile, role: 'president', account_enabled: false } })), '')
-    const { BranchDetailsFields } = await server.ssrLoadModule('/src/pages/BranchesPage.jsx')
+    const { BranchDetailsFields, BranchInformation } = await server.ssrLoadModule('/src/pages/BranchesPage.jsx')
+    const branchDetail = { id:'branch',name:'Branch',code:'05',province:'Kabul',city:'District',address:'Location text',phone:'hidden-branch-phone',manager:{ first_name:'Ahmad',surname:'Ahmadi',father_name:'Father',phone:'0700000000',national_id:'hidden-national-id',address:'Home text' } }
+    for (const language of ['en','fa']) {
+      const information = renderToStaticMarkup(React.createElement(BranchInformation,{ language,details:branchDetail,files:{ 'branch:identity':{url:'https://example.test/id',file_name:'tazkira.pdf'} } }))
+      assert.doesNotMatch(information,/hidden-branch-phone|hidden-national-id|Branch phone|شماره شعبه|نمبر تذکره/)
+      for (const value of ['05','Kabul','District','Location text','Ahmad','Ahmadi','Father','0700000000','Home text','tazkira.pdf']) assert.ok(information.includes(value),value)
+      assert.equal((information.match(/class="record-details branch-information-grid"/g)||[]).length,2)
+    }
     const branchFields = renderToStaticMarkup(React.createElement(BranchDetailsFields, { language: 'fa', form: initialBranchForm, update() {}, setSelectedFiles() {} }))
     for (const label of ['نام شعبه','کد شعبه','ولایت','ولسوالی','موقعیت','نام','تخلص','نام پدر','موبایل','قریه','عکس مدیر','تذکره','سی وی','سند تحصیلی','قرارداد','اسناد دیگر']) assert.ok(branchFields.includes(label), label)
     assert.doesNotMatch(branchFields, /شهر یا ولسوالی|آدرس کامل|شماره شعبه|شماره تماس مدیر|نمبر تذکره|سند ۱|سند ۲/)

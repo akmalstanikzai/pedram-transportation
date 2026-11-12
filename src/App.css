@@ -993,6 +993,17 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 .branch-form-fields input::file-selector-button { max-width: 100%; white-space: normal; cursor: pointer; }
 .branch-form-fields small, .branch-legacy-file { display: block; margin-top: 6px; font-size: 12px; overflow-wrap: anywhere; }
 .branch-legacy-file a { display: block; margin-top: 6px; }
+.branch-details-view .branch-information-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; margin: 0; }
+.branch-information-grid > div { min-width: 0; }
+.branch-information-grid > .wide { grid-column: 1 / -1; }
+.branch-details-view h3 { margin: 0 0 12px; font-size: 14px; line-height: 1.5; color: var(--navy); }
+.branch-details-view section { padding-bottom: 18px; margin-bottom: 18px; border-bottom: 1px solid var(--line); }
+.branch-details-view .branch-details-code { display: flex; align-items: baseline; gap: 10px; }
+.branch-details-view .branch-details-code dd { margin: 0; }
+.branch-details-view dd { line-height: 1.6; }
+.branch-details-view .branch-manager-documents { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.branch-details-view .branch-manager-documents > div { display: grid; min-width: 0; gap: 6px; padding: 10px; align-content: start; font-size: 13px; }
+.branch-details-view .branch-manager-documents a { display: flex; align-items: center; min-height: 44px; min-width: 0; overflow-wrap: anywhere; }
 @media (max-width: 640px) {
   .branch-form .branch-form-fields { gap: 14px 10px; }
   .branch-form-fields input:not([type='file']) { min-height: 46px; padding-inline: 8px; font-size: 16px; }
