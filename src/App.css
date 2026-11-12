@@ -1004,6 +1004,15 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 .branch-details-view .branch-manager-documents { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .branch-details-view .branch-manager-documents > div { display: grid; min-width: 0; gap: 6px; padding: 10px; align-content: start; font-size: 13px; }
 .branch-details-view .branch-manager-documents a { display: flex; align-items: center; min-height: 44px; min-width: 0; overflow-wrap: anywhere; }
+.fleet-information-view .fleet-information-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; margin: 0; }
+.fleet-information-view .fleet-address-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 10px; }
+.fleet-information-grid > div { min-width: 0; }
+.fleet-information-grid > .wide { grid-column: 1 / -1; }
+.fleet-information-view h3 { margin: 0 0 12px; color: var(--navy); font-size: 14px; line-height: 1.5; }
+.fleet-information-section { padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
+.fleet-information-section:last-child { padding-bottom: 0; margin-bottom: 0; border-bottom: 0; }
+.fleet-information-view dd { line-height: 1.6; white-space: pre-line; overflow-wrap: anywhere; }
+.fleet-information-photo { display: block; width: 80px; height: 96px; object-fit: cover; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 18px; }
 @media (max-width: 640px) {
   .branch-form .branch-form-fields { gap: 14px 10px; }
   .branch-form-fields input:not([type='file']) { min-height: 46px; padding-inline: 8px; font-size: 16px; }
