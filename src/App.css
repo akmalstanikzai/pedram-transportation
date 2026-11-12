@@ -1052,8 +1052,8 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 .employee-transactions article > div { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .employee-transactions p { margin: 0; }
 .employee-transactions small { opacity: .7; }
-.cashbook-loan-option { display: grid; gap: .7rem; padding: .85rem 1rem; border: 1px solid var(--line, #dce3e8); border-radius: 12px; }
+.cashbook-loan-option { grid-column: 1 / -1; display: grid; gap: .7rem; padding: .85rem 1rem; border: 1px solid var(--line, #dce3e8); border-radius: 12px; }
 .cashbook-loan-option label { display: flex; align-items: center; gap: .65rem; flex-wrap: wrap; }
-.cashbook-loan-option input[type="checkbox"] { width: 1.1rem; height: 1.1rem; }
+.cashbook-loan-option input[type="checkbox"] { width: 1.1rem; height: 1.1rem; min-height: 0; flex: none; }
 .cashbook-loan-option small { opacity: .72; }
 .employee-transactions .loan-deadline { color: #9b5a12; font-weight: 700; opacity: 1; }
