@@ -1046,3 +1046,9 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
   .vehicle-registration-form small { display: block; margin-top: 6px; overflow-wrap: anywhere; }
   .vehicle-registration-form .vehicle-document-fields { grid-template-columns: minmax(0, 1fr); }
 }
+.employee-salary { white-space: nowrap; font-size: .9rem; }
+.employee-transactions { display: grid; gap: .75rem; }
+.employee-transactions article { display: grid; gap: .35rem; padding: .9rem 1rem; border: 1px solid var(--line, #dce3e8); border-radius: 12px; }
+.employee-transactions article > div { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.employee-transactions p { margin: 0; }
+.employee-transactions small { opacity: .7; }
