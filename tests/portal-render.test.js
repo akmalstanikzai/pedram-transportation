@@ -4,7 +4,7 @@ import { createServer } from 'vite'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { initialBranchForm } from '../src/lib/branchForm.js'
-import { capacityEntry } from '../src/lib/capacity.js'
+import { vehicleWeightsFromRow } from '../src/lib/capacity.js'
 import { driverFormFromRow } from '../src/lib/driverForm.js'
 import { ownerFormFromRow } from '../src/lib/ownerForm.js'
 
@@ -38,8 +38,16 @@ test('branch navigation and direct Branches URL never render branch management c
     const { VehicleRegistrationFields, CapacityField } = await server.ssrLoadModule('/src/pages/VehiclesPage.jsx')
     const { default: DriverRegistrationFields } = await server.ssrLoadModule('/src/components/DriverRegistrationFields.jsx')
     const { default: OwnerRegistrationFields } = await server.ssrLoadModule('/src/components/OwnerRegistrationFields.jsx')
+    const { default: VehicleUploads } = await server.ssrLoadModule('/src/components/VehicleUploads.jsx')
+    const { default: VehicleOwnerForm } = await server.ssrLoadModule('/src/components/VehicleOwnerForm.jsx')
     for (const language of ['en','fa']) {
       const ownerFields = renderToStaticMarkup(React.createElement(OwnerRegistrationFields, { language, form: ownerFormFromRow(null), onChange() {}, onFilesChange() {} }))
+      const ownerFromVehicle = renderToStaticMarkup(React.createElement(VehicleOwnerForm, { language, branchId: null, onCreated() {}, onCancel() {}, onDone() {}, onBusyChange() {} }))
+      assert.ok(ownerFromVehicle.includes(ownerFields),'vehicle owner creation must use the exact Fleet owner fields')
+      const uploads = renderToStaticMarkup(React.createElement(VehicleUploads, { language, photo: null, files: {}, onPhotoChange() {}, onFilesChange() {} }))
+      assert.equal((uploads.match(/type="file"/g)||[]).length,5)
+      assert.doesNotMatch(uploads,/optional|اختیاری/)
+      assert.match(uploads,/جواز سیر|Road permit/)
       assert.equal((ownerFields.match(/type="file"/g)||[]).length, 2)
       assert.equal((ownerFields.match(/type="tel"/g)||[]).length, 1)
       assert.match(ownerFields, /class="owner-address-row wide"/)
@@ -47,24 +55,28 @@ test('branch navigation and direct Branches URL never render branch management c
       const ownerLabels = language === 'en' ? ['Name','Surname','Father name','Mobile','Province','District','Village','Notes','Person Photo','Tazkira'] : ['نام','تخلص','نام پدر','موبایل','ولایت','ولسوالی','قریه','ملاحظات','عکس شخص','تذکره']
       for (let i=1;i<ownerLabels.length;i++) assert.ok(ownerFields.indexOf(ownerLabels[i-1]) < ownerFields.indexOf(ownerLabels[i]), `${ownerLabels[i-1]} before ${ownerLabels[i]}`)
       const driverFields = renderToStaticMarkup(React.createElement(DriverRegistrationFields, { language, form: driverFormFromRow(null), onChange() {}, onFilesChange() {} }))
-      assert.equal((driverFields.match(/type="tel"/g)||[]).length, 2)
+      assert.equal((driverFields.match(/type="tel"/g)||[]).length, 1)
       assert.equal((driverFields.match(/type="file"/g)||[]).length, 6)
       assert.doesNotMatch(driverFields, /National ID|Tazkira number|Licence number|Previous company|Profile photo|نمبر تذکره|نمبر لایسنس|شرکت قبلی|عکس پروفایل/)
       assert.match(driverFields, /class="driver-address-row wide"/)
-      const driverLabels = language === 'en' ? ['Name','Surname','Father name','Mobile','Second mobile','Province','District','Village','Photo of Driver','Tazkira','License','Passport','Health Card','Other Document'] : ['نام','تخلص','نام پدر','موبایل','موبایل دوم','ولایت','ولسوالی','قریه','عکس راننده','تذکره','لایسنس','پاسپورت','کارت صحت','اسناد دیگر']
+      assert.doesNotMatch(driverFields, /<legend>|Second mobile|موبایل دوم|optional|اختیاری/)
+      const driverLabels = language === 'en' ? ['Name','Surname','Father name','Mobile','Province','District','Village','Photo of Driver','Tazkira','License','Passport','Health Card','Other Document'] : ['نام','تخلص','نام پدر','موبایل','ولایت','ولسوالی','قریه','عکس راننده','تذکره','لایسنس','پاسپورت','کارت صحت','اسناد دیگر']
       for (let i=1;i<driverLabels.length;i++) assert.ok(driverFields.indexOf(driverLabels[i-1]) < driverFields.indexOf(driverLabels[i]), `${driverLabels[i-1]} before ${driverLabels[i]}`)
-      const vehicleFields = renderToStaticMarkup(React.createElement(VehicleRegistrationFields, { language, form: {}, capacity: capacityEntry(null), onChange() {}, onCapacityChange() {} }))
+      const vehicleFields = renderToStaticMarkup(React.createElement(VehicleRegistrationFields, { language, form: {}, capacity: vehicleWeightsFromRow(null), onChange() {}, onCapacityChange() {} }))
+      assert.match(vehicleFields,/value="__new_owner__"/)
+      assert.doesNotMatch(vehicleFields,/class="vehicle-choice-field wide"/)
       assert.match(vehicleFields, /Owner \(optional\)|مالک \(اختیاری\)/)
       assert.match(vehicleFields, /<option value=""[^>]*>(Optional|اختیاری)</)
       assert.doesNotMatch(vehicleFields.split('</select>')[0], /required/)
       assert.doesNotMatch(vehicleFields, /VIN|نمبر شاسی|Model year|سال ساخت|Permit number|نمبر جواز/)
       const fieldLabels = language === 'en' ? ['Plate number','Province','Foreign plate','Vehicle type','Body style','Model','Color','Weight capacity'] : ['نمبر پلیت','ولایت','پلیت خارجی','نوعیت','حالت','ماډل','رنگ','ظرفیت']
       for (let i=1;i<fieldLabels.length;i++) assert.ok(vehicleFields.indexOf(fieldLabels[i-1]) < vehicleFields.indexOf(fieldLabels[i]), `${fieldLabels[i-1]} before ${fieldLabels[i]}`)
-      const capacityFields = renderToStaticMarkup(React.createElement(CapacityField, { language, value: capacityEntry('12.5'), onChange() {} }))
+      const capacityFields = renderToStaticMarkup(React.createElement(CapacityField, { language, value: vehicleWeightsFromRow({ gross_weight_kg: 53000, empty_weight_kg: 15000 }), onChange() {} }))
       assert.doesNotMatch(capacityFields, /<button|>Number<|>Fraction<|>عدد<|>کسر</)
       assert.equal((capacityFields.match(/type="number"/g)||[]).length, 2)
-      assert.match(capacityFields, /value="25"/)
-      assert.match(capacityFields, /value="2"/)
+      assert.match(capacityFields, /value="53000"/)
+      assert.match(capacityFields, /value="15000"/)
+      assert.match(capacityFields, /inputMode="decimal"/)
     }
     const { default: Cashbook } = await server.ssrLoadModule('/src/pages/CashbookPage.jsx')
     for (const language of ['en','fa']) {

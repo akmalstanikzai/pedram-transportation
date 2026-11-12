@@ -1,3 +1,25 @@
+export function vehicleWeightsFromRow(row) {
+  return {
+    gross: row?.gross_weight_kg == null ? '' : String(row.gross_weight_kg),
+    empty: row?.empty_weight_kg == null ? '' : String(row.empty_weight_kg),
+    legacyCapacityTons: row?.capacity_tons ?? null,
+  }
+}
+
+export function vehicleWeightsPayload(value) {
+  const gross = String(value.gross ?? '').trim(), empty = String(value.empty ?? '').trim()
+  if (!gross && !empty) return { gross_weight_kg: null, empty_weight_kg: null, capacity_tons: value.legacyCapacityTons ?? null }
+  if (!gross || !empty || !/^\d+(?:\.\d{1,3})?$/.test(gross) || !/^\d+(?:\.\d{1,3})?$/.test(empty)) throw new Error('INVALID_VEHICLE_WEIGHTS')
+  const grossNumber = Number(gross), emptyNumber = Number(empty)
+  if (!Number.isFinite(grossNumber) || !Number.isFinite(emptyNumber) || grossNumber <= emptyNumber || emptyNumber < 0 || grossNumber >= 1000000000) throw new Error('INVALID_VEHICLE_WEIGHTS')
+  return {
+    gross_weight_kg: grossNumber.toString(), empty_weight_kg: emptyNumber.toString(),
+    capacity_tons: ((Math.round(grossNumber * 1000) - Math.round(emptyNumber * 1000)) / 1000000).toFixed(6).replace(/\.?0+$/, ''),
+  }
+}
+
+// Legacy conversion helpers remain for earlier migration/test compatibility.
+// The current vehicle form uses the independent kilogram fields above.
 export function capacityEntry(value) {
   const empty = { mode: 'fraction', number: '', numerator: '', denominator: '' }
   if (value == null || value === '') return empty

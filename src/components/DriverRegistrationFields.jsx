@@ -13,16 +13,15 @@ export default function DriverRegistrationFields({ language, form, onChange, fil
   return <>
     {field('first_name', 'Name', 'نام', true)}
     {field('surname', 'Surname', 'تخلص')}
-    {field('father_name', 'Father name', 'نام پدر', false, 'text', true)}
+    {field('father_name', 'Father name', 'نام پدر')}
     {field('phone', 'Mobile', 'موبایل', true, 'tel')}
-    {field('phone_secondary', 'Second mobile (optional)', 'موبایل دوم (اختیاری)', false, 'tel')}
-    <fieldset className="driver-address-row wide"><legend>{t('Address', 'آدرس')}</legend>
+    <fieldset className="driver-address-row wide" aria-label={t('Address', 'آدرس')}>
       {field('province', 'Province', 'ولایت')}
       {field('district', 'District', 'ولسوالی')}
       {field('village', 'Village', 'قریه')}
     </fieldset>
     {documentSlots.map(([key,en,fa]) => <label className="driver-upload-field" key={key}>
-      <span>{t(en,fa)} <small>{t('(optional)', '(اختیاری)')}</small></span>
+      <span>{t(en,fa)}</span>
       <input type="file" accept={key === 'profile_photo' ? '.jpg,.jpeg,.png,.webp' : '.pdf,.jpg,.jpeg,.png,.webp'} onChange={event => onFilesChange(current => ({ ...current, [key]: event.target.files?.[0] || null }))}/>
       {files[key] && <small className="driver-file-name">{files[key].name}</small>}
     </label>)}
