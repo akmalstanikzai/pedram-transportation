@@ -107,7 +107,7 @@ export const translations = {
     vehiclesPage: 'وسایط، مالکان و رانندگان در این بخش مدیریت می‌شوند.',
     drivers: 'رانندگان',
     driversPage: 'مشخصات، وظایف و اسناد رانندگان در این بخش اضافه می‌شود.',
-    bookings: 'برنامه',
+    bookings: 'بار نامه',
     traders: 'تاجران',
     employees: 'کارمندان',
     availability: 'دسترسی وسایط و رانندگان',
