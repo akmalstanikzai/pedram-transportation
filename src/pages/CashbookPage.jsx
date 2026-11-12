@@ -5,6 +5,7 @@ import { allRows, cents, currencies, kabulToday, simpleLedger, ledgerPeriod } fr
 import { rpc } from '../lib/operations'
 import { Modal } from '../components/RecordTools'
 import { printRecord } from '../lib/recordExports'
+import { canPrintReceipt, cashbookReceipt } from '../lib/financialReports'
 import SolarHijriDateInput from '../components/SolarHijriDateInput'
 import { formatSolarHijri, solarHijriToday, solarHijriToISODate } from '../lib/solarHijri'
 
@@ -119,6 +120,12 @@ export default function CashbookPage({ language, profile }) {
     if (row.opening) return t('Earlier balance','موجودی قبلی')
     if (row.private_activity) return t('Trader activity total','مجموع معاملات تاجران')
     return `${row.description}${row.loan_due_date ? ` · ${t('Loan due','مهلت قرض')} ${formatSolarHijri(row.loan_due_date)}` : ''}${row.loan_repayment_entry_id ? ` · ${t('Loan repayment','بازپرداخت قرض')}` : ''}`
+  }
+
+  function printReceipt(row) {
+    if (!canPrintReceipt(row)) return
+    const report = cashbookReceipt({ row: { ...row, currency }, language, account: name(row.branch_id || 'admin') })
+    if (!printRecord(report)) setError(t('Allow pop-ups to print this receipt.','برای چاپ رسید، پنجرهٔ جدید را اجازه دهید.'))
   }
 
   function printPeriod() {
@@ -253,7 +260,7 @@ export default function CashbookPage({ language, profile }) {
       <section className="cashbook-ledger" aria-label={t('Cashbook records','معاملات روزنامچه')}><h2>{t('Records','معاملات')}</h2><div className="simple-cashbook-list"><table><thead><tr><th scope="col">{t('Date','تاریخ')}</th><th scope="col">{t('Description','شرح معامله')}</th><th scope="col">{t('Money In','آمد')}</th><th scope="col">{t('Money Out','رفت')}</th>{president&&<th scope="col">{t('Correction','اصلاح')}</th>}</tr></thead><tbody>
         {selectedLedger.rows.slice(0,shown).map(row=><tr key={row.id} className={row.direction==='in'?'cashbook-row-in':'cashbook-row-out'}>
           <td data-label={t('Date','تاریخ')}>{formatSolarHijri(row.entry_date)}</td>
-          <td data-label={t('Description','شرح معامله')}>{row.receipt_number ? `#${row.receipt_number} · ` : ''}{description(row)}</td>
+          <td data-label={t('Description','شرح معامله')}>{row.receipt_number ? `#${row.receipt_number} · ` : ''}{description(row)}{canPrintReceipt(row)&&<button type="button" className="registry-secondary cashbook-print-receipt" disabled={loading||busy} onClick={()=>printReceipt(row)}><Printer size={16}/>{t('Print receipt','چاپ رسید')}</button>}</td>
           <td data-label={t('Money In','آمد')} className="simple-money-in">{row.direction==='in'?money(cents(row.amount)):'—'}</td>
           <td data-label={t('Money Out','رفت')} className="simple-money-out">{row.direction==='out'?money(cents(row.amount)):'—'}</td>
           {president&&<td data-label={t('Correction','اصلاح')}>

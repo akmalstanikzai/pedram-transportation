@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Archive, Plus, Search, UsersRound, WalletCards } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { formatSolarHijri } from '../lib/solarHijri'
+import PersonTransactions from '../components/PersonTransactions'
 import { ConfirmArchive, IconButton, Modal, RecordTools } from '../components/RecordTools'
 
 const fields = [
@@ -26,9 +26,6 @@ export default function EmployeesPage({ language, profile }) {
   const [open, setOpen] = useState(false)
   const [deletion, setDeletion] = useState(null)
   const [statement, setStatement] = useState(null)
-  const [transactions, setTransactions] = useState([])
-  const [statementLoading, setStatementLoading] = useState(false)
-  const [statementError, setStatementError] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -73,24 +70,14 @@ export default function EmployeesPage({ language, profile }) {
     setDeletion(null)
     await load()
   }
-  async function showTransactions(row) {
-    setStatement(row)
-    setTransactions([])
-    setStatementError('')
-    setStatementLoading(true)
-    const { data, error: loadError } = await supabase.rpc('employee_cashbook_transactions', { p_employee: row.id })
-    setStatementLoading(false)
-    if (loadError) setStatementError(loadError.message)
-    else setTransactions(data || [])
-  }
   const visible = rows.filter(row => Boolean(row.archived_at) === archived && `${row.first_name} ${row.last_name} ${row.phone} ${row.province} ${row.district} ${row.village}`.toLocaleLowerCase().includes(query.toLocaleLowerCase()))
   return <div className="registry-page employees-page">
     <div className="booking-page-header"><h1>{t('Employees', 'کارمندان')}</h1><button className="registry-primary" onClick={() => start()}><Plus size={18} />{t('Add employee', 'افزودن کارمند')}</button></div>
     <div className="registry-toolbar"><label className="registry-search"><Search size={18} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder={t('Search employees', 'جستجوی کارمندان')} aria-label={t('Search employees', 'جستجوی کارمندان')} /></label><button className="registry-secondary" aria-pressed={archived} onClick={() => setArchived(!archived)}><Archive size={18} />{t('Archive', 'بایگانی')}</button></div>
     {error && !open && !deletion && <p className="registry-notice error" role="alert">{error}</p>}
-    {loading ? <div className="empty-state"><span className="spinner dark" /></div> : visible.length ? <div className="record-list">{visible.map(row => <article className="record-row" key={row.id}><UsersRound size={22} /><div className="record-row-main"><strong>{row.first_name} {row.last_name}</strong><small>{row.phone} · {row.province}, {row.district}, {row.village}</small></div><strong className="employee-salary">{Number(row.salary).toLocaleString(language === 'fa' ? 'fa-AF' : 'en-US')} AFN</strong><IconButton icon={WalletCards} label={t('Transactions', 'معاملات')} onClick={() => showTransactions(row)} disabled={busy} /><RecordTools language={language} archived={row.archived_at} disabled={busy} onEdit={() => start(row)} onArchive={() => { setError(''); setDeletion(row) }} /></article>)}</div> : <div className="empty-state"><UsersRound size={28} /><h2>{archived ? t('No archived employees', 'کارمند بایگانی شده وجود ندارد') : t('No employees found', 'کارمندی یافت نشد')}</h2></div>}
+    {loading ? <div className="empty-state"><span className="spinner dark" /></div> : visible.length ? <div className="record-list">{visible.map(row => <article className="record-row" key={row.id}><UsersRound size={22} /><div className="record-row-main"><strong>{row.first_name} {row.last_name}</strong><small>{row.phone} · {row.province}, {row.district}, {row.village}</small></div><strong className="employee-salary">{Number(row.salary).toLocaleString(language === 'fa' ? 'fa-AF' : 'en-US')} AFN</strong><IconButton icon={WalletCards} label={t('Transactions', 'معاملات')} onClick={() => setStatement(row)} disabled={busy} /><RecordTools language={language} archived={row.archived_at} disabled={busy} onEdit={() => start(row)} onArchive={() => { setError(''); setDeletion(row) }} /></article>)}</div> : <div className="empty-state"><UsersRound size={28} /><h2>{archived ? t('No archived employees', 'کارمند بایگانی شده وجود ندارد') : t('No employees found', 'کارمندی یافت نشد')}</h2></div>}
     {open && <Modal title={editing ? t('Edit employee', 'ویرایش کارمند') : t('Add employee', 'افزودن کارمند')} busy={busy} onClose={() => setOpen(false)}><form className="registry-form" onSubmit={save}><fieldset disabled={busy} className="booking-fields wide">{fields.map(([key, en, fa]) => <label key={key}><span>{t(en, fa)} *</span><input required type={key === 'salary' ? 'number' : key === 'phone' ? 'tel' : 'text'} min={key === 'salary' ? '0' : undefined} step={key === 'salary' ? '0.01' : undefined} value={form[key]} onChange={event => setForm(current => ({ ...current, [key]: event.target.value }))} /></label>)}</fieldset>{error && <p className="wide registry-notice error" role="alert">{error}</p>}<div className="registry-form-actions"><button type="button" disabled={busy} onClick={() => setOpen(false)}>{t('Cancel', 'انصراف')}</button><button className="registry-primary" disabled={busy}>{busy ? <span className="spinner" /> : t('Save', 'ثبت')}</button></div></form></Modal>}
-    {statement && <Modal title={`${statement.first_name} ${statement.last_name} · ${t('Transactions', 'معاملات')}`} onClose={() => setStatement(null)}><div className="record-modal-body">{statementLoading ? <p role="status">{t('Loading…', 'در حال بارگیری…')}</p> : statementError ? <p className="registry-notice error" role="alert">{statementError}</p> : transactions.length ? <div className="employee-transactions">{transactions.map(item => <article key={item.id}><div><strong>#{item.receipt_number} · {formatSolarHijri(item.date)}</strong><span>{item.branch} · {item.currency}</span></div><p>{item.description}</p><strong className={item.direction === 'out' ? 'simple-money-out' : 'simple-money-in'}>{item.direction === 'out' ? '−' : '+'}{Number(item.amount).toLocaleString(language === 'fa' ? 'fa-AF' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {item.currency}</strong>{item.loan_due_date && <small className="loan-deadline">{t('Loan deadline', 'مهلت قرض')}: {formatSolarHijri(item.loan_due_date)} · {item.reversed_by ? t('Reversed', 'معکوس‌شده') : Number(item.loan_remaining) <= 0 ? t('Paid', 'پرداخت‌شده') : `${t('Remaining', 'باقی‌مانده')}: ${Number(item.loan_remaining).toLocaleString()} ${item.currency}`}</small>}{item.loan_repayment_entry_id && <small>{t('Loan repayment', 'بازپرداخت قرض')}</small>}{item.reversed_by && <small>{t('Reversed by', 'اصلاح‌شده با')} #{item.reversed_by}</small>}{item.reversal && <small>{t('Reversal', 'معامله معکوس')}</small>}</article>)}</div> : <p>{t('No transactions for this employee yet.', 'هنوز معامله‌ای برای این کارمند ثبت نشده است.')}</p>}</div></Modal>}
+    {statement && <PersonTransactions key={statement.id} person={statement} kind="employee" language={language} onClose={() => setStatement(null)} />}
     {deletion && <ConfirmArchive language={language} busy={busy} error={error} restore={Boolean(deletion.archived_at)} onClose={() => setDeletion(null)} onConfirm={toggleArchive} />}
   </div>
 }

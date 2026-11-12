@@ -1110,3 +1110,19 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 .loan-overdue { color: #a23e46; font-weight: 700; }
 .loan-notification-toast { position: fixed; z-index: 40; inset-block-end: 22px; inset-inline-end: 22px; display: flex; align-items: center; gap: 10px; max-width: min(360px, calc(100vw - 32px)); padding: 11px 12px; border: 1px solid #d8a7aa; border-radius: 10px; background: #fff7f4; box-shadow: 0 10px 28px #1c343126; color: #76343b; font-size: 13px; font-weight: 700; }
 @media (max-width: 640px) { .loan-notification-toast { inset-inline: 16px; inset-block-end: 16px; max-width: none; } }
+.financial-statement-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; align-items: end; }
+.financial-statement-controls label { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.financial-statement-controls select { width: 100%; min-width: 0; padding: 10px; border: 1px solid #d5dfe4; border-radius: 8px; background: white; font: inherit; }
+.financial-statement-controls .solar-date-trigger { min-width: 0; width: 100%; }
+.financial-statement-controls .solar-date-picker { width: 100%; }
+.financial-statement-controls button { white-space: normal; }
+.financial-statement-totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px; margin-bottom: 16px; }
+.financial-statement-totals > div { display: flex; flex-direction: column; gap: 6px; padding: 12px; border: 1px solid #d5dfe4; border-radius: 8px; overflow-wrap: anywhere; }
+.cashbook-print-receipt { display: flex; margin-top: 8px; white-space: normal; }
+.trader-portal-currency { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.financial-statement-controls + .employee-transactions, .employee-transactions article { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  .financial-statement-controls :is(select, .solar-date-trigger), .financial-statement-controls > button, .cashbook-print-receipt { min-height: 44px; }
+  .financial-statement-controls select { font-size: 16px; }
+  .financial-statement-controls > label:nth-child(2) .solar-date-popover { inset-inline-start: auto; inset-inline-end: 0; }
+}
