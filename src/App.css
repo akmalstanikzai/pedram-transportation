@@ -1013,6 +1013,14 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 .fleet-information-section:last-child { padding-bottom: 0; margin-bottom: 0; border-bottom: 0; }
 .fleet-information-view dd { line-height: 1.6; white-space: pre-line; overflow-wrap: anywhere; }
 .fleet-information-photo { display: block; width: 80px; height: 96px; object-fit: cover; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 18px; }
+.booking-information-actions { margin-bottom: 18px; }
+.booking-information-actions button { min-height: 44px; white-space: normal; }
+.booking-information-expenses { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.booking-information-expenses li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; min-width: 0; }
+.booking-information-expenses li > * { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 520px) {
+  .booking-information-actions button { width: 100%; justify-content: center; }
+}
 @media (max-width: 640px) {
   .branch-form .branch-form-fields { gap: 14px 10px; }
   .branch-form-fields input:not([type='file']) { min-height: 46px; padding-inline: 8px; font-size: 16px; }

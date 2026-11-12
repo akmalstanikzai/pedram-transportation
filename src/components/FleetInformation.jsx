@@ -3,7 +3,7 @@ import { formatSolarHijri } from '../lib/solarHijri'
 const hasValue = value => value !== null && value !== undefined && String(value).trim() !== ''
 const normalizeAddress = value => String(value || '').replace(/[,،\s]+/g, ' ').trim()
 
-function InformationGroup({ title, fields, address = false }) {
+export function InformationGroup({ title, fields, address = false }) {
   const visible = fields.filter(field => !field.optional || hasValue(field.value))
   if (!visible.length) return null
   return <section className="fleet-information-section" aria-label={title}>
@@ -66,11 +66,11 @@ export default function FleetInformation({ kind, row, language, photoUrl, owner 
         field('second','Second mobile','موبایل دوم',row.phone_secondary,numeric),
       ]}/>
       {hasAddress && <InformationGroup title={t('Address','آدرس')} address fields={[
-        ...addressParts.some(hasValue) ? [
+        ...(addressParts.some(hasValue) ? [
           field('province','Province','ولایت',row.province),
           field('district','District','ولسوالی',row.district),
           field('village','Village','قریه',row.village),
-        ] : [],
+        ] : []),
         field('full-address','Full address','آدرس کامل',showFullAddress ? row.address : null,{ ...optional, wide:true }),
       ]}/>}
       <InformationGroup title={t('Additional details','معلومات بیشتر')} fields={[
