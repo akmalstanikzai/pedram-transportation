@@ -40,10 +40,6 @@ export default function OperationsSummary({ language, president }) {
           </li>)}</ul> : <strong>{summary ? t('No movement', 'بدون معامله') : '—'}</strong>}
         </dd>
       </div>
-      <div>
-        <dt>{t('Documents nearing expiry', 'اسناد نزدیک به انقضا')}</dt>
-        <dd><strong>{summary?.expiring ?? '—'}</strong><small>{t('Due within 30 days', 'در ۳۰ روز آینده')}</small></dd>
-      </div>
     </dl>
   </section>
 }
