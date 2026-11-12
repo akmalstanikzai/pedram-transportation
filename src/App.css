@@ -1076,3 +1076,20 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 .cashbook-loan-option input[type="checkbox"] { width: 1.1rem; height: 1.1rem; min-height: 0; flex: none; }
 .cashbook-loan-option small { opacity: .72; }
 .employee-transactions .loan-deadline { color: #9b5a12; font-weight: 700; opacity: 1; }
+.loan-notification-root { position: relative; }
+.loan-notification-button { position: relative; width: 38px; height: 38px; display: grid; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 8px; color: #3e5e55; background: white; cursor: pointer; }
+.loan-notification-button:hover, .loan-notification-button[aria-expanded="true"] { border-color: #7ba993; background: #eff7f2; }
+.loan-notification-button:focus-visible, .loan-notification-panel button:focus-visible, .loan-notification-toast button:focus-visible { outline: 3px solid #72a995; outline-offset: 2px; }
+.loan-notification-badge { position: absolute; inset-block-start: -7px; inset-inline-end: -8px; min-width: 20px; height: 20px; padding-inline: 4px; display: grid; place-items: center; border-radius: 999px; color: white; background: #bd414a; font-size: 11px; font-weight: 800; }
+.loan-notification-panel { position: absolute; z-index: 30; inset-block-start: calc(100% + 12px); inset-inline-end: 0; width: min(360px, calc(100vw - 24px)); max-height: min(480px, calc(100dvh - 90px)); overflow-y: auto; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: white; box-shadow: 0 16px 36px #1c343126; color: var(--ink); }
+.loan-notification-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.loan-notification-head strong { font-size: 16px; }
+.loan-notification-head button, .loan-notification-toast button { display: grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 6px; background: transparent; color: inherit; cursor: pointer; }
+.loan-notification-panel p { margin: 12px 0; color: var(--muted); font-size: 13px; }
+.loan-notification-panel ul { display: grid; gap: 8px; padding: 0; margin: 0 0 14px; list-style: none; }
+.loan-notification-panel li { display: grid; gap: 4px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; }
+.loan-notification-panel li small { color: var(--muted); font-size: 12px; }
+.loan-due-today { color: #a05a0c; font-weight: 700; }
+.loan-overdue { color: #a23e46; font-weight: 700; }
+.loan-notification-toast { position: fixed; z-index: 40; inset-block-end: 22px; inset-inline-end: 22px; display: flex; align-items: center; gap: 10px; max-width: min(360px, calc(100vw - 32px)); padding: 11px 12px; border: 1px solid #d8a7aa; border-radius: 10px; background: #fff7f4; box-shadow: 0 10px 28px #1c343126; color: #76343b; font-size: 13px; font-weight: 700; }
+@media (max-width: 640px) { .loan-notification-toast { inset-inline: 16px; inset-block-end: 16px; max-width: none; } }

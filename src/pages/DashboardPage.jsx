@@ -22,6 +22,7 @@ import TraderPortalPage from './TraderPortalPage'
 import AvailabilityPage from './AvailabilityPage'
 import EmployeesPage from './EmployeesPage'
 import OperationsSummary from '../components/OperationsSummary'
+import LoanNotifications from '../components/LoanNotifications'
 
 const moduleDefinitions = [
   { id: 'cashbook', icon: BookOpen, titleKey: 'cashbook', color: 'green' },
@@ -82,6 +83,7 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
         <Brand text={text} />
         <div className="header-actions">
           <LanguageSwitch language={language} onChange={onLanguageChange} />
+          {role === 'president' && <LoanNotifications language={language} userId={session.user.id} />}
           <div className="user-chip"><span className="avatar">{displayName.charAt(0).toUpperCase()}</span><span><strong>{displayName}</strong><small>{text.roles[role] || text.roles.driver}</small></span></div>
           <button className="logout-button" onClick={onSignOut} title={text.signOut}><Icon name="logout" size={18} /><span>{text.signOut}</span></button>
         </div>

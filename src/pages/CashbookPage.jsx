@@ -179,6 +179,7 @@ export default function CashbookPage({ language, profile }) {
         await rpc('reverse_cashbook_entry',{p_operation:row.operation_id,p_reason:reason.trim()})
       }
       setCorrection(null)
+      window.dispatchEvent(new Event('pedram:cashbook-changed'))
       setNotice(mode === 'edit' ? t('Amount updated.','مبلغ به‌روز شد.') : t('Reversal recorded.','اصلاح ثبت شد.'))
       try { await load() }
       catch { setNotice(t('Correction saved. Refresh to see the updated balance.','اصلاح ثبت شد. برای دیدن موجودی، صفحه را تازه کنید.')) }
@@ -216,6 +217,7 @@ export default function CashbookPage({ language, profile }) {
         setUncertain(true);setRetryDirection(direction);throw new Error(t('Save was not confirmed. Retry the same direction with the same details, or refresh before entering again.','ثبت تأیید نشد. با همان جهت و معلومات دوباره کوشش کنید یا پیش از ثبت مجدد، فهرست را تازه‌سازی کنید.'))
       }
       setRequest(crypto.randomUUID());setRetryDirection('');setUncertain(false)
+      window.dispatchEvent(new Event('pedram:cashbook-changed'))
       setForm(previous=>({...previous,amount:'',description:'',trader_id:'',booking_id:'',employee_id:'',driver_id:'',loan:false,loan_due_date:'',loan_repayment_entry_id:''}))
       setNotice(t('Saved.','ثبت شد.'))
       try{await load()}catch{setNotice(t('Saved. Refresh the list to see the updated balance.','ثبت شد. برای دیدن موجودی جدید، فهرست را تازه‌سازی کنید.'))}
