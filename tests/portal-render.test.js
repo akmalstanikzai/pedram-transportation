@@ -58,6 +58,7 @@ test('branch navigation and direct Branches URL never render branch management c
       assert.equal((ownerFields.match(/type="file"/g)||[]).length, 2)
       assert.equal((ownerFields.match(/type="tel"/g)||[]).length, 1)
       assert.match(ownerFields, /class="owner-address-row wide"/)
+      assert.doesNotMatch(ownerFields, /<legend>|optional|اختیاری/)
       assert.doesNotMatch(ownerFields, /Profile photo|Tazkira number|عکس پروفایل|نمبر تذکره/)
       const ownerLabels = language === 'en' ? ['Name','Surname','Father name','Mobile','Province','District','Village','Notes','Person Photo','Tazkira'] : ['نام','تخلص','نام پدر','موبایل','ولایت','ولسوالی','قریه','ملاحظات','عکس شخص','تذکره']
       for (let i=1;i<ownerLabels.length;i++) assert.ok(ownerFields.indexOf(ownerLabels[i-1]) < ownerFields.indexOf(ownerLabels[i]), `${ownerLabels[i-1]} before ${ownerLabels[i]}`)

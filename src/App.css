@@ -1048,7 +1048,7 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 .owner-registration-form input { min-width: 0; font-family: inherit; }
 .owner-registration-form label > span { font-size: 13px; line-height: 1.5; }
 .owner-registration-form .owner-upload-field { justify-content: flex-start; }
-.owner-registration-form .owner-upload-field > span { min-height: 3em; }
+.owner-registration-form .owner-upload-field > span { min-height: 1.5em; }
 .owner-registration-form .owner-upload-field input { height: auto; min-height: 46px; padding: 8px; font-size: 12px; }
 .owner-upload-field input::file-selector-button { max-width: 100%; white-space: normal; }
 .owner-upload-field small { font-size: 11px; font-weight: 400; }
