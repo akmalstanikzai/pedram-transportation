@@ -1126,3 +1126,14 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
   .financial-statement-controls select { font-size: 16px; }
   .financial-statement-controls > label:nth-child(2) .solar-date-popover { inset-inline-start: auto; inset-inline-end: 0; }
 }
+.employee-registration-form .booking-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 10px; }
+.employee-registration-form .booking-fields > .wide { grid-column: 1 / -1; }
+.employee-registration-form label { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.employee-registration-form label > span { margin-bottom: 0; font-size: 12px; line-height: 1.4; }
+.employee-registration-form .employee-address-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.employee-registration-form .employee-upload-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 10px; }
+.employee-registration-form input { min-width: 0; width: 100%; }
+.employee-registration-form input[type='file'] { height: auto; min-height: 44px; padding: 8px; font-size: 12px; }
+.employee-registration-form small, .employee-existing-file { overflow-wrap: anywhere; }
+.employee-existing-file { padding: 4px 0; border: 0; background: none; color: var(--green); font: inherit; text-align: start; text-decoration: underline; cursor: pointer; }
+@media (max-width: 600px) { .employee-registration-form input:not([type='file']) { min-height: 44px; padding-inline: 8px; font-size: 16px; } }

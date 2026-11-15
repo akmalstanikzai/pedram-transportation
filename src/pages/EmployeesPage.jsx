@@ -1,19 +1,14 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Archive, Plus, Search, UsersRound, WalletCards } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import EmployeeRegistrationFields from '../components/EmployeeRegistrationFields'
+import { uploadEmployeeFile } from '../lib/employeeFiles'
+import { persistEmployee, employeeFields as fields, validateEmployeeFiles } from '../lib/employeeSave'
+import { explain } from '../lib/operations'
 import PersonTransactions from '../components/PersonTransactions'
 import { ConfirmArchive, IconButton, Modal, RecordTools } from '../components/RecordTools'
 
-const fields = [
-  ['first_name', 'Name', 'نام'],
-  ['last_name', 'Last name', 'تخلص'],
-  ['phone', 'Phone number', 'شماره تماس'],
-  ['province', 'Province', 'ولایت'],
-  ['district', 'District', 'ولسوالی'],
-  ['village', 'Village', 'قریه'],
-  ['salary', 'Salary (AFN)', 'معاش (افغانی)'],
-]
-const emptyForm = { first_name: '', last_name: '', phone: '', province: '', district: '', village: '', salary: '' }
+const emptyForm = Object.fromEntries(fields.map(([key]) => [key, '']))
 
 export default function EmployeesPage({ language, profile }) {
   const t = (en, fa) => language === 'fa' ? fa : en
@@ -24,13 +19,16 @@ export default function EmployeesPage({ language, profile }) {
   const [form, setForm] = useState(emptyForm)
   const [editing, setEditing] = useState(null)
   const [open, setOpen] = useState(false)
+  const [files, setFiles] = useState({})
+  const [saved, setSaved] = useState(false)
+  const progress = useRef({})
   const [deletion, setDeletion] = useState(null)
   const [statement, setStatement] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
   const load = useCallback(async () => {
-    const { data, error: loadError } = await supabase.from('employees').select('*').order('created_at', { ascending: false })
+    const { data, error: loadError } = await supabase.from('employees').select('*, employee_files(*)').order('created_at', { ascending: false })
     setLoading(false)
     if (loadError) setError(loadError.message)
     else { setRows(data || []); setError('') }
@@ -39,6 +37,9 @@ export default function EmployeesPage({ language, profile }) {
   if (profile?.role !== 'president' || profile.account_enabled === false) return null
 
   function start(row = null) {
+    progress.current = {}
+    setFiles({})
+    setSaved(false)
     setEditing(row)
     setForm(row ? Object.fromEntries(fields.map(([key]) => [key, String(row[key] ?? '')])) : emptyForm)
     setError('')
@@ -46,17 +47,45 @@ export default function EmployeesPage({ language, profile }) {
   }
   async function save(event) {
     event.preventDefault()
+    if (busy) return
     setBusy(true)
     setError('')
     const payload = Object.fromEntries(fields.map(([key]) => [key, key === 'salary' ? Number(form[key]) : form[key].trim()]))
-    const result = editing
-      ? await supabase.from('employees').update(payload).eq('id', editing.id).eq('updated_at', editing.updated_at).select('id')
-      : await supabase.from('employees').insert(payload).select('id')
-    setBusy(false)
-    if (result.error) return setError(result.error.message)
-    if (editing && !result.data?.length) return setError(t('This employee changed. Close and reopen the form to try again.', 'معلومات این کارمند تغییر کرده است. فورم را بسته و دوباره باز کنید.'))
+    try {
+      await persistEmployee(progress.current, {
+        payload, files, validateFiles: validateEmployeeFiles, uploadFile: uploadEmployeeFile,
+        saveRecord: async (id, values) => {
+          const result = editing
+            ? await supabase.from('employees').update(values).eq('id', editing.id).eq('updated_at', editing.updated_at).select('*')
+            : await supabase.from('employees').upsert({id,...values}, {onConflict:'id',ignoreDuplicates:true}).select('*')
+          if (result.error) throw result.error
+          if (editing && !result.data?.length) throw new Error('STALE_RECORD')
+          if (result.data?.[0]) return result.data[0]
+          const prior = await supabase.from('employees').select('*').eq('id', id).single()
+          if (prior.error) throw prior.error
+          return prior.data
+        },
+        onSaved: row => { setSaved(true); setForm(Object.fromEntries(fields.map(([key]) => [key,String(row[key] ?? '')]))) },
+      })
+      setOpen(false)
+      await load()
+    } catch (failure) { setError(explain(failure, language)) }
+    finally { setBusy(false) }
+  }
+  function closeForm() {
     setOpen(false)
-    await load()
+    if (progress.current.saved) void load()
+  }
+  async function viewFile(file) {
+    setError('')
+    const popup = window.open('', '_blank')
+    if (!popup) { setError(t('Allow pop-ups to view the file.', 'برای دیدن فایل، پنجرهٔ جدید را اجازه دهید.')); return }
+    popup.opener = null
+    try {
+      const {data,error:signError} = await supabase.storage.from('employee-files').createSignedUrl(file.storage_path, 120)
+      if (signError) throw signError
+      popup.location.replace(data.signedUrl)
+    } catch (failure) { popup.close(); setError(explain(failure, language)) }
   }
   async function toggleArchive() {
     setBusy(true)
@@ -76,7 +105,7 @@ export default function EmployeesPage({ language, profile }) {
     <div className="registry-toolbar"><label className="registry-search"><Search size={18} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder={t('Search employees', 'جستجوی کارمندان')} aria-label={t('Search employees', 'جستجوی کارمندان')} /></label><button className="registry-secondary" aria-pressed={archived} onClick={() => setArchived(!archived)}><Archive size={18} />{t('Archive', 'بایگانی')}</button></div>
     {error && !open && !deletion && <p className="registry-notice error" role="alert">{error}</p>}
     {loading ? <div className="empty-state"><span className="spinner dark" /></div> : visible.length ? <div className="record-list">{visible.map(row => <article className="record-row" key={row.id}><UsersRound size={22} /><div className="record-row-main"><strong>{row.first_name} {row.last_name}</strong><small>{row.phone} · {row.province}, {row.district}, {row.village}</small></div><strong className="employee-salary">{Number(row.salary).toLocaleString(language === 'fa' ? 'fa-AF' : 'en-US')} AFN</strong><IconButton icon={WalletCards} label={t('Transactions', 'معاملات')} onClick={() => setStatement(row)} disabled={busy} /><RecordTools language={language} archived={row.archived_at} disabled={busy} onEdit={() => start(row)} onArchive={() => { setError(''); setDeletion(row) }} /></article>)}</div> : <div className="empty-state"><UsersRound size={28} /><h2>{archived ? t('No archived employees', 'کارمند بایگانی شده وجود ندارد') : t('No employees found', 'کارمندی یافت نشد')}</h2></div>}
-    {open && <Modal title={editing ? t('Edit employee', 'ویرایش کارمند') : t('Add employee', 'افزودن کارمند')} busy={busy} onClose={() => setOpen(false)}><form className="registry-form" onSubmit={save}><fieldset disabled={busy} className="booking-fields wide">{fields.map(([key, en, fa]) => <label key={key}><span>{t(en, fa)} *</span><input required type={key === 'salary' ? 'number' : key === 'phone' ? 'tel' : 'text'} min={key === 'salary' ? '0' : undefined} step={key === 'salary' ? '0.01' : undefined} value={form[key]} onChange={event => setForm(current => ({ ...current, [key]: event.target.value }))} /></label>)}</fieldset>{error && <p className="wide registry-notice error" role="alert">{error}</p>}<div className="registry-form-actions"><button type="button" disabled={busy} onClick={() => setOpen(false)}>{t('Cancel', 'انصراف')}</button><button className="registry-primary" disabled={busy}>{busy ? <span className="spinner" /> : t('Save', 'ثبت')}</button></div></form></Modal>}
+    {open && <Modal title={editing ? t('Edit employee', 'ویرایش کارمند') : t('Add employee', 'افزودن کارمند')} busy={busy} onClose={closeForm}><form className="registry-form employee-registration-form" onSubmit={save}><fieldset disabled={busy || saved} className="booking-fields wide"><EmployeeRegistrationFields language={language} form={form} onChange={setForm} files={files} onFilesChange={setFiles} existing={editing?.employee_files || []} onView={viewFile}/></fieldset>{saved && error && <p className="wide booking-help">{t('Employee information is saved. Retry to finish the remaining uploads.','معلومات کارمند ثبت شد. برای تکمیل آپلودهای باقی‌مانده دوباره کوشش کنید.')}</p>}{error && <p className="wide registry-notice error" role="alert">{error}</p>}<div className="registry-form-actions"><button type="button" disabled={busy} onClick={closeForm}>{t('Cancel', 'انصراف')}</button><button className="registry-primary" disabled={busy}>{busy ? <span className="spinner" /> : saved ? t('Finish uploads', 'تکمیل آپلودها') : t('Save', 'ثبت')}</button></div></form></Modal>}
     {statement && <PersonTransactions key={statement.id} person={statement} kind="employee" language={language} onClose={() => setStatement(null)} />}
     {deletion && <ConfirmArchive language={language} busy={busy} error={error} restore={Boolean(deletion.archived_at)} onClose={() => setDeletion(null)} onConfirm={toggleArchive} />}
   </div>
