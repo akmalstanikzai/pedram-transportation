@@ -1137,3 +1137,30 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 .employee-registration-form small, .employee-existing-file { overflow-wrap: anywhere; }
 .employee-existing-file { padding: 4px 0; border: 0; background: none; color: var(--green); font: inherit; text-align: start; text-decoration: underline; cursor: pointer; }
 @media (max-width: 600px) { .employee-registration-form input:not([type='file']) { min-height: 44px; padding-inline: 8px; font-size: 16px; } }
+.payroll-toolbar { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+.payroll-toolbar label { display: grid; gap: 5px; flex: 1 1 120px; min-width: 0; }
+.payroll-toolbar select { min-width: 0; width: 100%; min-height: 44px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: white; font: inherit; }
+.payroll-list { display: grid; gap: 12px; }
+.payroll-card { min-width: 0; border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+.payroll-card-heading { display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: 8px; overflow-wrap: anywhere; }
+.payroll-card-heading small { display: block; margin-top: 4px; color: var(--muted); }
+.payroll-card-heading > span { font-size: 12px; color: var(--green); }
+.payroll-amounts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
+.payroll-amounts > div { min-width: 0; }
+.payroll-amounts dt { font-size: 12px; color: var(--muted); }
+.payroll-amounts dd { margin: 4px 0 0; font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+.payroll-summary { padding: 14px; border-radius: 10px; background: var(--surface); }
+.payroll-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.payroll-actions button { min-height: 44px; white-space: normal; }
+.payroll-history { margin-top: 12px; font-size: 12px; }
+.payroll-history summary { cursor: pointer; padding: 6px 0; }
+.payroll-history > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; padding: 8px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+.payroll-payment-form .booking-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 10px; }
+.payroll-payment-form .booking-fields > label { min-width: 0; }
+.payroll-payment-form .solar-date-picker { width: 100%; }
+@media (min-width: 800px) { .payroll-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 600px) {
+  .payroll-toolbar select, .payroll-payment-form :is(input,select) { font-size: 16px; }
+  .payroll-payment-form :is(input,select,.solar-date-trigger) { min-height: 44px; }
+  .payroll-card .payroll-actions > button { flex: 1 1 120px; }
+}

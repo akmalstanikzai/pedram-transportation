@@ -44,6 +44,16 @@ The President can filter bookings across all branches, head office, or one branc
 
 ## Cashbook / روزنامچه
 
+### Monthly employee payroll
+
+As President, open **Employees → Monthly payroll**. Choose a Solar Hijri year and month, then select **Start monthly payroll**. This saves the current AFN salary of every active employee without creating any Cashbook payment. Starting the same month again preserves its existing salaries; **Add missing employees** adds employees not yet included. Later changes to an employee's salary affect newly started months, not saved months.
+
+Use **Record payment** to enter a salary advance or salary payment, its date and the paying account. Each payment creates one linked Cashbook Money Out entry and reduces the month's remaining salary. Partial payments are supported; payments above the remaining amount are rejected. Only payments recorded through payroll count toward that month. Existing general employee payments and personal loans are not automatically classified as salary payments.
+
+**Print payslip** prints the month's salary, advances, salary payments, remaining balance and payment history. Correct or reverse a mistaken payment in Cashbook as President; payroll automatically follows the corrected amount or reversal. Archived employees retain their saved payroll history but cannot receive new payroll payments.
+
+Apply `supabase/migrations/202611160001_employee_payroll.sql` after the existing migrations before using payroll. No Edge Function deployment is needed. The integration check `tests/payroll-database.mjs` uses a disposable PGlite database and verifies the complete migration chain, payment retries, salary snapshots, Cashbook posting, corrections, reversals and role restrictions; set `PEDRAM_PGLITE_PATH` to the PGlite module path before running it.
+
 Choose an **Account**, **Currency**, and **Period**. The President can switch between the admin ledger and individual branches. Branch managers use their assigned branch. Currencies are tracked separately in AFN, USD, PKR, and IRR.
 
 - **Add a record** takes a description, amount, and date. Use **Save Money In** or **Save Money Out** to post it.
