@@ -1164,3 +1164,14 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
   .payroll-payment-form :is(input,select,.solar-date-trigger) { min-height: 44px; }
   .payroll-card .payroll-actions > button { flex: 1 1 120px; }
 }
+.branch-account-settings { display: grid; gap: 14px; }
+.branch-account-name { color: var(--navy); font-size: 17px; overflow-wrap: anywhere; }
+.branch-account-section { display: grid; gap: 10px; min-width: 0; border: 0; border-bottom: 1px solid var(--line); padding: 0 0 14px; }
+.branch-account-section label { display: grid; gap: 6px; min-width: 0; }
+.branch-account-section input:not([type='checkbox']) { width: 100%; min-width: 0; min-height: 44px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; background: #fbfcfd; color: var(--ink); font: inherit; }
+.branch-account-section small { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.branch-account-section summary { padding: 8px 0; cursor: pointer; font-weight: 700; }
+.branch-account-password-form { display: grid; gap: 12px; margin-top: 12px; }
+.branch-account-password-form .branch-password-show { display: flex; align-items: center; gap: 8px; }
+.branch-account-settings button { min-height: 44px; white-space: normal; }
+@media (max-width: 600px) { .branch-account-section input { font-size: 16px; } }

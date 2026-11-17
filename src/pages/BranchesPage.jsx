@@ -3,6 +3,7 @@ import { Archive, Building2, KeyRound, Plus, Power, UserRound } from 'lucide-rea
 import { supabase } from '../lib/supabase'
 import { rpc, explain } from '../lib/operations'
 import { ConfirmArchive, IconButton, Modal, RecordTools } from '../components/RecordTools'
+import { normalizeLogin } from '../lib/loginIdentity'
 import BranchPassword from '../components/BranchPassword'
 import { branchAccountError } from '../lib/branchAccountError'
 import { loadBranchManagerFiles, uploadBranchManagerFile } from '../lib/branchManagerFiles'
@@ -20,7 +21,7 @@ const labels = {
     fatherName: 'Father name', managerPhone: 'Mobile', nationalId: 'National ID', managerAddress: 'Home address', village: 'Village', managerPhoto: 'Manager photo',
     login: 'Email or username', password: 'Password', confirm: 'Confirm password',
     create: 'Create branch and account', cancel: 'Cancel', required: 'Complete all required fields.', mismatch: 'Passwords do not match.',
-    shortPassword: 'Password must contain at least 8 characters.', invalidLogin: 'Use a valid email, or a username with English letters, numbers, dots, hyphens or underscores.', success: 'Branch and manager account created.',
+    shortPassword: 'Password must contain at least 8 characters.', success: 'Branch and manager account created.',
     passwordSaved: 'Password saved. The branch manager can sign in with the new password.', passwordSavedDisabled: 'Password saved. Enable the login using the power icon to allow sign-in.',
     loadError: 'The branch database is not ready. Apply and deploy the latest Supabase changes.', total: 'Branches', managers: 'Managers',
   },
@@ -32,7 +33,7 @@ const labels = {
     managerPhone: 'موبایل', nationalId: 'نمبر تذکره', managerAddress: 'آدرس خانه', village: 'قریه', managerPhoto: 'عکس مدیر',
     login: 'ایمیل یا نام کاربری', password: 'رمز عبور', confirm: 'تکرار رمز عبور', create: 'ایجاد شعبه و حساب',
     cancel: 'انصراف', required: 'خانه‌های ضروری را تکمیل کنید.', mismatch: 'رمزهای عبور یکسان نیست.',
-    shortPassword: 'رمز عبور باید حداقل 8 حرف داشته باشد.', invalidLogin: 'ایمیل درست وارد کنید، یا نام کاربری را با حروف انگلیسی، اعداد، نقطه، خط تیره یا زیرخط بنویسید.', success: 'شعبه و حساب مدیر ایجاد شد.',
+    shortPassword: 'رمز عبور باید حداقل 8 حرف داشته باشد.', success: 'شعبه و حساب مدیر ایجاد شد.',
     passwordSaved: 'رمز عبور ثبت شد. مدیر شعبه می‌تواند با رمز جدید وارد شود.', passwordSavedDisabled: 'رمز عبور ثبت شد. برای ورود، حساب را با آیکن روشن/خاموش فعال کنید.',
     loadError: 'دیتابیس شعبات آماده نیست. تغییرات جدید Supabase را اجرا و نشر کنید.', total: 'شعبات', managers: 'مدیران',
   },
@@ -88,8 +89,7 @@ function BranchRegistry({ language }) {
       return
     }
     if (!form.name.trim() || !form.province.trim() || !form.city.trim() || !form.managerName.trim() || !form.managerPhone.trim() || !form.login.trim() || !form.password) return setMessage({ type: 'error', text: text.required })
-    const login = form.login.trim()
-    if (login.includes('@') ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(login) : !/^[a-z0-9._-]+$/i.test(login)) return setMessage({ type: 'error', text: text.invalidLogin })
+    try { normalizeLogin(form.login) } catch { return setMessage({type:'error',text:explain(new Error('INVALID_LOGIN'),language)}) }
     if (form.password.length < 8) return setMessage({ type: 'error', text: text.shortPassword })
     if (form.password !== form.confirm) return setMessage({ type: 'error', text: text.mismatch })
     setSaving(true)
@@ -123,14 +123,14 @@ function BranchRegistry({ language }) {
   return <div className="registry-page branch-registry">
     <div className="registry-actions"><button className="registry-primary" onClick={() => { setMessage(null); setEditing(null);setForm(initialForm);setSelectedFiles({});request.current=null;setOpen(true) }}><Plus size={18} />{text.add}</button><button className="registry-secondary" aria-pressed={archived} onClick={()=>setArchived(!archived)}><Archive size={18}/>{language==='fa'?'بایگانی':'Archive'}</button></div>
     {message && <div className={`registry-notice ${message.type}`}>{message.code?text[message.code]:message.text}</div>}
-    <div className="branch-table-wrap"><table className="branch-table"><thead><tr><th>{text.name}</th><th>{text.location}</th><th>{text.manager}</th><th>{text.branchPhone}</th><th>{text.username}</th><th>{text.password}</th><th>{language==='fa'?'حالت':'Account'}</th><th>{language==='fa'?'عملیات':'Actions'}</th></tr></thead><tbody>
+    <div className="branch-table-wrap"><table className="branch-table"><thead><tr><th>{text.name}</th><th>{text.location}</th><th>{text.manager}</th><th>{text.branchPhone}</th><th>{text.username}</th><th>{language==='fa'?'معلومات ورود':'Login settings'}</th><th>{language==='fa'?'حالت':'Account'}</th><th>{language==='fa'?'عملیات':'Actions'}</th></tr></thead><tbody>
       {loading ? <tr><td colSpan="8" className="branch-table-empty"><span className="spinner dark" /></td></tr> : branches.filter(b=>!!b.archived_at===archived).length ? branches.filter(b=>!!b.archived_at===archived).map(branch => <tr key={branch.id}>
         <td><span className="branch-name-cell">{files[`${branch.id}:photo`]?.url?<img className="branch-manager-thumb" src={files[`${branch.id}:photo`].url} alt=""/>:<span className="branch-table-icon"><Building2 size={18} /></span>}<strong>{branch.name}</strong></span></td>
         <td>{branch.city}, {branch.province}</td>
         <td>{branch.manager?.full_name || '—'}</td>
         <td>{branch.phone || branch.manager?.phone || '—'}</td>
         <td>{branch.manager?.username || '—'}</td>
-        <td><IconButton icon={KeyRound} label={language==='fa'?`تغییر رمز عبور · ${branch.name}`:`Change password · ${branch.name}`} disabled={saving||!!branch.archived_at||!branch.manager_user_id} onClick={()=>{setMessage(null);setPasswordBranch(branch)}}/></td>
+        <td><IconButton icon={KeyRound} label={language==='fa'?`معلومات ورود · ${branch.name}`:`Login settings · ${branch.name}`} disabled={saving||!!branch.archived_at||!branch.manager_user_id} onClick={()=>{setMessage(null);setPasswordBranch(branch)}}/></td>
         <td><IconButton icon={Power} label={branch.manager?.account_enabled?(language==='fa'?'غیرفعال کردن حساب':'Disable login'):(language==='fa'?'فعال کردن حساب':'Enable login')} disabled={saving||!!branch.archived_at||!branch.manager_user_id} onClick={async()=>{setSaving(true);try{await rpc('set_account_enabled',{p_kind:'branch',p_id:branch.id,p_enabled:!branch.manager?.account_enabled});await loadBranches()}catch(e){setMessage({type:'error',text:explain(e,language)})}finally{setSaving(false)}}}/><small>{branch.manager?.account_enabled?(language==='fa'?'فعال':'Enabled'):(language==='fa'?'غیرفعال':'Disabled')}</small></td>
         <td><RecordTools language={language} disabled={saving} archived={branch.archived_at} onView={()=>setDetails(branch)} onEdit={()=>edit(branch)} onArchive={()=>{setMessage(null);setDeletion(branch)}}/></td>
       </tr>) : <tr><td colSpan="8" className="branch-table-empty"><Building2 size={28} /><strong>{text.none}</strong></td></tr>}
@@ -151,7 +151,7 @@ function BranchRegistry({ language }) {
     </div></div>}
     {details&&<Modal title={details.name} onClose={()=>setDetails(null)}><BranchInformation language={language} details={details} files={files}/></Modal>}
     {deletion&&<ConfirmArchive language={language} busy={saving} error={message?.text} restore={!!deletion.archived_at} onClose={()=>setDeletion(null)} onConfirm={archiveBranch}/>}
-    {passwordBranch&&<BranchPassword key={passwordBranch.id} branch={passwordBranch} language={language} onClose={()=>setPasswordBranch(null)} onSaved={()=>{setPasswordBranch(null);setMessage({type:'success',code:passwordBranch.manager?.account_enabled?'passwordSaved':'passwordSavedDisabled'})}}/>}
+    {passwordBranch&&<BranchPassword key={passwordBranch.id} branch={passwordBranch} language={language} onClose={()=>setPasswordBranch(null)} onUpdated={loadBranches}/>}
   </div>
 }
 

@@ -1,6 +1,28 @@
 // Standalone Dashboard deployment: paste this entire file into index.ts.
-// Keep provisioning logic in sync with ../_shared/provision.ts (checked by tests).
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+// Shared with the standalone Edge Functions; keep copies identical (tested).
+function normalizeLogin(value) {
+  if (typeof value !== 'string') throw new Error('INVALID_LOGIN')
+  const login = value.normalize('NFKC').trim()
+  const invisibleControl = [...login].some(char => { const code = char.codePointAt(0); return code < 32 || code >= 127 && code <= 159 || code >= 8234 && code <= 8238 || code >= 8294 && code <= 8297 })
+  if (!login || [...login].length > 120 || invisibleControl) throw new Error('INVALID_LOGIN')
+  return login
+}
+
+async function loginIdentity(value) {
+  const login = normalizeLogin(value), key = login.toLowerCase()
+  // Preserve existing email sign-ins and the original ASCII username format.
+  const [local,domain,...extra] = key.split('@')
+  const atom = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+$/i
+  const email = !extra.length && local?.length <= 64 && local.split('.').every(part => atom.test(part)) && domain?.includes('.') && domain.split('.').every(part => /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i.test(part))
+  if (email) return {login, email:key, username:null}
+  if (key.length <= 64 && /^[a-z0-9_-]+(?:\.[a-z0-9_-]+)*$/.test(key)) return {login, email:`${key}@users.pedram.local`, username:login}
+  // Names, spaces and symbols are encoded into an email accepted by Auth.
+  const digest = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(key))
+  const hash = Array.from(new Uint8Array(digest),byte => byte.toString(16).padStart(2,'0')).join('')
+  return {login, email:`${hash}@usernames.pedram.local`, username:login}
+}
+
 const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,x-client-info,apikey,content-type','Content-Type':'application/json'}
 async function provision(kind:'branch'|'driver',request:Request){
  if(request.method==='OPTIONS')return new Response('ok',{headers})
@@ -34,10 +56,8 @@ async function provision(kind:'branch'|'driver',request:Request){
   }
   if(typeof id!=='string'||!/^[0-9a-f-]{36}$/i.test(id))throw new Error('REQUEST_CONFLICT')
   const credentials=kind==='branch'?body.credentials:body
-  const login=String(credentials?.login||'').trim().toLowerCase(),password=credentials?.password
-  if(!login||typeof password!=='string'||password.length<8)throw new Error('REQUIRED_FIELDS')
-  const isEmail=login.includes('@');if(!isEmail&&!/^[a-z0-9._-]+$/.test(login))throw new Error('REQUIRED_FIELDS')
-  const email=isEmail?login:`${login}@users.pedram.local`,username=isEmail?null:login
+  const {email,username}=await loginIdentity(credentials?.login),password=credentials?.password
+  if(typeof password!=='string'||password.length<8)throw new Error('PASSWORD_TOO_SHORT')
   let fullName='',metadata:Record<string,string>,lookupName:string,lookup:Record<string,string>
   if(kind==='branch'){
    if(!body.branch?.name?.trim()||!body.branch?.province?.trim()||!body.branch?.city?.trim()||!body.manager?.full_name?.trim()||!body.manager?.phone?.trim())throw new Error('REQUIRED_FIELDS')
@@ -68,4 +88,5 @@ async function provision(kind:'branch'|'driver',request:Request){
   return new Response(JSON.stringify({branch_id:data,username,email}),{headers})
  }catch(error){const message=error instanceof Error?error.message:(error as {message?:string})?.message||'Unable to create account';console.error('branch provisioning failed',{stage,code:(error as {code?:string})?.code||'',message});return new Response(JSON.stringify({error:message,stage}),{status:400,headers})}
 }
+
 Deno.serve(request=>provision('driver',request))
