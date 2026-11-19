@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowDownLeft, ArrowUpRight, Printer, RefreshCw } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Printer, RefreshCw, WalletCards } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { allRows, cents, currencies, kabulToday, simpleLedger, ledgerPeriod } from '../lib/cashbook'
 import { rpc } from '../lib/operations'
 import { Modal } from '../components/RecordTools'
+import CustomsAgentAccount from '../components/CustomsAgentAccount'
 import { printRecord } from '../lib/recordExports'
 import { canPrintReceipt, cashbookReceipt } from '../lib/financialReports'
 import SolarHijriDateInput from '../components/SolarHijriDateInput'
@@ -49,6 +50,20 @@ export default function CashbookPage({ language, profile }) {
   const [reason,setReason]=useState('')
   const [correctedAmount,setCorrectedAmount]=useState('')
   const [correctionError,setCorrectionError]=useState('')
+  const [customsDirectory,setCustomsDirectory]=useState(null)
+  const [customsAgent,setCustomsAgent]=useState('')
+  const [customsBusy,setCustomsBusy]=useState(false)
+
+  async function openCustomsPayments() {
+    setCustomsAgent('')
+    setCustomsDirectory({loading:true})
+    try {
+      const agents=await allRows(supabase,'customs_agents','id,name,phone','id')
+      setCustomsDirectory({agents:agents.sort((a,b)=>a.name.localeCompare(b.name))})
+    } catch {
+      setCustomsDirectory({error:true})
+    }
+  }
   const loadPayments = useCallback(async () => {
     if (!president) return []
     const [entries, operations, corrections] = await Promise.all([
@@ -198,6 +213,7 @@ export default function CashbookPage({ language, profile }) {
         LOAN_HAS_REPAYMENTS: t('Reverse the loan repayments before reversing this loan.','پیش از معکوس‌کردن قرض، بازپرداخت‌های آن را معکوس کنید.'),
         INVALID_CORRECTION: t('This receipt amount cannot be changed.','مبلغ این رسید قابل تغییر نیست.'),
         INVALID_AMOUNT: t('Enter a positive amount with up to two decimal places.','یک مبلغ مثبت با حداکثر دو رقم اعشار وارد کنید.'),
+        CUSTOMS_EXCEEDS_BALANCE: t('The corrected amount exceeds the remaining fee.','مبلغ اصلاح‌شده از حق‌الزحمه باقی‌مانده بیشتر است.'),
         STALE_RECORD: t('The receipt changed. Close this dialog and refresh.','رسید تغییر کرده است. این پنجره را بسته و صفحه را تازه کنید.'),
         REQUEST_CONFLICT: t('Refresh the Cashbook before making another correction.','پیش از اصلاح دوباره، روزنامچه را تازه کنید.'),
       }
@@ -245,7 +261,10 @@ export default function CashbookPage({ language, profile }) {
     {notice&&<p className="registry-notice success" role="status">{notice}</p>}
     {error&&<p className="registry-notice error" role="alert">{error}</p>}
     {!loading&&loaded&&validPeriod&&(<div className="cashbook-summary"><div><span>{t('Opening balance','موجودی اول دوره')}</span><strong>{money(selectedLedger.opening)}</strong></div><div><span>{t('Money In','آمد')}</span><strong className="simple-money-in">{money(selectedLedger.incoming)}</strong></div><div><span>{t('Money Out','رفت')}</span><strong className="simple-money-out">{money(selectedLedger.outgoing)}</strong></div><div className="cashbook-summary-balance"><span>{t('Closing balance','موجودی پایان دوره')}</span><strong>{money(selectedLedger.balance)}</strong></div></div>)}
-    <form className="simple-cashbook-form" onSubmit={save}><div className="simple-cashbook-form-heading"><h2>{t('Add a record','ثبت معامله')}</h2><p>{name(scope)} · {currency}</p></div><fieldset disabled={busy||uncertain}>
+    <form className="simple-cashbook-form" onSubmit={save}><div className="simple-cashbook-form-heading"><h2>{t('Add a record','ثبت معامله')}</h2><p>{name(scope)} · {currency}</p></div>
+    {president && <button type="button" className="registry-secondary customs-account-link" disabled={busy || uncertain || loading || !loaded}
+      onClick={openCustomsPayments}><WalletCards size={17} />{t('Commission agent', 'کمیشن کار')}</button>}
+    <fieldset disabled={busy||uncertain}>
       <label className="cashbook-date-field"><span>{t('Date','تاریخ')} *</span><SolarHijriDateInput required max={kabulToday()} language={language} value={form.date} onChange={date=>setForm({...form,date})} ariaLabel={t('Date','تاریخ')}/></label>
       <label className="cashbook-currency-field"><span>{t('Currency','واحد پول')} *</span><select value={currency} onChange={e=>{setCurrency(e.target.value);setForm(previous=>({...previous,booking_id:'',loan_repayment_entry_id:''}))}}>{currencies.map(c=><option key={c}>{c}</option>)}</select></label>
       <label className="cashbook-amount-field"><span>{t('Amount','مبلغ')} ({currency}) *</span><input required type="number" inputMode="decimal" min="0.01" max="999999999999.99" step="0.01" placeholder="0.00" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})}/></label>
@@ -282,6 +301,26 @@ export default function CashbookPage({ language, profile }) {
         {!selectedLedger.rows.length&&<tr><td colSpan={president?5:4} className="simple-cashbook-empty">{t('No records for this period.','در این بازه معامله‌ای ثبت نشده است.')}</td></tr>}
       </tbody></table></div>{selectedLedger.rows.length>shown&&<button type="button" className="cashbook-see-more" onClick={()=>setShown(current=>current+20)}>{t('See more','نمایش بیشتر')}</button>}</section>
     </>}
+    {customsDirectory && president && <Modal title={t('Commission agent payments', 'پرداخت‌های کمیشن کار')}
+      busy={customsBusy || customsDirectory.loading} onClose={() => setCustomsDirectory(null)}>
+      <div className="record-modal-body customs-cashbook-picker">
+        {customsDirectory.loading && <p role="status">{t('Loading commission agents…', 'در حال بارگیری کمیشن کاران…')}</p>}
+        {customsDirectory.error && <p className="registry-notice error" role="alert">{t('Could not load commission agents. Check the Customs setup and try again.', 'کمیشن کاران بارگیری نشدند. تنظیمات گمرک را بررسی کرده دوباره کوشش کنید.')}</p>}
+        {customsDirectory.agents?.length > 0 && <label><span>{t('Commission agent', 'کمیشن کار')}</span>
+          <select value={customsAgent} disabled={customsBusy} onChange={event => setCustomsAgent(event.target.value)}>
+            <option value="">{t('Select an agent', 'کمیشن کار را انتخاب کنید')}</option>
+            {customsDirectory.agents.map(agent => <option key={agent.id} value={agent.id}>{agent.name} · {agent.phone}</option>)}
+          </select>
+        </label>}
+        {customsDirectory.agents?.length === 0 && <p>{t('Add a commission agent in Customs first.', 'ابتدا یک کمیشن کار در گمرک اضافه کنید.')}</p>}
+      </div>
+      {customsAgent && <CustomsAgentAccount key={customsAgent} agent={customsDirectory.agents.find(agent => agent.id === customsAgent)}
+        language={language} initialAccount={scope} onBusyChange={setCustomsBusy}
+        onPayment={() => {
+          setNotice(t('Commission agent payment saved.', 'پرداخت کمیشن کار ثبت شد.'))
+          void load().catch(() => setNotice(t('Payment saved. Refresh Cashbook to update the balance.', 'پرداخت ثبت شد. برای به‌روز شدن موجودی روزنامچه را تازه کنید.')))
+        }} />}
+    </Modal>}
     {correction&&president&&<Modal title={`${correction.mode==='edit'?t('Edit receipt amount','ویرایش مبلغ رسید'):t('Reverse receipt','معکوس‌کردن رسید')} #${correction.row.receipt_number}`} busy={busy} onClose={()=>setCorrection(null)}>
       <form className="registry-form" onSubmit={saveCorrection}>
         <p className="wide">{description(correction.row)} · {money(cents(correction.row.amount))}</p>

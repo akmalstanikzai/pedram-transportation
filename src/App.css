@@ -549,6 +549,19 @@ html[dir='rtl'] .brand strong { font-family: var(--font-dari); letter-spacing: 0
 .customs-card-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .customs-card-heading h2 { min-width: 0; margin: 0; font-size: 17px; overflow-wrap: anywhere; }
 .customs-card-heading .record-tools { flex-shrink: 0; }
+.customs-account-link { margin-top: 14px; }
+.simple-cashbook-form > .customs-account-link { margin: 0 0 12px; }
+.customs-profile-account { padding-top: 0; }
+.customs-account-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.registry-form.customs-account-form { padding: 0; }
+.customs-account-form h3, .customs-account-form p { margin: 0; }
+.customs-account-form input, .customs-account-form select { min-width: 0; }
+.customs-account-form .booking-fields { gap: 12px 8px; }
+.customs-account-form .booking-fields > .wide { grid-column: 1 / -1; }
+.customs-cashbook-picker { border-bottom: 1px solid var(--line); }
+.customs-cashbook-picker label { display: grid; gap: 6px; }
+.customs-cashbook-picker select { width: 100%; min-height: 44px; border: 1px solid var(--line); padding: 8px; border-radius: 8px; }
+.customs-account .employee-transactions article > .registry-secondary { width: fit-content; }
 .customs-agent-card > .record-modal-body { padding: 12px 0 0; }
 .customs-information-grid, .customs-fields-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 8px; }
 .customs-information-grid { margin: 0; }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Plus, RefreshCw, Search, Stamp } from 'lucide-react'
+import { Plus, RefreshCw, Search, Stamp, WalletCards } from 'lucide-react'
+import CustomsAgentAccount from '../components/CustomsAgentAccount'
 import CustomsAgentFields from '../components/CustomsAgentFields'
 import { Modal, RecordTools } from '../components/RecordTools'
 import { getTranslation } from '../lib/i18n'
@@ -42,6 +43,8 @@ export default function CustomsPage({ language, profile }) {
   const [editing, setEditing] = useState(null)
   const [open, setOpen] = useState(false)
   const [details, setDetails] = useState(null)
+  const [account, setAccount] = useState(null)
+  const [accountBusy, setAccountBusy] = useState(false)
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState(null)
@@ -152,6 +155,9 @@ export default function CustomsPage({ language, profile }) {
           <RecordTools language={language} onView={() => { setError(null); setDetails(row) }} onEdit={() => start(row)} />
         </div>
         <AgentDetails row={row} language={language} />
+        <button type="button" className="registry-secondary customs-account-link" onClick={() => setAccount(row)}>
+          <WalletCards size={17} />{t('Fees & payments', 'حق‌الزحمه و پرداخت‌ها')}
+        </button>
       </article>)}
     </div>}
     {!loading && !message && !filtered.length && <div className="empty-state customs-empty-state">
@@ -178,6 +184,15 @@ export default function CustomsPage({ language, profile }) {
     {details && <Modal title={t('Commission agent details', 'معلومات کمیشن کار')} onClose={() => { setError(null); setDetails(null) }}>
       <AgentDetails row={details} language={language} onView={viewFile} />
       {message && <p className="registry-notice error" role="alert">{message}</p>}
+      <div className="record-modal-body customs-profile-account">
+        <button type="button" className="registry-secondary" onClick={() => { setAccount(details); setDetails(null); setError(null) }}>
+          <WalletCards size={17} />{t('Fees & payments', 'حق‌الزحمه و پرداخت‌ها')}
+        </button>
+      </div>
+    </Modal>}
+    {account && <Modal title={`${account.name} · ${t('Fees & payments', 'حق‌الزحمه و پرداخت‌ها')}`}
+      busy={accountBusy} onClose={() => setAccount(null)}>
+      <CustomsAgentAccount key={account.id} agent={account} language={language} onBusyChange={setAccountBusy} />
     </Modal>}
   </section>
 }
