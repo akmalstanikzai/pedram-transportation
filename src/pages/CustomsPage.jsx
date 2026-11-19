@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Plus, RefreshCw, Search, Stamp, WalletCards } from 'lucide-react'
 import CustomsAgentAccount from '../components/CustomsAgentAccount'
+import CompactTable from '../components/CompactTable'
 import CustomsAgentFields from '../components/CustomsAgentFields'
-import { Modal, RecordTools } from '../components/RecordTools'
+import { IconButton, Modal, RecordTools } from '../components/RecordTools'
 import { getTranslation } from '../lib/i18n'
 import { explain } from '../lib/operations'
 import { customsAgentFields, customsAgentFileTypes, customsAgentForm, latestCustomsAgentFiles, persistCustomsAgent } from '../lib/customsAgentForm'
@@ -10,14 +11,13 @@ import { loadCustomsAgents, saveCustomsAgent, uploadCustomsAgentFile, customsAge
 
 function AgentDetails({ row, language, onView }) {
   const t = (en, fa) => language === 'fa' ? fa : en
-  const files = onView ? latestCustomsAgentFiles(row.customs_agent_files) : []
-  const contactFields = customsAgentFields.slice(onView ? 0 : 1, 3)
+  const files = latestCustomsAgentFiles(row.customs_agent_files)
   return <div className="record-modal-body">
-    {[contactFields, customsAgentFields.slice(3)].map(group => <dl className="customs-information-grid" key={group[0][0]}>
+    {[customsAgentFields.slice(0, 3), customsAgentFields.slice(3)].map(group => <dl className="customs-information-grid" key={group[0][0]}>
       {group.map(([key, en, fa]) => <div key={key}><dt>{t(en, fa)}</dt>
         <dd>{key === 'phone' ? <bdi dir="ltr">{row[key]}</bdi> : row[key] || '—'}</dd></div>)}
     </dl>)}
-    {onView && <div className="customs-saved-documents">
+    <div className="customs-saved-documents">
       {customsAgentFileTypes.map(([type, en, fa]) => {
         const file = files.find(item => item.document_type === type)
         return <div key={type}>
@@ -27,7 +27,7 @@ function AgentDetails({ row, language, onView }) {
             : <small>{t('No file uploaded', 'فایل آپلود نشده است')}</small>}
         </div>
       })}
-    </div>}
+    </div>
   </div>
 }
 
@@ -148,18 +148,23 @@ export default function CustomsPage({ language, profile }) {
     </div>
     {message && !open && !details && <p className="registry-notice error" role="alert">{message}</p>}
     {loading && <div className="empty-state" role="status"><span className="spinner dark" /><p>{t('Loading commission agents…', 'در حال بارگیری کمیشن کاران…')}</p></div>}
-    {!loading && filtered.length > 0 && <div className="customs-agent-list">
-      {filtered.map(row => <article className="customs-agent-card" key={row.id}>
-        <div className="customs-card-heading">
-          <h2>{row.name}</h2>
+    {!loading && filtered.length > 0 && <CompactTable label={t('Commission agents', 'کمیشن کاران')} columns={[
+      { label: t('Name / mobile', 'نام / موبایل') },
+      { label: t('Location', 'موقعیت') },
+      { label: t('Actions', 'عملیات'), width: '29%' },
+    ]}>
+      {filtered.map(row => <tr key={row.id}>
+        <th scope="row"><strong>{row.name}</strong>
+          {row.father_name && <small>{t('Father', 'پدر')} · {row.father_name}</small>}
+          <small><bdi dir="ltr">{row.phone}</bdi></small>
+        </th>
+        <td>{[row.province, row.district, row.village].filter(Boolean).join(' · ') || '—'}</td>
+        <td><div className="compact-table-actions">
+          <IconButton icon={WalletCards} label={t('Fees & payments', 'حق‌الزحمه و پرداخت‌ها')} onClick={() => setAccount(row)} />
           <RecordTools language={language} onView={() => { setError(null); setDetails(row) }} onEdit={() => start(row)} />
-        </div>
-        <AgentDetails row={row} language={language} />
-        <button type="button" className="registry-secondary customs-account-link" onClick={() => setAccount(row)}>
-          <WalletCards size={17} />{t('Fees & payments', 'حق‌الزحمه و پرداخت‌ها')}
-        </button>
-      </article>)}
-    </div>}
+        </div></td>
+      </tr>)}
+    </CompactTable>}
     {!loading && !message && !filtered.length && <div className="empty-state customs-empty-state">
       <Stamp size={28} aria-hidden="true" />
       <h2>{search ? t('No matching commission agents', 'کمیشن کار مطابق یافت نشد') : t('No commission agents yet', 'هنوز کمیشن کار ثبت نشده است')}</h2>
