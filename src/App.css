@@ -537,11 +537,46 @@ html[dir='rtl'] .brand strong { font-family: var(--font-dari); letter-spacing: 0
 .fleet-drivers h3, .fleet-section-title { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 16px; font-weight: 800; }
 .booking-page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin: 12px 0 24px; }
 .booking-page-header h1 { margin: 0; font-size: 28px; font-weight: 800; }
-.customs-page-heading { justify-content: flex-start; flex-wrap: nowrap; }
+.customs-page-heading { justify-content: space-between; }
+.customs-title { display: flex; align-items: center; gap: 14px; }
 .customs-page-heading > div { min-width: 0; }
 .customs-page-heading .module-card-icon { flex-shrink: 0; }
 .customs-page-heading p { margin: 6px 0 0; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
 .customs-empty-state { min-height: 240px; border: 1px solid var(--line); border-radius: 16px; background: #fff; }
+.customs-toolbar .registry-search { flex: 1; width: auto; max-width: 500px; min-width: 0; }
+.customs-agent-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.customs-agent-card { min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.customs-card-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.customs-card-heading h2 { min-width: 0; margin: 0; font-size: 17px; overflow-wrap: anywhere; }
+.customs-card-heading .record-tools { flex-shrink: 0; }
+.customs-agent-card > .record-modal-body { padding: 12px 0 0; }
+.customs-information-grid, .customs-fields-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 8px; }
+.customs-information-grid { margin: 0; }
+.customs-information-grid + .customs-information-grid { margin-top: 12px; }
+.customs-information-grid dt { color: var(--muted); font-size: 12px; }
+.customs-information-grid dd { margin: 4px 0 0; font-size: 14px; overflow-wrap: anywhere; }
+.registry-form.customs-agent-form { display: block; }
+.customs-agent-fields { display: grid; gap: 14px; min-width: 0; border: 0; padding: 0; margin: 0 0 10px; }
+.customs-agent-form label { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.customs-fields-row > label { justify-content: flex-end; }
+.customs-agent-form label > span { margin: 0; font-size: 12px; line-height: 1.4; }
+.customs-agent-form input { min-width: 0; min-height: 44px; }
+.customs-upload-grid, .customs-saved-documents { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 10px; }
+.customs-agent-form input[type='file'] { height: auto; padding: 8px; font-size: 12px; }
+.customs-agent-form input::file-selector-button { max-width: 100%; white-space: normal; }
+.customs-agent-form small, .customs-saved-documents { overflow-wrap: anywhere; }
+.customs-saved-documents { border-top: 1px solid var(--line); padding-top: 18px; margin-top: 22px; }
+.customs-saved-documents strong, .customs-saved-documents small { display: block; font-size: 12px; }
+.customs-saved-documents small { margin-top: 6px; color: var(--muted); }
+@media (max-width: 600px) {
+  .customs-agent-list { grid-template-columns: minmax(0, 1fr); }
+  .customs-page-heading > .registry-primary { width: 100%; justify-content: center; }
+  .registry-form.customs-agent-form { padding: 18px 14px; }
+  .customs-agent-form input:not([type='file']) { padding-inline: 6px; font-size: 16px; }
+  .customs-upload-grid label > span { min-height: 2.8em; }
+  .customs-agent-modal .registry-form-head { padding: 18px 14px; }
+  .customs-agent-modal .registry-form-head h2 { font-size: 18px; }
+}
 .booking-list { display: grid; gap: 14px; margin-top: 20px; }
 .booking-form-card { width: min(880px, 100%); }
 .booking-form-card .registry-form-head { justify-content: space-between; }
