@@ -148,7 +148,7 @@ export default function CashbookPage({ language, profile }) {
       title: t('Cashbook statement','صورت حساب روزنامچه'),
       subtitle: `${name(scope)} · ${currency} · ${range}`,
       sections: [
-        { title: t('Period summary','خلاصه دوره'), rows: [
+        { title: t('Period summary','خلاصه دوره'), receiptColumns: 4, rows: [
           [t('Opening balance','موجودی اول دوره'),money(selectedLedger.opening)],
           [t('Money In','آمد'),money(selectedLedger.incoming)],
           [t('Money Out','رفت'),money(selectedLedger.outgoing)],

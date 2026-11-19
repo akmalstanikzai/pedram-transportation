@@ -1,5 +1,7 @@
 # Pedram Transportation Management System
 
+All existing print actions support 80 mm and 58 mm receipt paper as well as A4/PDF. Each opens a paper-selection preview with optional locally generated PNG receipt images for Android Bluetooth printing apps. See [Windows and Android receipt-printer setup](PRINTING.md) for the supplied POS-HQ300, driver/app setup, Dari printing, and test-print steps.
+
 A bilingual English and Dari application for managing bookings, fleet records, branches, trader accounts, and cash. The app uses React, Vite, and Supabase.
 
 Dari uses a right-to-left layout and the bundled Vazirmatn font. Both languages display English digits and Solar Hijri dates. Date pickers save the corresponding ISO date. Cashbook periods and daily dashboard totals use Kabul time.
