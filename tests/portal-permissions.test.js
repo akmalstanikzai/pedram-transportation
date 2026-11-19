@@ -13,3 +13,10 @@ test('only President can open Branches; unknown roles and pages are denied', () 
   for (const role of ['driver', 'vice_president', 'departmental_manager', undefined, 'admin']) assert.equal(canAccessModule(role, 'branches'), false)
   assert.equal(canAccessModule('president', 'unknown-page'), false)
 })
+
+test('Customs is available only in the President portal', () => {
+  assert.equal(canAccessModule('president','customs'),true)
+  for (const role of ['branch_manager','driver','trader','vice_president','departmental_manager',undefined]) {
+    assert.equal(canAccessModule(role,'customs'),false)
+  }
+})

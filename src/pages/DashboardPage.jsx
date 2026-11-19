@@ -4,6 +4,7 @@ import {
   CalendarDays,
   ClipboardList,
   BookOpen,
+  Stamp,
   Truck,
   Users,
 } from 'lucide-react'
@@ -21,6 +22,7 @@ import DriverBookingsPage from './DriverBookingsPage'
 import TraderPortalPage from './TraderPortalPage'
 import AvailabilityPage from './AvailabilityPage'
 import EmployeesPage from './EmployeesPage'
+import CustomsPage from './CustomsPage'
 import OperationsSummary from '../components/OperationsSummary'
 import LoanNotifications from '../components/LoanNotifications'
 
@@ -29,12 +31,13 @@ const moduleDefinitions = [
   { id: 'branches', icon: Building2, titleKey: 'branches', pageKey: 'branchesPage', color: 'blue' },
   { id: 'vehicles', icon: Truck, titleKey: 'vehicles', pageKey: 'vehiclesPage', color: 'green' },
   { id: 'bookings', icon: ClipboardList, titleKey: 'bookings', pageKey: 'bookingsPage', color: 'red' },
+  { id: 'customs', icon: Stamp, titleKey: 'customs', color: 'cyan' },
   { id: 'traders', icon: Users, titleKey: 'traders', color: 'cyan' },
   { id: 'employees', icon: Users, titleKey: 'employees', color: 'blue' },
   { id: 'availability', icon: CalendarDays, titleKey: 'availability', color: 'blue' },
 ]
 
-const registryModules = ['vehicles', 'bookings', 'cashbook', 'traders', 'employees', 'availability']
+const registryModules = ['vehicles', 'bookings', 'customs', 'cashbook', 'traders', 'employees', 'availability']
 
 function getModuleFromHash() {
   const raw = window.location.hash.replace('#/', '')
@@ -98,7 +101,7 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
               <div className={`module-icon ${activeModule.color}`}><ActiveModuleIcon size={38} strokeWidth={1.8} /></div>
               <div><span className="section-label">{text.managementModule}</span><h1>{text[activeModule.titleKey]}</h1><p>{text[activeModule.pageKey]}</p></div>
             </div>}
-            {activeModule.id === 'availability' ? <AvailabilityPage language={language} /> : activeModule.id === 'employees' ? <EmployeesPage language={language} profile={profile} /> : activeModule.id === 'traders' ? <TradersPage language={language} profile={profile} /> : activeModule.id === 'cashbook' ? <CashbookPage language={language} profile={profile} /> : activeModule.id === 'branches' ? <BranchesPage language={language} profile={profile} /> : activeModule.id === 'vehicles' ? <VehiclesPage language={language} profile={profile} /> : activeModule.id === 'bookings' ? <BookingsPage language={language} profile={profile} /> : <div className="empty-state">
+            {activeModule.id === 'customs' ? <CustomsPage language={language} /> : activeModule.id === 'availability' ? <AvailabilityPage language={language} /> : activeModule.id === 'employees' ? <EmployeesPage language={language} profile={profile} /> : activeModule.id === 'traders' ? <TradersPage language={language} profile={profile} /> : activeModule.id === 'cashbook' ? <CashbookPage language={language} profile={profile} /> : activeModule.id === 'branches' ? <BranchesPage language={language} profile={profile} /> : activeModule.id === 'vehicles' ? <VehiclesPage language={language} profile={profile} /> : activeModule.id === 'bookings' ? <BookingsPage language={language} profile={profile} /> : <div className="empty-state">
               <div className="empty-state-mark"><Icon name="layers" size={27} /></div>
               <h2>{text.readyTitle}</h2>
               <p>{text.readyText}</p>

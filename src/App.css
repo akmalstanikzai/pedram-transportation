@@ -537,6 +537,11 @@ html[dir='rtl'] .brand strong { font-family: var(--font-dari); letter-spacing: 0
 .fleet-drivers h3, .fleet-section-title { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 16px; font-weight: 800; }
 .booking-page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin: 12px 0 24px; }
 .booking-page-header h1 { margin: 0; font-size: 28px; font-weight: 800; }
+.customs-page-heading { justify-content: flex-start; flex-wrap: nowrap; }
+.customs-page-heading > div { min-width: 0; }
+.customs-page-heading .module-card-icon { flex-shrink: 0; }
+.customs-page-heading p { margin: 6px 0 0; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.customs-empty-state { min-height: 240px; border: 1px solid var(--line); border-radius: 16px; background: #fff; }
 .booking-list { display: grid; gap: 14px; margin-top: 20px; }
 .booking-form-card { width: min(880px, 100%); }
 .booking-form-card .registry-form-head { justify-content: space-between; }
