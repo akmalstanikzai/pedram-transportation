@@ -1,6 +1,7 @@
 import dariFontUrl from '@fontsource-variable/vazirmatn/files/vazirmatn-arabic-wght-normal.woff2?url'
 import { createReceiptImages } from './receiptImage.js'
 import { receiptSections, PRINT_CREDIT } from './receiptLayout.js'
+import { connectCleanter, printCleanterImages } from './cleanterPrinting.js'
 
 const printStyles = `
   * { box-sizing: border-box; }
@@ -27,8 +28,8 @@ const printStyles = `
   .report-note { margin: 10px 0; }
   .receipt .a4-report, .a4 .receipt-report { display: none; }
   .a4 .document { width: 184mm; max-width: 100%; }
-  .receipt .document { width: var(--receipt-width); max-width: 100%; }
-  .receipt header { display: block; text-align: center; border-bottom: 1px dashed #000; }
+  .receipt .document { display: flow-root; width: var(--receipt-width); max-width: 100%; padding: 2mm 4mm; }
+  .receipt header { display: block; text-align: center; border-bottom: 1px dashed #000; padding-bottom: 5px; margin-bottom: 5px; }
   .receipt .logo { width: 45px; height: 43px; }
   .receipt h1 { font-size: 13pt; }
   .receipt .company { font-size: 10pt; }
@@ -40,8 +41,11 @@ const printStyles = `
   .receipt .receipt-table th, .receipt .receipt-table td { border: .5pt solid #555; padding: .8mm .5mm; text-align: center; white-space: pre-wrap; }
   .receipt .receipt-table th { background: #f3f3f3; font-size: 7.5pt; }
   .receipt .record-end { margin-bottom: 6px; }
-  .receipt-note { text-align: center; font-size: 8pt; margin: 6px 0 0; overflow-wrap: anywhere; }
+  .report-closing { break-inside: avoid; page-break-inside: avoid; break-before: avoid; }
+  .receipt .report-note { text-align: center; font-size: 8pt; margin: 4px 0 0; overflow-wrap: anywhere; }
   .report-credit { direction: ltr; text-align: center; font: 7pt/1.3 Arial, sans-serif; border-top: 1px solid #888; margin-top: 7px; padding-top: 4px; break-inside: avoid; }
+  .receipt .report-credit { margin-top: 4px; padding-top: 3px; }
+  .receipt-section:last-child { break-after: avoid; }
   .report-section + .report-section { border-top: 1px solid #777; margin-top: 10px; padding-top: 4px; }
   @media screen { body { padding: 0 12px 24px; background: #fff; } }
   @media print {
@@ -84,6 +88,8 @@ export function printRecord({ language, title, subtitle, sections, note }) {
   let paper = '80'
   try { const saved = window.localStorage.getItem('pedram-print-paper'); if (['80','58','a4'].includes(saved)) paper = saved } catch { /* Printing also works when browser storage is unavailable. */ }
   paperSelect.value = paper
+  const cleanterButton = /Android/i.test(window.navigator?.userAgent || '')
+    ? append(toolbar,'button',t('Print receipt (Cleanter)','چاپ رسید (Cleanter)')) : null
   const imageButton = append(toolbar,'button',t('Prepare receipt images','آماده‌سازی عکس رسید'))
   append(toolbar,'p',t('Windows: choose your installed receipt printer. Android: select your Bluetooth print service, or download the images below and open them in the printing app.','ویندوز: چاپگر رسید نصب‌شده را انتخاب کنید. اندروید: سرویس چاپ بلوتوث را انتخاب کنید، یا عکس‌ها را دانلود کرده در برنامه چاپ باز کنید.'))
   const imageLinks = append(toolbar,'div',null,'image-links')
@@ -115,9 +121,10 @@ export function printRecord({ language, title, subtitle, sections, note }) {
       })
     }
   }
-  if (note) append(a4,'p',note,'report-note')
   const receipt = append(document,'div',null,'receipt-report')
-  append(document,'footer',PRINT_CREDIT,'report-credit')
+  const closing = append(document,'div',null,'report-closing')
+  if (note) append(closing,'p',note,'report-note')
+  append(closing,'footer',PRINT_CREDIT,'report-credit')
   let renderedPaper = ''
   function renderReceipt() {
     if (renderedPaper === paper) return
@@ -138,19 +145,24 @@ export function printRecord({ language, title, subtitle, sections, note }) {
         }
       }
     }
-    if (note) append(receipt,'p',note,'receipt-note')
   }
   const imageUrls = []
+  let receiptBusy = false
   function applyPaper() {
     doc.body.className = paper === 'a4' ? 'a4' : 'receipt'
     if (paper !== 'a4') renderReceipt()
-    document.style.setProperty('--receipt-width',paper === '58' ? '50mm' : '72mm')
-    imageButton.disabled = paper === 'a4'
+    document.style.setProperty('--receipt-width',`${paper === '58' ? 58 : 80}mm`)
+    imageButton.disabled = paper === 'a4' || receiptBusy
+    if (cleanterButton) cleanterButton.disabled = paper === 'a4' || receiptBusy
     if (paper === 'a4') paperStyle.textContent = '@page { size: A4; margin: 13mm; }'
     else {
-      // Match short receipts to their contents; paginate unusually long statements.
-      const height = Math.max(80,Math.min(1000,Math.ceil((document.getBoundingClientRect?.().height || 0) * 25.4 / 96 + 6)))
-      paperStyle.textContent = `@page { size: ${paper}mm ${height}mm; margin: 3mm 4mm; }`
+      // Measure at the actual print width, even on a narrow phone. Padding is
+      // inside the receipt so driver margins cannot subtract it a second time.
+      const previewMaxWidth = document.style.maxWidth
+      document.style.maxWidth = 'none'
+      const height = Math.max(40,Math.min(1000,Math.ceil((document.getBoundingClientRect?.().height || 0) * 25.4 / 96) + 2))
+      document.style.maxWidth = previewMaxWidth || ''
+      paperStyle.textContent = `@page { size: ${paper}mm ${height}mm; margin: 0; }`
     }
   }
   applyPaper()
@@ -166,19 +178,28 @@ export function printRecord({ language, title, subtitle, sections, note }) {
     Promise.all([logo.decode().catch(() => {}),doc.fonts.load?.('12px "Pedram Print"').catch(() => {}),doc.fonts.ready])
       .then(() => { clearTimeout(timer); resolve() })
   })
-  let printing = false
+  // Chrome's Share > Print bypasses our button. Refresh after assets load and
+  // again for the native print event so the footer is included in the page size.
+  ready.then(() => { if (!printWindow.closed) applyPaper() })
+  printWindow.addEventListener?.('beforeprint',applyPaper)
   button.onclick = async () => {
-    if (printing) return
-    printing = true; button.disabled = true
+    if (receiptBusy) return
+    receiptBusy = true; button.disabled = true; paperSelect.disabled = true; imageButton.disabled = true
+    if (cleanterButton) cleanterButton.disabled = true
     try {
       await ready
       if (!printWindow.closed) { applyPaper(); printWindow.focus(); printWindow.print() }
-    } finally { printing = false; button.disabled = false }
+    } finally {
+      receiptBusy = false; button.disabled = false; paperSelect.disabled = false; imageButton.disabled = paper === 'a4'
+      if (cleanterButton) cleanterButton.disabled = paper === 'a4'
+    }
   }
   imageButton.onclick = async () => {
-    if (paper === 'a4') return
+    if (receiptBusy || paper === 'a4') return
+    receiptBusy = true
     const selectedPaper = paper
     imageButton.disabled = true; paperSelect.disabled = true; button.disabled = true
+    if (cleanterButton) cleanterButton.disabled = true
     status.textContent = t('Preparing images…','در حال آماده‌سازی عکس‌ها…')
     try {
       await ready
@@ -192,7 +213,35 @@ export function printRecord({ language, title, subtitle, sections, note }) {
       status.textContent = t('Tap each download link, then open or share the image with your Bluetooth printing app. Print all parts in order.','هر لینک را لمس کنید، سپس عکس را با برنامه چاپ بلوتوث باز یا شریک سازید. تمام بخش‌ها را به ترتیب چاپ کنید.')
     } catch {
       status.textContent = t('Image preparation failed. Use Print / Save PDF, or try again.','آماده‌سازی عکس انجام نشد. از چاپ / ذخیره PDF استفاده کنید یا دوباره کوشش کنید.')
-    } finally { imageButton.disabled = paper === 'a4'; paperSelect.disabled = false; button.disabled = false }
+    } finally {
+      receiptBusy = false
+      imageButton.disabled = paper === 'a4'; paperSelect.disabled = false; button.disabled = false
+      if (cleanterButton) cleanterButton.disabled = paper === 'a4'
+    }
+  }
+  if (cleanterButton) cleanterButton.onclick = async () => {
+    if (receiptBusy || paper === 'a4') return
+    receiptBusy = true
+    const selectedPaper = paper
+    cleanterButton.disabled = true; imageButton.disabled = true; paperSelect.disabled = true; button.disabled = true
+    status.textContent = t('Connecting to Cleanter… Allow access to apps on this device if Chrome asks.','اتصال به Cleanter… اگر کروم اجازه دسترسی به برنامه‌های این دستگاه را خواست، اجازه دهید.')
+    let sent = false
+    try {
+      await connectCleanter(printWindow.fetch.bind(printWindow))
+      await ready
+      status.textContent = t('Printing receipt…','در حال چاپ رسید…')
+      const images = await createReceiptImages(doc,report,selectedPaper)
+      sent = true
+      await printCleanterImages(images,selectedPaper,printWindow.fetch.bind(printWindow))
+      status.textContent = t('Cleanter reports that the receipt was printed.','Cleanter گزارش داد که رسید چاپ شد.')
+    } catch {
+      status.textContent = sent
+        ? t('Printing was not confirmed. Check the printer and Cleanter job history before trying again.','چاپ تأیید نشد. پیش از کوشش دوباره، چاپگر و تاریخچه چاپ Cleanter را بررسی کنید.')
+        : t('Open Cleanter, select the printer and tap Start. In Chrome site permissions, allow Apps on device, then try again. Print / Save PDF is also available.','Cleanter را باز کنید، چاپگر را انتخاب کرده و Start را بزنید. در اجازه‌های سایت کروم، دسترسی به برنامه‌های دستگاه را فعال کنید و دوباره کوشش کنید. چاپ / ذخیره PDF نیز موجود است.')
+    } finally {
+      receiptBusy = false
+      cleanterButton.disabled = paper === 'a4'; imageButton.disabled = paper === 'a4'; paperSelect.disabled = false; button.disabled = false
+    }
   }
   // A preview lets mobile users select paper or images before opening the OS dialog.
   return true

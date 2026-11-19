@@ -29,10 +29,18 @@ test('all financial reports use safe text, RTL and the working Print / Save PDF 
         {language,title:unsafe,sections:[{title:'Booking',rows:[['Route','Kabul → Herat']]},{headers:['Date','Description','In','Out'],rows:[['1405/08/28',unsafe,'100','']]}]},
       ]
       for (const report of reports) {
-        let printed = 0, focused = 0
-        const doc = { documentElement:{}, head:new Element('head'), body:new Element('body'), createElement:tag => new Element(tag), fonts:{ready:Promise.resolve()} }
-        const popup = { document:doc, focus:() => focused++, print:() => printed++ }
-        globalThis.window = { open:() => popup, location:{href:'http://localhost/'} }
+        let printed = 0, focused = 0, receiptHeight = 290
+        const events = {}
+        const doc = { documentElement:{}, head:new Element('head'), body:new Element('body'), createElement:tag => {
+          const node = new Element(tag)
+          if (tag === 'main') node.getBoundingClientRect = () => {
+            assert.equal(node.style.maxWidth,'none','measure at print width, not the phone preview width')
+            return {height:receiptHeight}
+          }
+          return node
+        }, fonts:{ready:Promise.resolve()} }
+        const popup = { document:doc, focus:() => focused++, print:() => printed++, addEventListener:(name,callback) => { events[name] = callback } }
+        globalThis.window = { open:() => popup, location:{href:'http://localhost/'}, navigator:{userAgent:language === 'fa' ? 'Android' : 'Desktop'} }
         assert.equal(printRecord(report), true)
         await new Promise(resolve => setImmediate(resolve))
         assert.equal(doc.documentElement.dir, language === 'fa' ? 'rtl' : 'ltr')
@@ -41,10 +49,19 @@ test('all financial reports use safe text, RTL and the working Print / Save PDF 
         assert.equal(focused, 0)
         assert.equal(doc.title, report.title)
         const elements = flatten(doc.body)
+        const cleanterButton = elements.find(node=>node.textContent === 'چاپ رسید (Cleanter)')
+        assert.equal(Boolean(cleanterButton),language === 'fa')
         assert.equal(elements.filter(node => node.tag === 'img').length, 1, 'only the company logo is an image')
         assert.ok(elements.some(node => String(node.textContent).includes(unsafe)))
         assert.equal(elements.filter(node => node.tag === 'footer' && node.textContent === 'rayan-tech-solution.tech').length,1)
+        const closing = elements.find(node => node.className === 'report-closing')
+        assert.ok(closing.children.some(node => node.tag === 'footer'))
+        if (report.note) assert.ok(closing.children.some(node => node.textContent === report.note))
         assert.ok(elements.some(node => node.className?.includes('receipt-table')))
+        assert.equal(typeof events.beforeprint,'function')
+        receiptHeight = 650
+        events.beforeprint()
+        assert.ok(flatten(doc.head).some(node => String(node.textContent).includes('size: 80mm 174mm; margin: 0;')),'native Chrome printing remeasures the complete receipt after font/layout changes')
         elements.find(node => node.tag === 'button').onclick()
         await new Promise(resolve => setImmediate(resolve))
         assert.equal(printed, 1)
@@ -56,6 +73,7 @@ test('all financial reports use safe text, RTL and the working Print / Save PDF 
         assert.ok(flatten(doc.head).some(node => String(node.textContent).includes('size: 58mm')))
         paper.value = 'a4'; paper.onchange()
         assert.equal(doc.body.className,'a4')
+        if (cleanterButton) assert.equal(cleanterButton.disabled,true,'Cleanter prints receipt paper, not A4')
         assert.ok(flatten(doc.head).some(node => String(node.textContent).includes('size: A4')))
         popup.closed = true
         elements.find(node => node.tag === 'button').onclick()
