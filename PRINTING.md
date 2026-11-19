@@ -2,7 +2,7 @@
 
 Every existing print action opens the same preview. Select **80 mm receipt**, **58 mm receipt**, or **A4 / PDF**, then **Print / Save PDF**. The browser remembers the paper choice on that device. All authorized report rows are retained. Receipt sections use compact bordered tables with related information side by side and a separator between sections. Cashbook period summaries use four columns at 80 mm and two at 58 mm. Wider records use consecutive small tables so fields remain readable. Browser/PDF and Android image exports share the same table layout. Every print includes the small centered footer `rayan-tech-solution.tech`.
 
-On Android with Cleanter installed, use **Print receipt (Cleanter)** for continuous receipt printing without Android's fixed roll-page length. **Print / Save PDF** remains available for the normal system dialog and PDF export.
+On Android with Cleanter installed, use **Print receipt (Cleanter)** for continuous receipt printing without Android's fixed roll-page length. If the preview was set to A4/PDF, this button automatically selects 80 mm rather than staying disabled. The button shows Connecting/Printing while it works. **Print / Save PDF** remains available for the normal system dialog and PDF export.
 
 Covered: booking confirmations, Cashbook period statements, individual Cashbook receipts, employee and driver statements, President-side trader statements, Trader portal My account, and employee payroll payslips. The Cashbook period printout still omits the receipt-number column.
 
@@ -29,7 +29,7 @@ Use continuous thermal receipt paper and Receipt/ESC-POS mode, not gap-label mod
 2. Open **Cleanter: Thermal Printer BT**, select the paired printer, choose 80 mm, and start its local service if it is not already running.
 3. In Pedram's report preview choose **80 mm receipt → Print receipt (Cleanter)**. If Chrome asks to access other apps/services on this device, allow it. If access was previously blocked, open this site's Chrome permissions and enable **Apps on device**.
 4. This button sends the locally generated receipt images to Cleanter on `http://localhost:9100` as one continuous print job. The compact table layout, Dari text and company credit are included in the images. There are no PDF page breaks or page-length blank areas between image parts, and only one blank feed line is requested at the end. Paper advance added by the printer/app is still controlled there.
-5. If printing is not confirmed, inspect the printer and Cleanter's job history before trying again. Pedram does not automatically resend an uncertain job or fall back to a second print path, preventing accidental duplicate receipts. **Print / Save PDF** and **Prepare receipt images** remain available.
+5. If Chrome has blocked device access, the preview shows a permission-specific instruction without sending a job. If printing is not confirmed after sending, inspect the printer and Cleanter's job history before trying again. Pedram does not automatically resend an uncertain job or fall back to a second print path, preventing accidental duplicate receipts. **Print / Save PDF** and **Prepare receipt images** remain available.
 
 The bridge is contacted only after a user taps the Cleanter button. No background printer discovery or cloud conversion is used. The phone and Cleanter must be the same device. A4 printing uses the ordinary print/PDF path.
 
@@ -45,7 +45,7 @@ Bluetooth pairing by itself does not make a printer appear in a browser. The And
 
 ## Paper and text
 
-- Default 80 mm paper uses 72 mm of content width; 58 mm uses 50 mm. The receipt includes 2 mm top/bottom and 4 mm side padding, with no additional CSS page margins. Short print pages are measured at their physical print width after fonts/logo load and again for native printing; the closing note and credit stay together. Long browser statements paginate at up to 1,000 mm per page. Driver/service paper handling can override custom browser page sizes; use the Cleanter button on Android to bypass that pagination.
+- Default 80 mm paper uses 72 mm of content width; 58 mm uses 50 mm. The receipt includes 2 mm top/bottom and 4 mm side padding, with no additional CSS page margins. On desktop, short print pages are measured at their physical print width after fonts/logo load and again for native printing; long browser statements paginate at up to 1,000 mm per page. On Android the normal print path uses `@page size: auto` and the receipt paper selected in the system print dialog, so Chrome does not vertically center a shorter CSS page inside a longer service sheet. The closing note and credit stay together. Driver/service paper length can still add trailing paper; the Cleanter button bypasses sheet pagination entirely.
 - Receipt PNGs are black on white, 576 pixels wide for 80 mm or 384 pixels for 58 mm. Long exports are split into parts up to 6,000 pixels high to avoid oversized Android images. Download every part.
 - Dari uses the bundled Vazirmatn font, RTL layout and image rendering, not raw ESC/POS text encoding. The image output contains the company name and report text; the browser/PDF output also includes the company logo.
 - A4 remains available for regular office printers and large PDF reports. Browsers/printer drivers retain control over the final destination and settings.

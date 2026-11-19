@@ -13,6 +13,22 @@ test('Cleanter connects only to the on-device bridge',async () => {
   await assert.rejects(connectCleanter(async () => ({ok:false})),/CLEANTER_UNAVAILABLE/)
 })
 
+test('a blocked Chrome device permission returns a clear error without sending a receipt',async () => {
+  let requests=0
+  await assert.rejects(connectCleanter(async()=>{requests++;return {ok:true}}, {
+    query:async({name})=>{assert.equal(name,'local-network-access');return {state:'denied'}},
+  }),/CLEANTER_PERMISSION_DENIED/)
+  assert.equal(requests,0)
+})
+
+test('older browsers without the local-device permission API can still connect',async () => {
+  let requests=0
+  await connectCleanter(async()=>{requests++;return {ok:true}}, {
+    query:async()=>{throw new TypeError('Unknown permission')},
+  })
+  assert.equal(requests,1)
+})
+
 test('receipt images print as one continuous job with binary PNG data and minimal paper feed',async () => {
   const bytes=Uint8Array.from({length:20000},(_,i)=>i%256)
   const images=[new Blob([bytes],{type:'image/png'}),new Blob(['second image'],{type:'image/png'})]

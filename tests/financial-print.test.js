@@ -61,7 +61,7 @@ test('all financial reports use safe text, RTL and the working Print / Save PDF 
         assert.equal(typeof events.beforeprint,'function')
         receiptHeight = 650
         events.beforeprint()
-        assert.ok(flatten(doc.head).some(node => String(node.textContent).includes('size: 80mm 174mm; margin: 0;')),'native Chrome printing remeasures the complete receipt after font/layout changes')
+        assert.ok(flatten(doc.head).some(node => String(node.textContent).includes(language === 'fa' ? 'size: auto; margin: 0;' : 'size: 80mm 174mm; margin: 0;')),'Android uses the service sheet; desktop printing remeasures after font/layout changes')
         elements.find(node => node.tag === 'button').onclick()
         await new Promise(resolve => setImmediate(resolve))
         assert.equal(printed, 1)
@@ -70,10 +70,10 @@ test('all financial reports use safe text, RTL and the working Print / Save PDF 
         assert.equal(paper.value,'80')
         paper.value = '58'; paper.onchange()
         assert.equal(doc.body.className,'receipt')
-        assert.ok(flatten(doc.head).some(node => String(node.textContent).includes('size: 58mm')))
+        assert.ok(flatten(doc.head).some(node => String(node.textContent).includes(language === 'fa' ? 'size: auto;' : 'size: 58mm')))
         paper.value = 'a4'; paper.onchange()
         assert.equal(doc.body.className,'a4')
-        if (cleanterButton) assert.equal(cleanterButton.disabled,true,'Cleanter prints receipt paper, not A4')
+        if (cleanterButton) assert.equal(cleanterButton.disabled,false,'Cleanter remains actionable in PDF mode and selects receipt paper when tapped')
         assert.ok(flatten(doc.head).some(node => String(node.textContent).includes('size: A4')))
         popup.closed = true
         elements.find(node => node.tag === 'button').onclick()

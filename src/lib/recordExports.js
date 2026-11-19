@@ -60,6 +60,7 @@ export function printRecord({ language, title, subtitle, sections, note }) {
   if (!printWindow) return false
   printWindow.opener = null
   const doc = printWindow.document, dari = language === 'fa'
+  const android = /Android/i.test(window.navigator?.userAgent || '')
   const t = (en,fa) => dari ? fa : en
   const company = t('Pedram International Transport','شرکت ترانسپورتی بین‌المللی پدرام')
   const report = {language,title,subtitle,sections,note,company}
@@ -88,7 +89,7 @@ export function printRecord({ language, title, subtitle, sections, note }) {
   let paper = '80'
   try { const saved = window.localStorage.getItem('pedram-print-paper'); if (['80','58','a4'].includes(saved)) paper = saved } catch { /* Printing also works when browser storage is unavailable. */ }
   paperSelect.value = paper
-  const cleanterButton = /Android/i.test(window.navigator?.userAgent || '')
+  const cleanterButton = android
     ? append(toolbar,'button',t('Print receipt (Cleanter)','چاپ رسید (Cleanter)')) : null
   const imageButton = append(toolbar,'button',t('Prepare receipt images','آماده‌سازی عکس رسید'))
   append(toolbar,'p',t('Windows: choose your installed receipt printer. Android: select your Bluetooth print service, or download the images below and open them in the printing app.','ویندوز: چاپگر رسید نصب‌شده را انتخاب کنید. اندروید: سرویس چاپ بلوتوث را انتخاب کنید، یا عکس‌ها را دانلود کرده در برنامه چاپ باز کنید.'))
@@ -153,8 +154,11 @@ export function printRecord({ language, title, subtitle, sections, note }) {
     if (paper !== 'a4') renderReceipt()
     document.style.setProperty('--receipt-width',`${paper === '58' ? 58 : 80}mm`)
     imageButton.disabled = paper === 'a4' || receiptBusy
-    if (cleanterButton) cleanterButton.disabled = paper === 'a4' || receiptBusy
+    if (cleanterButton) cleanterButton.disabled = receiptBusy
     if (paper === 'a4') paperStyle.textContent = '@page { size: A4; margin: 13mm; }'
+    // Android's print service supplies the roll sheet size. A shorter explicit
+    // CSS page is vertically centered inside that sheet by Chrome, wasting paper.
+    else if (android) paperStyle.textContent = '@page { size: auto; margin: 0; }'
     else {
       // Measure at the actual print width, even on a narrow phone. Padding is
       // inside the receipt so driver margins cannot subtract it a second time.
@@ -191,7 +195,7 @@ export function printRecord({ language, title, subtitle, sections, note }) {
       if (!printWindow.closed) { applyPaper(); printWindow.focus(); printWindow.print() }
     } finally {
       receiptBusy = false; button.disabled = false; paperSelect.disabled = false; imageButton.disabled = paper === 'a4'
-      if (cleanterButton) cleanterButton.disabled = paper === 'a4'
+      if (cleanterButton) cleanterButton.disabled = false
     }
   }
   imageButton.onclick = async () => {
@@ -216,31 +220,41 @@ export function printRecord({ language, title, subtitle, sections, note }) {
     } finally {
       receiptBusy = false
       imageButton.disabled = paper === 'a4'; paperSelect.disabled = false; button.disabled = false
-      if (cleanterButton) cleanterButton.disabled = paper === 'a4'
+      if (cleanterButton) cleanterButton.disabled = false
     }
   }
   if (cleanterButton) cleanterButton.onclick = async () => {
-    if (receiptBusy || paper === 'a4') return
+    if (receiptBusy) return
+    // A receipt action should still work when the preview was set to A4/PDF.
+    if (paper === 'a4') {
+      paper = '80'; paperSelect.value = paper; applyPaper()
+      try { window.localStorage.setItem('pedram-print-paper',paper) } catch { /* Preference only. */ }
+    }
     receiptBusy = true
     const selectedPaper = paper
     cleanterButton.disabled = true; imageButton.disabled = true; paperSelect.disabled = true; button.disabled = true
+    cleanterButton.textContent = t('Connecting…','در حال اتصال…')
     status.textContent = t('Connecting to Cleanter… Allow access to apps on this device if Chrome asks.','اتصال به Cleanter… اگر کروم اجازه دسترسی به برنامه‌های این دستگاه را خواست، اجازه دهید.')
     let sent = false
     try {
-      await connectCleanter(printWindow.fetch.bind(printWindow))
+      await connectCleanter(printWindow.fetch.bind(printWindow),printWindow.navigator?.permissions)
       await ready
+      cleanterButton.textContent = t('Printing…','در حال چاپ…')
       status.textContent = t('Printing receipt…','در حال چاپ رسید…')
       const images = await createReceiptImages(doc,report,selectedPaper)
       sent = true
       await printCleanterImages(images,selectedPaper,printWindow.fetch.bind(printWindow))
       status.textContent = t('Cleanter reports that the receipt was printed.','Cleanter گزارش داد که رسید چاپ شد.')
-    } catch {
+    } catch (error) {
       status.textContent = sent
         ? t('Printing was not confirmed. Check the printer and Cleanter job history before trying again.','چاپ تأیید نشد. پیش از کوشش دوباره، چاپگر و تاریخچه چاپ Cleanter را بررسی کنید.')
-        : t('Open Cleanter, select the printer and tap Start. In Chrome site permissions, allow Apps on device, then try again. Print / Save PDF is also available.','Cleanter را باز کنید، چاپگر را انتخاب کرده و Start را بزنید. در اجازه‌های سایت کروم، دسترسی به برنامه‌های دستگاه را فعال کنید و دوباره کوشش کنید. چاپ / ذخیره PDF نیز موجود است.')
+        : error.message === 'CLEANTER_PERMISSION_DENIED'
+          ? t('Chrome blocked access to Cleanter. In this site’s permissions, allow Apps on device. You can also use Print / Save PDF.','کروم دسترسی به Cleanter را مسدود کرده است. در اجازه‌های این سایت، دسترسی به برنامه‌های دستگاه را فعال کنید. چاپ / ذخیره PDF نیز موجود است.')
+          : t('Open Cleanter, select the printer and tap Start. In Chrome site permissions, allow Apps on device, then try again. Print / Save PDF is also available.','Cleanter را باز کنید، چاپگر را انتخاب کرده و Start را بزنید. در اجازه‌های سایت کروم، دسترسی به برنامه‌های دستگاه را فعال کنید و دوباره کوشش کنید. چاپ / ذخیره PDF نیز موجود است.')
     } finally {
       receiptBusy = false
-      cleanterButton.disabled = paper === 'a4'; imageButton.disabled = paper === 'a4'; paperSelect.disabled = false; button.disabled = false
+      cleanterButton.textContent = t('Print receipt (Cleanter)','چاپ رسید (Cleanter)')
+      cleanterButton.disabled = false; imageButton.disabled = paper === 'a4'; paperSelect.disabled = false; button.disabled = false
     }
   }
   // A preview lets mobile users select paper or images before opening the OS dialog.
