@@ -544,7 +544,6 @@ html[dir='rtl'] .brand strong { font-family: var(--font-dari); letter-spacing: 0
 .customs-page-heading p { margin: 6px 0 0; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
 .customs-empty-state { min-height: 240px; border: 1px solid var(--line); border-radius: 16px; background: #fff; }
 .customs-toolbar .registry-search { flex: 1; width: auto; max-width: 500px; min-width: 0; }
-.simple-cashbook-form > .customs-account-link { margin: 0 0 12px; }
 .customs-profile-account { padding-top: 0; }
 .customs-account-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
 .customs-account-actions { display: flex; align-items: stretch; gap: 8px; min-width: 0; }
@@ -613,52 +612,27 @@ html[dir='rtl'] .brand strong { font-family: var(--font-dari); letter-spacing: 0
 .booking-preview dd { margin: 4px 0 0; font-size: 13px; font-weight: 650; overflow-wrap: anywhere; }
 .booking-contact-details summary { cursor: pointer; font-size: 13px; font-weight: 700; padding: 8px 0; color: #277658; }
 .simple-cashbook-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-bottom: 12px; }
-.simple-cashbook { max-width: 1500px; margin: 0 auto; }
 .simple-cashbook-toolbar { padding: 15px; border: 1px solid var(--line); border-radius: 12px; background: white; }
 .cashbook-summary { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; margin: 20px 0; }
 .cashbook-summary > div { display: grid; gap: 7px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: white; }
 .cashbook-summary span { color: #60727f; font-size: 12px; font-weight: 700; }
 .cashbook-summary strong { font-size: clamp(16px,1.7vw,22px); white-space: nowrap; }
 .cashbook-summary-balance { background: #eaf2f7 !important; border-color: #bfd1dd !important; }
-.cashbook-see-more { display: block; margin: 16px auto 0; border: 1px solid var(--line); border-radius: 8px; padding: 9px 18px; background: white; color: var(--ink); font-weight: 700; cursor: pointer; }
 @media(max-width:800px) { .cashbook-summary { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media(max-width:480px) { .cashbook-summary { gap: 8px; } .cashbook-summary > div { padding: 12px; } .cashbook-summary strong { font-size: 15px; white-space: normal; overflow-wrap: anywhere; } }
-:is(.simple-cashbook, .simple-cashbook-toolbar) label { display: grid; gap: 7px; font-size: 12px; font-weight: 700; }
-:is(.simple-cashbook, .simple-cashbook-toolbar) :is(input, select) { min-width: 0; width: 100%; min-height: 43px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: white; }
+.simple-cashbook-toolbar label { display: grid; gap: 7px; font-size: 12px; font-weight: 700; }
+.simple-cashbook-toolbar :is(input, select) { min-width: 0; width: 100%; min-height: 43px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: white; }
 .simple-cashbook-toolbar > label { min-width: 130px; }
-.cashbook-account-display { display: grid; gap: 7px; min-width: 130px; font-size: 12px; font-weight: 700; }
-.cashbook-account-display strong { display: flex; align-items: center; min-height: 43px; }
 .booking-branch-filter { margin-bottom: 22px; }
 .booking-branch-filter label { display: grid; gap: 7px; width: min(240px, 100%); font-size: 12px; font-weight: 700; }
 .booking-branch-filter label > span { display: flex; align-items: center; gap: 7px; }
 .booking-branch-filter select { width: 100%; min-width: 0; min-height: 43px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: white; }
-.simple-cashbook-buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
-.simple-cashbook-buttons button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 9px 16px; border-radius: 8px; border: 1px solid currentColor; font-size: 13px; font-weight: 750; cursor: pointer; }
-.simple-cashbook-buttons button:disabled { opacity: .55; cursor: not-allowed; }
-.cashbook-in { color: #216547; background: #e1f2e9; }
-.cashbook-out { color: #a23e46; background: #fcebed; }
-.simple-cashbook-form { max-width: 860px; padding: 14px 16px; margin-bottom: 20px; border: 1px solid var(--line); border-radius: 12px; background: #f8faf9; }
-.simple-cashbook-form-heading { margin-bottom: 12px; }
-.simple-cashbook-form-heading h2 { font-size: 17px; margin: 0 0 3px; }
-.simple-cashbook-form-heading p { margin: 0; color: #586b73; font-size: 12px; }
-.simple-cashbook-form fieldset { display: grid; grid-template-columns: minmax(155px,1fr) minmax(110px,.7fr) minmax(150px,1.3fr); align-items: end; gap: 10px; padding: 0; margin: 0; border: 0; min-width: 0; }
-.cashbook-description-field { grid-column: 1/-1; }
-.cashbook-account-field { grid-column: 1/-1; max-width: 260px; }
-.simple-cashbook-form .solar-date-picker { width: 100%; }
-.simple-cashbook-form input, .simple-cashbook-form select { min-height: 42px; }
-.simple-cashbook-form input:focus-visible, .simple-cashbook-form select:focus-visible, .simple-cashbook-buttons button:focus-visible { outline: 3px solid #72a995; outline-offset: 2px; }
-.simple-cashbook-description { grid-column: 1/-1; }
-.simple-cashbook-description summary { width: fit-content; color: #426655; font-size: 12px; font-weight: 700; cursor: pointer; }
-.simple-cashbook-description label { max-width: 300px; margin-top: 8px; }
-.cashbook-ledger h2 { margin: 0; padding: 12px 0; font-size: 18px; }
 .cashbook-balance-row { background: #eaf1ed; }
 .cashbook-balance-row th, .cashbook-balance-row td { font-size: 15px; font-weight: 800; }
 .simple-money-in { color: #216547; }
 .simple-money-out { color: #a23e46; }
 .cashbook-empty-amount { color: #9ca7a9; }
 .simple-cashbook-empty { text-align: center; color: #657581; padding: 35px 12px !important; }
-@media(max-width:700px) { .simple-cashbook-form fieldset { grid-template-columns: repeat(2,minmax(0,1fr)); } .cashbook-account-field, .cashbook-amount-field, .cashbook-description-field, .simple-cashbook-description { grid-column: 1/-1; } }
-@media(max-width:520px) { .simple-cashbook-form { padding: 14px 12px; } .simple-cashbook-buttons { width: 100%; } .simple-cashbook-buttons button { flex: 1; min-width: 0; padding: 8px; line-height: 1.35; } .simple-cashbook-buttons svg { flex: none; } }
 .booking-fields input:disabled { opacity: 1; color: #536572; background: #eef3f2; }
 @media (max-width: 600px) { .booking-fields { grid-template-columns: minmax(0,1fr); } }
 .booking-record { padding: 20px; border: 1px solid var(--line); border-radius: 14px; background: white; }
@@ -964,37 +938,13 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 .availability-jobs { margin: 0; padding: 0; list-style: none; }
 .availability-jobs li + li { margin-top: 0.55rem; padding-top: 0.55rem; border-top: 1px solid #d7e2ee; }
 
-/* Cashbook controls and transaction rows for narrow screens, in either direction. */
-.simple-cashbook { min-width: 0; }
-.simple-cashbook-toolbar > *, .simple-cashbook-form label, .cashbook-summary > div { min-width: 0; }
-.cashbook-account-display strong, .simple-cashbook-form-heading p { overflow-wrap: anywhere; }
+/* Keep availability filters in two columns on phones. */
+.simple-cashbook-toolbar > * { min-width: 0; }
 .simple-cashbook-toolbar :is(.solar-date-picker, .solar-date-trigger) { width: 100%; min-width: 0; }
-.simple-cashbook :is(input, select, button):focus-visible { outline: 3px solid #72a995; outline-offset: 2px; }
-.simple-cashbook .cashbook-summary strong { white-space: normal; overflow-wrap: anywhere; }
-@media screen and (max-width: 640px) {
+@media (max-width: 640px) {
   .simple-cashbook-toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; padding: 10px; }
-  .simple-cashbook-toolbar > label, .simple-cashbook-toolbar > button, .cashbook-account-display { width: 100%; min-width: 0; }
-  :is(.simple-cashbook, .simple-cashbook-toolbar) label, .cashbook-account-display { font-size: 14px; line-height: 1.5; }
-  :is(.simple-cashbook, .simple-cashbook-toolbar) :is(input, select, .solar-date-trigger) { min-height: 48px; font-size: 16px; }
-  .simple-cashbook .registry-secondary, .simple-cashbook .cashbook-see-more { min-height: 44px; font-size: 14px; white-space: normal; }
-  .simple-cashbook-form { padding: 12px; }
-  .simple-cashbook-form > fieldset { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .simple-cashbook-form > fieldset > :is(label, details:not([open])) { grid-column: auto; }
-  .simple-cashbook-form > fieldset > :is(details[open], .cashbook-loan-option) { grid-column: 1 / -1; }
-  .simple-cashbook-description summary { padding-block: 10px; font-size: 14px; line-height: 1.5; }
-  .simple-cashbook-description label { max-width: none; }
-  .simple-cashbook-form-heading p { font-size: 14px; line-height: 1.6; }
-  .simple-cashbook-buttons { flex-direction: row; align-items: stretch; gap: 8px; }
-  .simple-cashbook-buttons button { flex: 1; width: auto; min-height: 44px; font-size: 13px; padding: 8px; }
-  .cashbook-summary > div { padding: 9px; }
-  .cashbook-summary span { font-size: 13px; line-height: 1.5; }
-  .simple-cashbook .solar-date-popover { position: fixed; top: 50%; inset-inline: 12px; width: auto; max-width: 360px; max-height: calc(100dvh - 24px); margin-inline: auto; overflow-y: auto; transform: translateY(-50%); }
-  .simple-cashbook .solar-date-toolbar { grid-template-columns: 44px minmax(0, 1fr) 44px; }
-  .simple-cashbook .solar-date-toolbar button { width: 44px; height: 44px; }
-  .simple-cashbook .solar-date-toolbar strong { font-size: 14px; }
-  .simple-cashbook .solar-date-weekdays { font-size: 12px; }
-  .simple-cashbook .solar-date-days { grid-auto-rows: 42px; }
-  .simple-cashbook .solar-date-days button { font-size: 14px; }
+  .simple-cashbook-toolbar > label { width: 100%; min-width: 0; font-size: 14px; line-height: 1.5; }
+  .simple-cashbook-toolbar :is(input, select, .solar-date-trigger) { min-height: 48px; font-size: 16px; }
 }
 
 /* Keep the reference form's paired rows on phones as well as desktop. */
@@ -1104,10 +1054,6 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 .employee-transactions article > div { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .employee-transactions p { margin: 0; }
 .employee-transactions small { opacity: .7; }
-.cashbook-loan-option { grid-column: 1 / -1; display: grid; gap: .7rem; padding: .85rem 1rem; border: 1px solid var(--line, #dce3e8); border-radius: 12px; }
-.cashbook-loan-option label { display: flex; align-items: center; gap: .65rem; flex-wrap: wrap; }
-.cashbook-loan-option input[type="checkbox"] { width: 1.1rem; height: 1.1rem; min-height: 0; flex: none; }
-.cashbook-loan-option small { opacity: .72; }
 .employee-transactions .loan-deadline { color: #9b5a12; font-weight: 700; opacity: 1; }
 .loan-notification-root { position: relative; }
 .loan-notification-button { position: relative; width: 38px; height: 38px; display: grid; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 8px; color: #3e5e55; background: white; cursor: pointer; }

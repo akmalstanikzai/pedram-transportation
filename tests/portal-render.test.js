@@ -91,16 +91,19 @@ test('branch navigation and direct Branches URL never render branch management c
     const { default: Cashbook } = await server.ssrLoadModule('/src/pages/CashbookPage.jsx')
     for (const language of ['en','fa']) {
       const branchCashbook = renderToStaticMarkup(React.createElement(Cashbook, { language, profile }))
-      const toolbar = branchCashbook.split('simple-cashbook-toolbar')[1].split('<form')[0]
+      const toolbar = branchCashbook.split('cashbook-filters')[1].split('<form')[0]
       assert.ok(toolbar.indexOf('cashbook-account-display') < toolbar.indexOf('solar-date-picker'))
-      assert.doesNotMatch(branchCashbook, /value="admin"|Admin account|حساب مرکزی|Edit amount|Reverse receipt|Link to a trader/)
+      assert.doesNotMatch(branchCashbook, /value="admin"|Admin account|حساب مرکزی|Edit amount|Reverse receipt|cashbook-link-buttons/)
       assert.match(branchCashbook, /value="in"/)
       assert.match(branchCashbook, /value="out"/)
       assert.match(toolbar, /value="custom"/)
       assert.match(toolbar, /Print \/ Save PDF|چاپ \/ ذخیره PDF/)
+      assert.match(toolbar, /solar-date-icon-trigger/)
+      if (language === 'fa') assert.match(toolbar, /مشاهده قبلی/)
       const presidentCashbook = renderToStaticMarkup(React.createElement(Cashbook, { language, profile: { ...profile, role: 'president' } }))
-      const presidentToolbar = presidentCashbook.split('simple-cashbook-toolbar')[1].split('<form')[0]
+      const presidentToolbar = presidentCashbook.split('cashbook-filters')[1].split('<form')[0]
       assert.ok(presidentToolbar.indexOf('value="admin"') < presidentToolbar.indexOf('solar-date-picker'))
+      assert.match(presidentCashbook, /cashbook-customs-button/)
     }
   } finally {
     if (previousWindow === undefined) delete globalThis.window

@@ -1,0 +1,152 @@
+.simple-cashbook {
+  --cashbook-border: #d5e3e5;
+  --cashbook-teal: #146054;
+  --cashbook-control-height: 42px;
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  max-width: 960px;
+  min-width: 0;
+  margin-inline: auto;
+}
+
+.cashbook-heading, .cashbook-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cashbook-heading h1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--navy);
+  font-size: clamp(22px, 4vw, 28px);
+}
+
+.cashbook-heading h1 svg { color: var(--cashbook-teal); }
+
+.cashbook-filters, .cashbook-balances, .simple-cashbook-form {
+  min-width: 0;
+  border: 1px solid var(--cashbook-border);
+  border-radius: 10px;
+}
+
+.cashbook-filters { padding: 8px 10px; background: #eef4fa; border-color: #cdddea; }
+.cashbook-filter-row {
+  display: grid;
+  align-items: end;
+  grid-template-columns: minmax(0, 1.1fr) var(--cashbook-control-height) minmax(0, 1fr) var(--cashbook-control-height);
+  gap: 6px;
+  max-width: 520px;
+}
+
+.cashbook-field {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  color: #3b5361;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.cashbook-field :is(input, select), .cashbook-account-display strong {
+  min-width: 0;
+  width: 100%;
+  min-height: var(--cashbook-control-height);
+  padding: 5px 7px;
+  border: 1px solid var(--cashbook-border);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.cashbook-field select, .cashbook-account-display strong { text-overflow: ellipsis; }
+.cashbook-account-display strong { display: block; align-content: center; overflow: hidden; white-space: nowrap; }
+.cashbook-filter-row .cashbook-field select, .cashbook-account-display strong { font-size: 14px; }
+
+.simple-cashbook :is(.cashbook-heading, .cashbook-filter-row) .record-icon-button,
+.simple-cashbook .solar-date-icon-trigger {
+  width: var(--cashbook-control-height);
+  height: var(--cashbook-control-height);
+  padding: 0;
+  justify-content: center;
+  color: #224b6b;
+  background: #fff;
+  border: 1px solid #c5d7e5;
+  border-radius: 7px;
+}
+
+.simple-cashbook .cashbook-filter-row > .record-icon-button { background: #e0edf8; }
+.cashbook-entry-row .solar-date-icon-trigger { color: var(--cashbook-teal); border-color: #b9d5ca; background: #eaf5ef; }
+.simple-cashbook .solar-date-icon-trigger[aria-expanded='true'] { background: #d8eae9; }
+.simple-cashbook :is(.cashbook-filter-row, .cashbook-entry-row) > .solar-date-picker { width: var(--cashbook-control-height); }
+.cashbook-selected-date { margin: 6px 0 0; font-size: 12px; color: #33556d; }
+.cashbook-range { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; max-width: 340px; margin-top: 8px; }
+.cashbook-range .solar-date-picker { width: 100%; }
+
+.cashbook-balances { background: #f3f5fa; border-color: #d9e1ee; }
+.cashbook-balances h2 { padding: 7px 10px; margin: 0; color: #374f70; font-size: 13px; }
+.cashbook-balances dl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin: 0; background: #d9e1ee; border-top: 1px solid #d9e1ee; border-radius: 0 0 9px 9px; overflow: hidden; }
+.cashbook-balances dl > div { min-width: 0; padding: 6px 10px; background: #fafbfe; }
+.cashbook-balances dl > .cashbook-closing { background: #e7edf8; }
+.cashbook-balances dt { font-size: 12px; color: #425874; }
+.cashbook-balances dd { margin: 1px 0 0; font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+.simple-cashbook-form { border-color: #bbd9cc; background: #fff; }
+.cashbook-section-heading { flex-wrap: wrap; padding: 8px 10px; background: #eaf5ef; border-bottom: 1px solid #bbd9cc; border-radius: 9px 9px 0 0; }
+.cashbook-section-heading h2, .cashbook-ledger h2 { margin: 0; color: var(--cashbook-teal); font-size: 16px; }
+.cashbook-section-heading small { color: #3f6058; font-size: 12px; overflow-wrap: anywhere; }
+.cashbook-entry-fields { min-width: 0; margin: 0; border: 0; padding: 9px 10px; display: grid; gap: 9px; }
+.cashbook-entry-row { display: grid; grid-template-columns: var(--cashbook-control-height) minmax(0, 13ch) 74px; align-items: end; gap: 8px; }
+.cashbook-entry-row input[type='number'] { text-align: end; appearance: textfield; }
+.cashbook-entry-row input::-webkit-inner-spin-button, .cashbook-entry-row input::-webkit-outer-spin-button { appearance: none; margin: 0; }
+.cashbook-description-row { display: grid; gap: 8px; align-items: end; }
+.cashbook-description-row.with-loan { grid-template-columns: minmax(0, 1fr) minmax(0, 126px); }
+
+.cashbook-loan-toggle { display: flex; align-items: center; gap: 6px; min-width: 0; min-height: var(--cashbook-control-height); padding: 4px 6px; border: 1px solid #e6d4b6; border-radius: 7px; background: #fff8ea; color: #664615; font-size: 11px; line-height: 1.4; font-weight: 700; }
+.cashbook-loan-toggle input { margin: 0; width: 16px; height: 16px; flex: none; accent-color: #85612e; }
+.cashbook-loan-details { display: grid; gap: 4px; padding: 6px 8px; border-inline-start: 2px solid #e1be81; background: #fffbf3; }
+.cashbook-loan-details small, .cashbook-link-panel small { color: #53666e; font-size: 12px; }
+
+.cashbook-links { display: grid; min-width: 0; gap: 6px; padding-top: 8px; border-top: 1px solid var(--cashbook-border); }
+.cashbook-links h3 { margin: 0; color: #3c5960; font-size: 13px; }
+.cashbook-link-buttons { display: flex; flex-wrap: wrap; gap: 5px; }
+.cashbook-link-button { display: inline-flex; gap: 4px; align-items: center; padding: 4px 7px; min-height: 36px; border: 1px solid #cedfe0; border-radius: 7px; color: #28565b; background: #f4f9f9; font-size: 12px; font-weight: 700; }
+.cashbook-link-button svg { flex: none; }
+.cashbook-link-button[aria-expanded='true'] { border-color: #6ca997; background: #e3f2eb; color: #165748; }
+.cashbook-link-button[data-linked='true'] { box-shadow: inset 0 -2px #3d8772; }
+.cashbook-customs-button { border-color: #c9d8e6; color: #264e72; background: #ecf3f9; }
+.cashbook-link-panel { min-width: 0; padding: 7px 8px; border: 1px solid var(--cashbook-border); border-radius: 7px; background: #f7faf9; }
+.cashbook-trader-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+
+.simple-cashbook-buttons { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; padding: 8px 10px; border-top: 1px solid var(--cashbook-border); }
+.simple-cashbook-buttons button { display: inline-flex; gap: 5px; align-items: center; justify-content: center; min-height: 42px; padding: 5px 11px; border: 1px solid transparent; border-radius: 8px; font-size: 13px; line-height: 1.3; font-weight: 800; }
+.simple-cashbook-buttons svg { flex: none; }
+.cashbook-in { color: #fff; background: #146251; }
+.simple-cashbook-buttons .cashbook-out { color: #8d2d37; background: #fcecee; border-color: #e5aeb6; }
+:is(.simple-cashbook-buttons, .cashbook-links) button:disabled { opacity: .55; cursor: not-allowed; }
+
+.cashbook-ledger { min-width: 0; border-top: 1px solid var(--cashbook-border); padding-top: 9px; }
+.cashbook-ledger h2 { margin-bottom: 7px; color: var(--navy); }
+.cashbook-ledger .compact-table thead th { background: #edf3f6; }
+.cashbook-ledger .compact-table tbody tr:nth-child(even) { background: #f8fbfc; }
+.cashbook-ledger .cashbook-row-actions .record-icon-button { width: 30px; height: 30px; flex-basis: 30px; border-radius: 6px; }
+.cashbook-see-more { display: block; margin: 8px auto 0; min-height: 40px; padding: 4px 12px; border: 1px solid var(--cashbook-border); border-radius: 7px; color: var(--cashbook-teal); background: #f5faf8; font-weight: 700; font-size: 13px; }
+.simple-cashbook :is(button, input, select):focus-visible { outline: 2px solid #48978a; outline-offset: 2px; }
+
+@media (max-width: 640px) {
+  .simple-cashbook { gap: 9px; }
+  .cashbook-balances dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .simple-cashbook .solar-date-popover { position: fixed; top: 50%; inset-inline: 12px; width: auto; max-width: 360px; max-height: calc(100dvh - 24px); margin-inline: auto; overflow-y: auto; transform: translateY(-50%); }
+  .simple-cashbook .solar-date-toolbar { grid-template-columns: 42px minmax(0, 1fr) 42px; }
+  .simple-cashbook .solar-date-toolbar button { width: 42px; height: 42px; }
+  .simple-cashbook .solar-date-days { grid-auto-rows: 42px; }
+}

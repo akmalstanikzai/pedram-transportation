@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowDownLeft, ArrowUpRight, Pencil, Printer, RefreshCw, RotateCcw, WalletCards } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, BadgeDollarSign, BriefcaseBusiness, HandCoins, Landmark, Pencil, Printer, RefreshCw, RotateCcw, Stamp, Truck } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { allRows, cents, currencies, kabulToday, simpleLedger, ledgerPeriod } from '../lib/cashbook'
 import { rpc } from '../lib/operations'
@@ -10,6 +10,7 @@ import { printRecord } from '../lib/recordExports'
 import { canPrintReceipt, cashbookReceipt } from '../lib/financialReports'
 import SolarHijriDateInput from '../components/SolarHijriDateInput'
 import { formatSolarHijri, solarHijriToday, solarHijriToISODate } from '../lib/solarHijri'
+import './CashbookPage.css'
 
 function periodBounds(period){
   const today=kabulToday(),day=new Date(`${today}T00:00:00Z`)
@@ -42,6 +43,7 @@ export default function CashbookPage({ language, profile }) {
   const [period,setPeriod]=useState('today')
   const [customRange,setCustomRange]=useState({start:kabulToday(),end:kabulToday()})
   const [shown,setShown]=useState(20)
+  const [linkPanel,setLinkPanel]=useState('')
   const [form,setForm]=useState({amount:'',description:'',date:kabulToday(),trader_id:'',booking_id:'',employee_id:'',driver_id:'',loan:false,loan_due_date:'',loan_repayment_entry_id:''})
   const [request,setRequest]=useState(()=>crypto.randomUUID())
   const [retryDirection,setRetryDirection]=useState('')
@@ -132,6 +134,17 @@ export default function CashbookPage({ language, profile }) {
   const validPeriod=periodStart&&periodEnd&&periodStart<=periodEnd
   const selectedLedger=ledgerPeriod(ledger,periodStart,periodEnd)
   const accountOptions=<>{president&&<option value="admin">{t('Admin account','حساب مرکزی')}</option>}{data.branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</>
+  const activeEmployees = employees.filter(row => !row.archived_at)
+  const activeDrivers = drivers.filter(row => !row.archived_at && (!row.branch_id || scope === 'admin' || row.branch_id === scope))
+  const activeTraders = traders.filter(row => !row.archived_at && (!row.branch_id || row.branch_id === scope))
+  const openLoans = loans.filter(row => row.currency === currency)
+  const bookingOptions = bookings.filter(row => row.trader_id === form.trader_id && !row.archived_at && !row.deleted_at
+    && row.branch_id === (scope === 'admin' ? null : scope) && row.commission_currency === currency)
+  const links = [
+    {id:'employee', icon:BriefcaseBusiness, label:t('Employee','کارمند'), value:form.employee_id},
+    {id:'driver', icon:Truck, label:t('Driver','راننده'), value:form.driver_id},
+    {id:'trader', icon:BadgeDollarSign, label:t('Trader','تاجر'), value:form.trader_id},
+  ]
   function description(row) {
     if (row.opening) return t('Earlier balance','موجودی قبلی')
     if (row.private_activity) return t('Trader activity total','مجموع معاملات تاجران')
@@ -243,44 +256,188 @@ export default function CashbookPage({ language, profile }) {
       setRequest(crypto.randomUUID());setRetryDirection('');setUncertain(false)
       window.dispatchEvent(new Event('pedram:cashbook-changed'))
       setForm(previous=>({...previous,amount:'',description:'',trader_id:'',booking_id:'',employee_id:'',driver_id:'',loan:false,loan_due_date:'',loan_repayment_entry_id:''}))
+      setLinkPanel('')
       setNotice(t('Saved.','ثبت شد.'))
       try{await load()}catch{setNotice(t('Saved. Refresh the list to see the updated balance.','ثبت شد. برای دیدن موجودی جدید، فهرست را تازه‌سازی کنید.'))}
     }catch(err){setError(err.message)}finally{setBusy(false)}
   }
   return <div className="simple-cashbook">
-    <div className="booking-page-header"><h1>{t('Cashbook','روزنامچه')}</h1><button className="registry-secondary" aria-label={t('Refresh','تازه‌سازی')} title={t('Refresh','تازه‌سازی')} disabled={loading||busy} onClick={refresh}><RefreshCw size={17}/></button></div>
-    <div className="simple-cashbook-toolbar">
-      {president?<label><span>{t('Account','حساب')}</span><select value={scope} disabled={busy||uncertain} onChange={e=>{setScope(e.target.value);setForm(previous=>({...previous,trader_id:'',booking_id:'',employee_id:'',driver_id:'',loan:false,loan_due_date:'',loan_repayment_entry_id:''}));setShown(20)}}>{accountOptions}</select></label>:<div className="cashbook-account-display"><span>{t('Account','حساب')}</span><strong>{name(scope)}</strong></div>}
-      <label><span>{t('Date','تاریخ')}</span><SolarHijriDateInput required language={language} value={period==='date'?customRange.start:periodEnd} ariaLabel={t('Statement date','تاریخ صورت حساب')} onChange={date=>{setCustomRange({start:date,end:date});setPeriod('date');setShown(20)}}/></label>
-      <label><span>{t('Period','بازه زمانی')}</span><select value={period} onChange={e=>{setPeriod(e.target.value);setShown(20)}}><option value="today">{t('Today','امروز')}</option><option value="yesterday">{t('Yesterday','دیروز')}</option><option value="week">{t('This week','این هفته')}</option><option value="month">{t('This month','این ماه')}</option><option value="year">{t('This year','امسال')}</option><option value="date">{t('Selected date','تاریخ انتخاب‌شده')}</option><option value="all">{t('All time','همه زمان‌ها')}</option><option value="custom">{t('Custom dates','تاریخ دلخواه')}</option></select></label>
-      {period==='custom'&&<>
-        <label><span>{t('From','از تاریخ')}</span><SolarHijriDateInput language={language} value={customRange.start} ariaLabel={t('From','از تاریخ')} onChange={start=>{setCustomRange(current=>({...current,start}));setShown(20)}}/></label>
-        <label><span>{t('Through','تا تاریخ')}</span><SolarHijriDateInput language={language} value={customRange.end} ariaLabel={t('Through','تا تاریخ')} onChange={end=>{setCustomRange(current=>({...current,end}));setShown(20)}}/></label>
-      </>}
-      <button type="button" className="registry-secondary" disabled={!loaded||loading||!validPeriod||busy} onClick={printPeriod}><Printer size={17}/>{t('Print / Save PDF','چاپ / ذخیره PDF')}</button>
-    </div>
+    <header className="cashbook-heading">
+      <h1><Landmark size={22}/>{t('Cashbook','روزنامچه')}</h1>
+      <IconButton icon={RefreshCw} label={t('Refresh','تازه‌سازی')} disabled={loading||busy} onClick={refresh}/>
+    </header>
+    <section className="cashbook-filters" aria-label={t('Statement options','گزینه‌های صورت حساب')}>
+      <div className="cashbook-filter-row">
+        {president ? <label className="cashbook-field">
+          <span>{t('Account','حساب')}</span>
+          <select value={scope} title={name(scope)} disabled={busy||uncertain} onChange={e=>{
+            setScope(e.target.value)
+            setForm(previous=>({...previous,trader_id:'',booking_id:'',employee_id:'',driver_id:'',loan:false,loan_due_date:'',loan_repayment_entry_id:''}))
+            setLinkPanel('')
+            setShown(20)
+          }}>{accountOptions}</select>
+        </label> : <div className="cashbook-field cashbook-account-display">
+          <span>{t('Account','حساب')}</span>
+          <strong title={name(scope)}>{name(scope)}</strong>
+        </div>}
+        <SolarHijriDateInput iconOnly required language={language} value={period==='date'?customRange.start:periodEnd}
+          ariaLabel={t('Statement date','تاریخ صورت حساب')} onChange={date=>{setCustomRange({start:date,end:date});setPeriod('date');setShown(20)}}/>
+        <label className="cashbook-field">
+          <span>{t('Period','مشاهده قبلی')}</span>
+          <select value={period} onChange={e=>{setPeriod(e.target.value);setShown(20)}}>
+            <option value="today">{t('Today','امروز')}</option>
+            <option value="yesterday">{t('Yesterday','دیروز')}</option>
+            <option value="week">{t('This week','این هفته')}</option>
+            <option value="month">{t('This month','این ماه')}</option>
+            <option value="year">{t('This year','امسال')}</option>
+            <option value="date">{t('Selected date','تاریخ انتخابی')}</option>
+            <option value="all">{t('All time','همه زمان‌ها')}</option>
+            <option value="custom">{t('Custom dates','بازه دلخواه')}</option>
+          </select>
+        </label>
+        <IconButton icon={Printer} label={t('Print / Save PDF','چاپ / ذخیره PDF')} disabled={!loaded||loading||!validPeriod||busy} onClick={printPeriod}/>
+      </div>
+      {period==='date'&&<p className="cashbook-selected-date">{t('Selected date','تاریخ انتخابی')} · <bdi>{formatSolarHijri(customRange.start)}</bdi></p>}
+      {period==='custom'&&<div className="cashbook-range">
+        <div className="cashbook-field"><span>{t('From','از تاریخ')}</span>
+          <SolarHijriDateInput language={language} value={customRange.start} ariaLabel={t('From','از تاریخ')} onChange={start=>{setCustomRange(current=>({...current,start}));setShown(20)}}/>
+        </div>
+        <div className="cashbook-field"><span>{t('Through','تا تاریخ')}</span>
+          <SolarHijriDateInput language={language} value={customRange.end} ariaLabel={t('Through','تا تاریخ')} onChange={end=>{setCustomRange(current=>({...current,end}));setShown(20)}}/>
+        </div>
+      </div>}
+    </section>
     {notice&&<p className="registry-notice success" role="status">{notice}</p>}
     {error&&<p className="registry-notice error" role="alert">{error}</p>}
-    {!loading&&loaded&&validPeriod&&(<div className="cashbook-summary"><div><span>{t('Opening balance','موجودی اول دوره')}</span><strong>{money(selectedLedger.opening)}</strong></div><div><span>{t('Money In','آمد')}</span><strong className="simple-money-in">{money(selectedLedger.incoming)}</strong></div><div><span>{t('Money Out','رفت')}</span><strong className="simple-money-out">{money(selectedLedger.outgoing)}</strong></div><div className="cashbook-summary-balance"><span>{t('Closing balance','موجودی پایان دوره')}</span><strong>{money(selectedLedger.balance)}</strong></div></div>)}
-    <form className="simple-cashbook-form" onSubmit={save}><div className="simple-cashbook-form-heading"><h2>{t('Add a record','ثبت معامله')}</h2><p>{name(scope)} · {currency}</p></div>
-    {president && <button type="button" className="registry-secondary customs-account-link" disabled={busy || uncertain || loading || !loaded}
-      onClick={openCustomsPayments}><WalletCards size={17} />{t('Commission agent', 'کمیشن کار')}</button>}
-    <fieldset disabled={busy||uncertain}>
-      <label className="cashbook-date-field"><span>{t('Date','تاریخ')} *</span><SolarHijriDateInput required max={kabulToday()} language={language} value={form.date} onChange={date=>setForm({...form,date})} ariaLabel={t('Date','تاریخ')}/></label>
-      <label className="cashbook-currency-field"><span>{t('Currency','واحد پول')} *</span><select value={currency} onChange={e=>{setCurrency(e.target.value);setForm(previous=>({...previous,booking_id:'',loan_repayment_entry_id:''}))}}>{currencies.map(c=><option key={c}>{c}</option>)}</select></label>
-      <label className="cashbook-amount-field"><span>{t('Amount','مبلغ')} ({currency}) *</span><input required type="number" inputMode="decimal" min="0.01" max="999999999999.99" step="0.01" placeholder="0.00" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})}/></label>
-      <label className="cashbook-description-field"><span>{t('Name / description','نام / شرح معامله')} *</span><input required placeholder={t('Who or what is this for?','نام شخص یا دلیل معامله')} value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label>
-      {president&&<div className="cashbook-loan-option"><label><input type="checkbox" checked={form.loan} disabled={!!form.loan_repayment_entry_id} onChange={e=>setForm(previous=>({...previous,loan:e.target.checked,loan_due_date:e.target.checked?previous.loan_due_date:''}))}/><span>{t('This payment is a loan (optional)','این پرداخت قرض است (اختیاری)')}</span></label>{form.loan&&<label><span>{t('Loan deadline','مهلت بازپرداخت قرض')} *</span><SolarHijriDateInput required min={form.date} language={language} value={form.loan_due_date} onChange={date=>setForm(previous=>({...previous,loan_due_date:date}))} ariaLabel={t('Loan deadline','مهلت بازپرداخت قرض')}/></label>}<small>{t('Select one employee or driver for a loan.','برای قرض یک کارمند یا راننده را انتخاب کنید.')}</small></div>}
-      {president&&<details className="simple-cashbook-description" open={form.loan || undefined}><summary>{t('Link to an employee (optional)','وصل به کارمند (اختیاری)')}</summary><label><span>{t('Employee','کارمند')}</span><select value={form.employee_id} onChange={e=>setForm({...form,employee_id:e.target.value,trader_id:'',booking_id:'',driver_id:'',loan_repayment_entry_id:''})}><option value="">—</option>{employees.filter(row=>!row.archived_at).map(row=><option key={row.id} value={row.id}>{row.first_name} {row.last_name} · {row.phone}</option>)}</select></label>{!employees.some(row=>!row.archived_at)&&<p className="booking-help">{t('Add an employee on the Employees page first.','ابتدا یک کارمند در صفحه کارمندان اضافه کنید.')}</p>}</details>}
-      {president&&<details className="simple-cashbook-description" open={form.loan || undefined}><summary>{t('Link to a driver (optional)','وصل به راننده (اختیاری)')}</summary><label><span>{t('Driver','راننده')}</span><select value={form.driver_id} onChange={e=>setForm({...form,driver_id:e.target.value,trader_id:'',booking_id:'',employee_id:'',loan_repayment_entry_id:''})}><option value="">—</option>{drivers.filter(row=>!row.archived_at&&(!row.branch_id||scope==='admin'||row.branch_id===scope)).map(row=><option key={row.id} value={row.id}>{row.full_name} · {row.phone}</option>)}</select></label>{!drivers.some(row=>!row.archived_at)&&<p className="booking-help">{t('Add a driver in Fleet first.','ابتدا یک راننده در بخش وسایط اضافه کنید.')}</p>}</details>}
-      {traders.length>0&&<details className="simple-cashbook-description"><summary>{t('Link to a trader (optional)','وصل به حساب تاجر (اختیاری)')}</summary><label><span>{t('Trader','تاجر')}</span><select value={form.trader_id||''} onChange={e=>setForm({...form,trader_id:e.target.value,booking_id:'',employee_id:'',driver_id:'',loan:false,loan_due_date:'',loan_repayment_entry_id:''})}><option value="">—</option>{traders.filter(r=>!r.archived_at&&(!r.branch_id||r.branch_id===scope)).map(r=><option key={r.id} value={r.id}>{r.full_name} · {r.phone}</option>)}</select></label>{form.trader_id&&<label><span>{t('Booking (optional)','بوکینگ (اختیاری)')}</span><select value={form.booking_id} onChange={e=>setForm({...form,booking_id:e.target.value})}><option value="">{t('General trader payment','پرداخت عمومی تاجر')}</option>{bookings.filter(row=>row.trader_id===form.trader_id&&!row.archived_at&&!row.deleted_at&&row.branch_id===(scope==='admin'?null:scope)&&row.commission_currency===currency).map(row=><option key={row.id} value={row.id}>#{row.booking_number}</option>)}</select></label>}</details>}
-      {president&&<details className="simple-cashbook-description"><summary>{t('Repay a loan (Money In)','بازپرداخت قرض (پول آمد)')}</summary><label><span>{t('Open loan','قرض باز')}</span><select value={form.loan_repayment_entry_id} onChange={e=>setForm(previous=>({...previous,loan_repayment_entry_id:e.target.value,employee_id:'',driver_id:'',trader_id:'',booking_id:'',loan:false,loan_due_date:''}))}><option value="">—</option>{loans.filter(row=>row.currency===currency).map(row=><option key={row.id} value={row.id}>#{row.receipt_number} · {row.person} · {Number(row.remaining).toLocaleString()} {row.currency} {t('remaining','باقی‌مانده')}</option>)}</select></label>{!loans.some(row=>row.currency===currency)&&<p className="booking-help">{t('No open loans in this currency.','قرض بازی با این واحد پول وجود ندارد.')}</p>}</details>}
-    </fieldset><div className="simple-cashbook-buttons"><button type="submit" value="in" className="cashbook-in" disabled={loading||!loaded||busy||!!form.employee_id||!!form.driver_id||form.loan||uncertain&&retryDirection!=='in'||(!president&&!profile?.branch_id)}><ArrowDownLeft size={20}/>{busy&&retryDirection==='in'?t('Saving…','در حال ثبت…'):uncertain&&retryDirection==='in'?t('Retry Money In','کوشش مجدد آمد'):t('Save Money In','ثبت پول آمد')}</button><button type="submit" value="out" className="cashbook-out" disabled={loading||!loaded||busy||!!form.loan_repayment_entry_id||uncertain&&retryDirection!=='out'||(!president&&!profile?.branch_id)}><ArrowUpRight size={20}/>{busy&&retryDirection==='out'?t('Saving…','در حال ثبت…'):uncertain&&retryDirection==='out'?t('Retry Money Out','کوشش مجدد رفت'):t('Save Money Out','ثبت پول رفت')}</button></div></form>
+    {!loading&&loaded&&validPeriod&&<section className="cashbook-balances" aria-labelledby="cashbook-balances-title">
+      <h2 id="cashbook-balances-title">{t('Balance summary','خلاصه حساب')}</h2>
+      <dl>
+        <div><dt>{t('Opening balance','موجودی اول دوره')}</dt><dd><bdi>{money(selectedLedger.opening)}</bdi></dd></div>
+        <div><dt>{t('Money In','پول آمد')}</dt><dd className="simple-money-in"><bdi>{money(selectedLedger.incoming)}</bdi></dd></div>
+        <div><dt>{t('Money Out','پول رفت')}</dt><dd className="simple-money-out"><bdi>{money(selectedLedger.outgoing)}</bdi></dd></div>
+        <div className="cashbook-closing"><dt>{t('Closing balance','موجودی پایان دوره')}</dt><dd><bdi>{money(selectedLedger.balance)}</bdi></dd></div>
+      </dl>
+    </section>}
+    <form className="simple-cashbook-form" onSubmit={save} aria-labelledby="cashbook-add-title">
+      <div className="cashbook-section-heading">
+        <h2 id="cashbook-add-title">{t('Add a record','ثبت معامله')}</h2>
+        <small>{name(scope)}{form.date!==kabulToday()&&<> · <bdi>{formatSolarHijri(form.date)}</bdi></>}</small>
+      </div>
+      <fieldset className="cashbook-entry-fields" disabled={busy||uncertain}>
+        <div className="cashbook-entry-row">
+          <SolarHijriDateInput iconOnly required max={kabulToday()} language={language} value={form.date}
+            onChange={date=>setForm(previous=>({...previous,date}))} ariaLabel={t('Transaction date','تاریخ معامله')}/>
+          <label className="cashbook-field">
+            <span>{t('Amount','مبلغ')} *</span>
+            <input required type="number" dir="ltr" inputMode="decimal" min="0.01" max="999999999999.99" step="0.01" placeholder="0.00"
+              value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})}/>
+          </label>
+          <label className="cashbook-field">
+            <span>{t('Currency','واحد پول')}</span>
+            <select dir="ltr" value={currency} onChange={e=>{setCurrency(e.target.value);setForm(previous=>({...previous,booking_id:'',loan_repayment_entry_id:''}))}}>
+              {currencies.map(c=><option key={c}>{c}</option>)}
+            </select>
+          </label>
+        </div>
+        <div className={`cashbook-description-row${president?' with-loan':''}`}>
+          <label className="cashbook-field">
+            <span>{t('Description','تفصیلات')} *</span>
+            <input required placeholder={t('Name or reason','نام شخص یا دلیل')} value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/>
+          </label>
+          {president&&<label className="cashbook-loan-toggle">
+            <input type="checkbox" checked={form.loan} disabled={!!form.loan_repayment_entry_id} onChange={e=>{
+              const loan=e.target.checked
+              setForm(previous=>({...previous,loan,loan_due_date:loan?previous.loan_due_date:''}))
+              if(loan)setLinkPanel(form.driver_id?'driver':'employee')
+            }}/>
+            <span>{t('This payment is a loan (optional)','این پرداخت قرض است (اختیاری)')}</span>
+          </label>}
+        </div>
+        {president&&form.loan&&<div className="cashbook-loan-details">
+          <div className="cashbook-field">
+            <span>{t('Loan deadline','مهلت بازپرداخت قرض')} *</span>
+            <SolarHijriDateInput required min={form.date} language={language} value={form.loan_due_date}
+              onChange={date=>setForm(previous=>({...previous,loan_due_date:date}))} ariaLabel={t('Loan deadline','مهلت بازپرداخت قرض')}/>
+          </div>
+          <small>{t('Select one employee or driver for a loan.','برای قرض یک کارمند یا راننده را انتخاب کنید.')}</small>
+        </div>}
+        {president&&<section className="cashbook-links" aria-labelledby="cashbook-links-title">
+          <h3 id="cashbook-links-title">{t('Link a record','وصل معامله')}</h3>
+          <div className="cashbook-link-buttons">
+            {links.map(({id,icon:Icon,label,value})=><button key={id} type="button" className="cashbook-link-button"
+              aria-expanded={linkPanel===id} aria-controls={linkPanel===id?'cashbook-link-panel':undefined} data-linked={!!value}
+              onClick={()=>setLinkPanel(current=>current===id?'':id)}>
+              <Icon size={16} aria-hidden="true"/>{label}
+            </button>)}
+            <button type="button" className="cashbook-link-button cashbook-customs-button" disabled={loading||!loaded}
+              onClick={openCustomsPayments}><Stamp size={16} aria-hidden="true"/>{t('Commission agent','کمیشن کار')}</button>
+            <button type="button" className="cashbook-link-button" aria-expanded={linkPanel==='repayment'}
+              aria-controls={linkPanel==='repayment'?'cashbook-link-panel':undefined} data-linked={!!form.loan_repayment_entry_id}
+              onClick={()=>setLinkPanel(current=>current==='repayment'?'':'repayment')}>
+              <HandCoins size={16} aria-hidden="true"/>{t('Loan repayment','بازپرداخت قرض')}
+            </button>
+          </div>
+          {linkPanel&&<div id="cashbook-link-panel" className="cashbook-link-panel">
+            {linkPanel==='employee'&&<label className="cashbook-field">
+              <span>{t('Employee','کارمند')}</span>
+              <select value={form.employee_id} onChange={e=>setForm({...form,employee_id:e.target.value,trader_id:'',booking_id:'',driver_id:'',loan_repayment_entry_id:''})}>
+                <option value="">—</option>
+                {activeEmployees.map(row=><option key={row.id} value={row.id}>{row.first_name} {row.last_name} · {row.phone}</option>)}
+              </select>
+              {!activeEmployees.length&&<small>{t('Add an employee on the Employees page first.','ابتدا یک کارمند در صفحه کارمندان اضافه کنید.')}</small>}
+            </label>}
+            {linkPanel==='driver'&&<label className="cashbook-field">
+              <span>{t('Driver','راننده')}</span>
+              <select value={form.driver_id} onChange={e=>setForm({...form,driver_id:e.target.value,trader_id:'',booking_id:'',employee_id:'',loan_repayment_entry_id:''})}>
+                <option value="">—</option>
+                {activeDrivers.map(row=><option key={row.id} value={row.id}>{row.full_name} · {row.phone}</option>)}
+              </select>
+              {!activeDrivers.length&&<small>{t('No active drivers for this account.','برای این حساب راننده فعال وجود ندارد.')}</small>}
+            </label>}
+            {linkPanel==='trader'&&<div className="cashbook-trader-fields">
+              <label className="cashbook-field">
+                <span>{t('Trader','تاجر')}</span>
+                <select value={form.trader_id} onChange={e=>setForm({...form,trader_id:e.target.value,booking_id:'',employee_id:'',driver_id:'',loan:false,loan_due_date:'',loan_repayment_entry_id:''})}>
+                  <option value="">—</option>
+                  {activeTraders.map(row=><option key={row.id} value={row.id}>{row.full_name} · {row.phone}</option>)}
+                </select>
+                {!activeTraders.length&&<small>{t('No active traders for this account.','برای این حساب تاجر فعال وجود ندارد.')}</small>}
+              </label>
+              {form.trader_id&&<label className="cashbook-field">
+                <span>{t('Booking (optional)','بار نامه (اختیاری)')}</span>
+                <select value={form.booking_id} onChange={e=>setForm({...form,booking_id:e.target.value})}>
+                  <option value="">{t('General payment','پرداخت عمومی')}</option>
+                  {bookingOptions.map(row=><option key={row.id} value={row.id}>#{row.booking_number}</option>)}
+                </select>
+              </label>}
+            </div>}
+            {linkPanel==='repayment'&&<label className="cashbook-field">
+              <span>{t('Open loan · Money In','قرض باز · پول آمد')}</span>
+              <select value={form.loan_repayment_entry_id} onChange={e=>setForm(previous=>({...previous,loan_repayment_entry_id:e.target.value,employee_id:'',driver_id:'',trader_id:'',booking_id:'',loan:false,loan_due_date:''}))}>
+                <option value="">—</option>
+                {openLoans.map(row=><option key={row.id} value={row.id}>#{row.receipt_number} · {row.person} · {Number(row.remaining).toLocaleString()} {row.currency} {t('remaining','باقی‌مانده')}</option>)}
+              </select>
+              {!openLoans.length&&<small>{t('No open loans in this currency.','قرض بازی با این واحد پول وجود ندارد.')}</small>}
+            </label>}
+          </div>}
+        </section>}
+      </fieldset>
+      <div className="simple-cashbook-buttons">
+        <button type="submit" value="in" className="cashbook-in"
+          disabled={loading||!loaded||busy||!!form.employee_id||!!form.driver_id||form.loan||uncertain&&retryDirection!=='in'||(!president&&!profile?.branch_id)}>
+          <ArrowDownLeft size={17} aria-hidden="true"/>{busy&&retryDirection==='in'?t('Saving…','در حال ثبت…'):uncertain&&retryDirection==='in'?t('Retry Money In','کوشش مجدد آمد'):t('Save Money In','ثبت پول آمد')}
+        </button>
+        <button type="submit" value="out" className="cashbook-out"
+          disabled={loading||!loaded||busy||!!form.loan_repayment_entry_id||uncertain&&retryDirection!=='out'||(!president&&!profile?.branch_id)}>
+          <ArrowUpRight size={17} aria-hidden="true"/>{busy&&retryDirection==='out'?t('Saving…','در حال ثبت…'):uncertain&&retryDirection==='out'?t('Retry Money Out','کوشش مجدد رفت'):t('Save Money Out','ثبت پول رفت')}
+        </button>
+      </div>
+    </form>
     {loading?<p role="status">{t('Loading…','در حال بارگیری…')}</p>:loaded&&!validPeriod?<p role="status">{t('Choose a valid start and end date.','تاریخ آغاز و پایان درست انتخاب کنید.')}</p>:loaded&&<>
-      <section className="cashbook-ledger"><h2>{t('Records','معاملات')}</h2>
+      <section className="cashbook-ledger" aria-labelledby="cashbook-ledger-title"><h2 id="cashbook-ledger-title">{t('Saved records','معاملات ثبت‌شده')}</h2>
         <CompactTable label={t('Cashbook records','معاملات روزنامچه')} columns={[
-          {label:t('Date','تاریخ'),width:'23%'}, {label:t('Description','شرح معامله')},
-          {label:t('Money In','آمد'),width:'20%'}, {label:t('Money Out','رفت'),width:'20%'},
+          {label:t('Date','تاریخ'),width:'22%'}, {label:t('Description','شرح معامله')},
+          {label:t('Money In / Out','آمد / رفت'),width:'27%'},
         ]}>
         {selectedLedger.rows.slice(0,shown).map(row=><tr key={row.id}>
           <th scope="row"><bdi>{formatSolarHijri(row.entry_date)}</bdi>{row.receipt_number > 0 && <small><bdi>#{row.receipt_number}</bdi></small>}</th>
@@ -303,10 +460,11 @@ export default function CashbookPage({ language, profile }) {
               </li>)}</ul>
             </details>}
           </td>
-          <td className="simple-money-in">{row.direction==='in'?<bdi>{money(cents(row.amount))}</bdi>:'—'}</td>
-          <td className="simple-money-out">{row.direction==='out'?<bdi>{money(cents(row.amount))}</bdi>:'—'}</td>
+          <td className={row.direction==='in'?'simple-money-in':'simple-money-out'}>
+            <strong><bdi>{row.direction==='in'?'+':'−'}{money(cents(row.amount))}</bdi></strong>
+          </td>
         </tr>)}
-        {!selectedLedger.rows.length&&<tr><td colSpan={4} className="simple-cashbook-empty">{t('No records for this period.','در این بازه معامله‌ای ثبت نشده است.')}</td></tr>}
+        {!selectedLedger.rows.length&&<tr><td colSpan={3} className="simple-cashbook-empty">{t('No records for this period.','در این بازه معامله‌ای ثبت نشده است.')}</td></tr>}
       </CompactTable>{selectedLedger.rows.length>shown&&<button type="button" className="cashbook-see-more" onClick={()=>setShown(current=>current+20)}>{t('See more','نمایش بیشتر')}</button>}</section>
     </>}
     {customsDirectory && president && <Modal title={t('Commission agent payments', 'پرداخت‌های کمیشن کار')}

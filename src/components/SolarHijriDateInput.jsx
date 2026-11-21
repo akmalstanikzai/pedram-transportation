@@ -11,7 +11,7 @@ function monthFromValue(value) {
   return parts.length === 3 ? { year: parts[0], month: parts[1], day: parts[2] } : solarHijriToday()
 }
 
-export default function SolarHijriDateInput({ value = '', onChange, min, max, required = false, disabled = false, ariaLabel, language = 'en' }) {
+export default function SolarHijriDateInput({ value = '', onChange, min, max, required = false, disabled = false, iconOnly = false, ariaLabel, language = 'en' }) {
   const [open, setOpen] = useState(false)
   const [view, setView] = useState(() => monthFromValue(value))
   const root = useRef(null)
@@ -28,7 +28,11 @@ export default function SolarHijriDateInput({ value = '', onChange, min, max, re
   const blanks = Array.from({ length: solarHijriWeekday(view.year, view.month, 1) }, (_, index) => <span key={`blank-${index}`} />)
   const days = Array.from({ length: solarHijriMonthLength(view.year, view.month) }, (_, index) => { const day = index + 1; const iso = solarHijriToISODate(view.year, view.month, day); const unavailable = !!((min && iso < min) || (max && iso > max)); const active = selected[0] === view.year && selected[1] === view.month && selected[2] === day; return <button key={day} type="button" disabled={unavailable} className={active ? 'selected' : ''} onClick={() => select(day)}>{day}</button> })
   return <span className="solar-date-picker" ref={root}>
-    <button type="button" className="solar-date-trigger" disabled={disabled} aria-label={ariaLabel} aria-haspopup="dialog" aria-expanded={open} onClick={() => { setView(monthFromValue(value)); setOpen(current => !current) }}><CalendarDays size={16} /><bdi dir="ltr">{chosen || '—'}</bdi></button>
+    <button type="button" className={`solar-date-trigger${iconOnly ? ' solar-date-icon-trigger' : ''}`} disabled={disabled}
+      aria-label={ariaLabel} aria-description={iconOnly && chosen ? chosen : undefined} title={iconOnly ? [ariaLabel, chosen].filter(Boolean).join(' · ') : undefined}
+      aria-haspopup="dialog" aria-expanded={open} onClick={() => { setView(monthFromValue(value)); setOpen(current => !current) }}>
+      <CalendarDays size={16} aria-hidden="true" />{!iconOnly && <bdi dir="ltr">{chosen || '—'}</bdi>}
+    </button>
     {!required && value && <button type="button" className="solar-date-clear" disabled={disabled} aria-label={isDari ? 'پاک کردن تاریخ' : 'Clear date'} onClick={() => onChange('')}><X size={14} /></button>}
     {open && <span className="solar-date-popover" role="dialog" aria-label={ariaLabel} dir={isDari ? 'rtl' : 'ltr'}><span className="solar-date-toolbar"><button type="button" aria-label={isDari ? 'ماه قبل' : 'Previous month'} onClick={() => move(-1)}><ChevronLeft size={18} /></button><strong><bdi dir="ltr">{view.year}</bdi> {months[isDari ? 'fa' : 'en'][view.month - 1]}</strong><button type="button" aria-label={isDari ? 'ماه بعد' : 'Next month'} onClick={() => move(1)}><ChevronRight size={18} /></button></span><span className="solar-date-weekdays">{weekdays[isDari ? 'fa' : 'en'].map(day => <b key={day}>{day}</b>)}</span><span className="solar-date-days">{blanks}{days}</span></span>}
   </span>
