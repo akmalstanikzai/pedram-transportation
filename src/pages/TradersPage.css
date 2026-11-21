@@ -1,0 +1,38 @@
+.module-page.traders-module { padding-top: 6px; }
+.traders-module .module-shell { margin-top: 0; }
+.traders-title { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.traders-title h1 { margin: 0; color: #245981; font-size: clamp(22px, 4vw, 28px); }
+.traders-title .module-back { min-height: 40px; padding-inline: 6px; }
+.traders-directory .traders-tools { flex-direction: row; flex-wrap: nowrap; gap: 6px; padding: 7px; margin-bottom: 9px; border: 1px solid #bdd5e8; border-radius: 9px; background: #edf5fb; }
+.traders-tools .registry-search { flex: 1 1 0; min-width: 0; }
+.traders-tools button { flex-shrink: 0; padding-inline: 8px; gap: 4px; }
+.traders-tools button[aria-pressed='true'] { background: #fff0d9; color: #734719; }
+.traders-directory > .compact-table-frame { border-color: #bdd5e8; }
+.traders-directory > .compact-table-frame thead th { background: #e5f0fa; color: #244a66; }
+.traders-directory > .compact-table-frame tbody tr:nth-child(even) { background: #f3f8fb; }
+.traders-directory .compact-table-actions > button:first-child { background: #e5f0fa; }
+.trader-detail { display: grid; gap: 10px; }
+.trader-detail-fields { margin: 0; }
+.trader-detail .trader-account { display: grid; gap: 9px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.trader-detail .trader-account-toolbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 7px; border: 1px solid #bdd5e8; border-radius: 9px; background: #edf5fb; }
+.trader-detail .trader-account-toolbar label { min-width: 0; }
+.trader-detail .trader-account-toolbar button { padding-inline: 6px; white-space: normal; }
+.trader-detail .trader-account-toolbar select { width: 100%; min-height: 40px; }
+.trader-account-block { min-width: 0; border: 1px solid var(--trader-line); border-radius: 9px; overflow: hidden; background: var(--trader-fill); }
+.trader-account-block > h3 { margin: 0; padding: 7px 9px; font-size: 14px; color: #fff; background: var(--trader-header); }
+.trader-balance-block { --trader-fill: #eaf6f0; --trader-line: #b7d8c9; --trader-header: #1a6453; }
+.trader-bookings-block { --trader-fill: #fff3df; --trader-line: #e7cda7; --trader-header: #804b19; }
+.trader-history-block { --trader-fill: #f5effc; --trader-line: #d6c7ea; --trader-header: #624387; }
+.trader-account-block .compact-table-frame { border: 0; border-radius: 0; }
+.trader-account-block .compact-table thead th { background: var(--trader-fill); color: var(--trader-header); }
+.trader-detail .trader-account-totals { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin: 0; background: var(--trader-line); }
+.trader-detail .trader-account-totals > div { min-width: 0; padding: 7px; border: 0; border-radius: 0; background: var(--trader-fill); }
+.trader-detail .trader-account-totals dd { color: #245346; overflow-wrap: anywhere; font-size: 14px; }
+.trader-detail .trader-account-form { padding: 9px; margin: 0; border: 1px solid #b7d8c9; border-radius: 9px; background: #edf7f2; }
+@media (max-width: 640px) {
+  .trader-detail { padding: 10px; }
+  .trader-detail .trader-account-toolbar, .trader-detail .trader-account-totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .traders-directory .compact-table .record-icon-button { width: 31px; height: 36px; flex-basis: 31px; }
+  .trader-account-form .solar-date-popover { position: fixed; inset-inline: 12px; top: 50%; width: auto; max-width: 340px; margin-inline: auto; transform: translateY(-50%); }
+}
+@media (max-width: 360px) { .traders-archive span { display: none; } }

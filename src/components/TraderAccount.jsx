@@ -127,7 +127,10 @@ export default function TraderAccount({ trader, language }) {
     {error && <p className="registry-notice error" role="alert">{error}</p>}
     {!data && !error && <p role="status">{t('Loading account…','حساب در حال بارگیری است…')}</p>}
     {data && <>
-      <dl className="trader-account-totals">{summary.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+      <section className="trader-account-block trader-balance-block">
+        <h3>{t('Balance summary','خلاصه حساب')}</h3>
+        <dl className="trader-account-totals">{summary.map(([label, value]) => <div key={label}><dt>{label}</dt><dd><bdi>{value}</bdi></dd></div>)}</dl>
+      </section>
       {mode && <form className="registry-form trader-account-form" onSubmit={save}>
         <fieldset className="booking-fields wide" disabled={busy}>
           <label><span>{t('Account','حساب')} *</span><select required value={form.scope} onChange={event => setForm({ ...form, scope: event.target.value, booking_id: '' })}>
@@ -148,7 +151,8 @@ export default function TraderAccount({ trader, language }) {
         </fieldset>
         <div className="registry-form-actions"><button type="button" disabled={busy} onClick={() => setMode('')}>{t('Cancel','انصراف')}</button><button className="registry-primary" disabled={busy}>{t('Save','ثبت')}</button></div>
       </form>}
-      <h3>{t('Bookings','بوکینگ‌ها')}</h3>
+      <section className="trader-account-block trader-bookings-block">
+      <h3>{t('Bookings','بار نامه‌ها')}</h3>
       <CompactTable label={t('Bookings','بوکینگ‌ها')} columns={[
         { label: t('Booking / route','بوکینگ / مسیر') },
         { label: t('Charge / paid','بدهی / پرداخت'), width: '29%' },
@@ -164,6 +168,8 @@ export default function TraderAccount({ trader, language }) {
         })}
         {!bookings.length && <tr><td colSpan={3}>{t('No bookings for this currency.','برای این واحد پول بوکینگ نیست.')}</td></tr>}
       </CompactTable>
+      </section>
+      <section className="trader-account-block trader-history-block">
       <h3>{t('Account history','تاریخچه حساب')}</h3>
       <CompactTable label={t('Account history','تاریخچه حساب')} columns={[
         { label: t('Date / description','تاریخ / شرح') },
@@ -182,6 +188,7 @@ export default function TraderAccount({ trader, language }) {
         })}
         {!history.length && <tr><td colSpan={3}>{t('No account entries yet.','هنوز معامله‌ای در حساب ثبت نشده است.')}</td></tr>}
       </CompactTable>
+      </section>
     </>}
     {voiding && <Modal title={t('Cancel charge','لغو بدهی')} busy={busy} onClose={() => setVoiding(null)}>
       <div className="record-modal-body">
