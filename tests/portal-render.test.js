@@ -44,7 +44,9 @@ test('branch navigation and direct Branches URL never render branch management c
     const branchFields = renderToStaticMarkup(React.createElement(BranchDetailsFields, { language: 'fa', form: initialBranchForm, update() {}, setSelectedFiles() {} }))
     for (const label of ['نام شعبه','کد شعبه','ولایت','ولسوالی','موقعیت','نام','تخلص','نام پدر','موبایل','قریه','عکس مدیر','تذکره','سی وی','سند تحصیلی','قرارداد','اسناد دیگر']) assert.ok(branchFields.includes(label), label)
     assert.doesNotMatch(branchFields, /شهر یا ولسوالی|آدرس کامل|شماره شعبه|شماره تماس مدیر|نمبر تذکره|سند ۱|سند ۲/)
-    assert.equal((branchFields.match(/type="file"/g) || []).length, 6)
+    const documentSection = branchFields.match(/data-section="documents"[\s\S]*?<\/section>/)?.[0]
+    assert.ok(documentSection)
+    assert.equal((documentSection.match(/type="file"/g) || []).length, 6)
     const legacyFields = renderToStaticMarkup(React.createElement(BranchDetailsFields, { language: 'en', form: initialBranchForm, update() {}, setSelectedFiles() {}, editing: { id: 'old' }, files: { 'old:doc1': { file_name: 'existing.pdf', url: 'https://example.test/file' } } }))
     assert.match(legacyFields, /existing.pdf/)
     const { VehicleRegistrationFields, CapacityField } = await server.ssrLoadModule('/src/pages/VehiclesPage.jsx')

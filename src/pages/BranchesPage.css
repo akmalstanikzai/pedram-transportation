@@ -45,10 +45,55 @@
 .branch-option-buttons button:disabled { cursor: not-allowed; opacity: .55; }
 .branch-registry button:focus-visible { outline: 2px solid #396f97; outline-offset: 2px; }
 
+.record-modal.branch-form-card { width: min(780px, 100%); background: #f1f5f8; scroll-padding-block: 60px; }
+.branch-form-card > .registry-form-head { position: sticky; inset-block-start: 0; z-index: 2; padding: 9px 14px; background: #fff; }
+.branch-form-card > .registry-form-head .record-icon-button { flex-shrink: 0; }
+.branch-form { --branch-form-gutter: 14px; display: grid; gap: 10px; padding: 10px var(--branch-form-gutter) 0; }
+
+.branch-form-section[data-section='branch'] { --branch-section-header: #245981; --branch-section-ink: #244a66; --branch-section-fill: #edf5fb; --branch-section-line: #bdd5e8; }
+.branch-form-section[data-section='manager'] { --branch-section-header: #1a6453; --branch-section-ink: #245346; --branch-section-fill: #eaf6f0; --branch-section-line: #b7d8c9; }
+.branch-form-section[data-section='documents'] { --branch-section-header: #804b19; --branch-section-ink: #674019; --branch-section-fill: #fff3df; --branch-section-line: #e7cda7; }
+.branch-form-section[data-section='credentials'] { --branch-section-header: #624387; --branch-section-ink: #523775; --branch-section-fill: #f5effc; --branch-section-line: #d6c7ea; }
+
+.branch-form-section { min-width: 0; border: 1px solid var(--branch-section-line); border-radius: 9px; background: var(--branch-section-fill); }
+.branch-form-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 7px 9px;
+  border-radius: 8px 8px 0 0;
+  background: var(--branch-section-header);
+  color: #fff;
+  font-size: 14px;
+}
+.branch-form-section h3 svg { flex: none; }
+.branch-form-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 8px 9px 9px; }
+.branch-form-fields > .wide { grid-column: 1 / -1; }
+.branch-form-fields label { display: grid; align-content: start; gap: 3px; min-width: 0; color: var(--branch-section-ink); font-size: 12px; font-weight: 700; overflow-wrap: anywhere; }
+.branch-form-fields input:not([type='file']) { width: 100%; min-width: 0; min-height: 42px; padding: 5px 7px; border: 1px solid var(--branch-section-line); border-radius: 7px; background: #fff; color: var(--ink); font: inherit; font-size: 16px; font-weight: 500; }
+.branch-form-fields input:not([type='file']):focus-visible, .branch-file-control:focus-within { outline: 2px solid var(--branch-section-header); outline-offset: 1px; }
+.branch-home-address { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.branch-home-address legend { margin-bottom: 5px; color: var(--branch-section-ink); font-size: 12px; font-weight: 800; }
+
+.branch-upload-field .branch-file-control { position: relative; display: flex; align-items: center; justify-content: center; gap: 5px; min-height: 42px; padding: 4px 6px; border: 1px solid var(--branch-section-line); border-radius: 7px; background: #fffaf1; color: var(--branch-section-ink); text-align: center; }
+.branch-file-control svg { flex: none; }
+.branch-file-control input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.branch-upload-field small, .branch-legacy-file { font-size: 12px; overflow-wrap: anywhere; }
+.branch-legacy-file a { display: block; margin-top: 3px; }
+.branch-form-fields .booking-help { margin: 0; color: var(--branch-section-ink); font-size: 12px; }
+
+.branch-form .branch-form-message { margin: 0; }
+.branch-form .branch-actions { gap: 8px; padding: 8px var(--branch-form-gutter); margin-inline: calc(-1 * var(--branch-form-gutter)); border-top: 1px solid #c5d8e5; background: #fff; }
+.branch-form .branch-actions button { min-height: 42px; padding: 6px 10px; white-space: normal; }
+.branch-form .branch-actions .spinner { width: 17px; height: 17px; }
+
 @media (max-width: 640px) {
   .module-page.branches-module { padding-top: 6px; }
   .branch-shell .branch-registry { gap: 8px; }
   .branches-directory .branch-row-actions { gap: 3px; }
   .branches-directory .branch-row-actions .record-icon-button { width: 34px; flex-basis: 34px; }
   .branch-row-options { padding: 12px; }
+  .branch-form { --branch-form-gutter: 10px; gap: 8px; }
+  .branch-form .branch-actions { position: sticky; inset-block-end: 0; z-index: 1; justify-content: center; padding-block-end: max(8px, env(safe-area-inset-bottom)); }
 }

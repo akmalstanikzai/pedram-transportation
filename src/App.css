@@ -644,18 +644,6 @@ html[dir='rtl'] .brand strong { font-family: var(--font-dari); letter-spacing: 0
 .trader-login-actions button { min-height: 42px; padding: 9px 14px; font-size: 13px; }
 .trader-login-saved { display: grid; gap: 7px; margin: 14px 0; font-size: 12px; font-weight: 700; }
 .trader-login-form { display: grid; gap: 12px; padding: 15px; border: 1px solid var(--line); border-radius: 10px; background: #fafcfb; }
-.branch-form-card { width: min(780px, 100%); }
-.branch-form { padding: 0 25px 26px; }
-.branch-form-section { padding: 22px 0; border-bottom: 1px solid var(--line); }
-.branch-form-section h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 17px; color: var(--navy); font-size: 12px; }
-.branch-form-fields { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
-.branch-form-fields label span { display: block; margin-bottom: 7px; color: #455460; font-size: 10px; font-weight: 800; }
-.branch-form-fields input, .branch-form-fields select { width: 100%; height: 43px; padding: 0 11px; border: 1px solid #d9e1e6; border-radius: 8px; outline: 0; color: var(--ink); background: #fbfcfd; font-size: 12px; }
-.branch-form-fields input:focus, .branch-form-fields select:focus { border-color: #6ca88e; background: #fff; }
-.branch-form-fields .wide { grid-column: 1 / -1; }
-.branch-form-message { margin: 18px 0 0; }
-.branch-actions { padding-top: 22px; }
-.branch-actions .spinner { width: 17px; height: 17px; }
 
 html[dir='rtl'] body { font-family: var(--font-dari); }
 html[dir='rtl'] .primary-button svg,
@@ -725,11 +713,6 @@ html[dir='rtl'] .role-title { font-family: var(--font-dari); letter-spacing: 0; 
   .vehicle-owner { grid-column: 2 / -1; }
   .registry-form { grid-template-columns: 1fr; padding: 20px; }
   .registry-form .wide, .registry-form-actions { grid-column: auto; }
-  .branch-form { padding: 0 20px 22px; }
-  .branch-form-fields { grid-template-columns: 1fr; }
-  .branch-form-fields .wide { grid-column: auto; }
-  .branch-actions { flex-direction: column-reverse; }
-  .branch-actions button { width: 100%; }
 }
 
 /* Keep the boxed fields without a focus shadow. */
@@ -855,7 +838,6 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
   .registry-form-head { padding: 16px; }
   .registry-form-head h2 { min-width: 0; font-size: 19px; overflow-wrap: anywhere; }
   .registry-form, .record-modal-body { padding: 16px; }
-  .branch-form { padding: 0 16px 20px; }
   .record-details { grid-template-columns: minmax(0, 1fr); }
   .registry-form-actions { flex-wrap: wrap; }
   .registry-form-actions button { min-height: 44px; }
@@ -899,18 +881,6 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
   .simple-cashbook-toolbar :is(input, select, .solar-date-trigger) { min-height: 48px; font-size: 16px; }
 }
 
-/* Keep the reference form's paired rows on phones as well as desktop. */
-.branch-form .branch-form-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.branch-form .branch-form-fields > .wide { grid-column: 1 / -1; }
-.branch-form-fields > label { min-width: 0; }
-.branch-form .branch-home-address { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; min-width: 0; padding: 0; margin: 0; border: 0; }
-.branch-home-address legend { margin-bottom: 10px; color: #455460; font-size: 13px; font-weight: 800; }
-.branch-form-fields label span { font-size: 13px; line-height: 1.5; }
-.branch-form-fields input { min-width: 0; font-family: inherit; }
-.branch-form-fields input[type='file'] { height: auto; min-height: 46px; padding: 8px; font-size: 12px; }
-.branch-form-fields input::file-selector-button { max-width: 100%; white-space: normal; cursor: pointer; }
-.branch-form-fields small, .branch-legacy-file { display: block; margin-top: 6px; font-size: 12px; overflow-wrap: anywhere; }
-.branch-legacy-file a { display: block; margin-top: 6px; }
 .branch-details-view .branch-information-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; margin: 0; }
 .branch-information-grid > div { min-width: 0; }
 .branch-information-grid > .wide { grid-column: 1 / -1; }
@@ -940,10 +910,6 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
   .booking-information-actions button { width: 100%; justify-content: center; }
 }
 @media (max-width: 640px) {
-  .branch-form .branch-form-fields { gap: 14px 10px; }
-  .branch-form-fields input:not([type='file']) { min-height: 46px; padding-inline: 8px; font-size: 16px; }
-  .branch-form .branch-home-address { gap: 8px; }
-  .branch-form-section h3 { font-size: 14px; line-height: 1.5; }
 }
 
 .vehicle-registration-form .booking-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }

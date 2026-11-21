@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Archive, Building2, Ellipsis, Eye, KeyRound, Pencil, Plus, Power, RotateCcw, UserRound } from 'lucide-react'
+import { Archive, Building2, Ellipsis, Eye, Files, KeyRound, Pencil, Plus, Power, RotateCcw, Upload, UserRound } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { rpc, explain } from '../lib/operations'
 import { ConfirmArchive, IconButton, Modal } from '../components/RecordTools'
@@ -20,7 +20,7 @@ const labels = {
     add: 'Add Branch', none: 'No branches found.', name: 'Branch name', location: 'Location', manager: 'Manager', username: 'Username',
     code: 'Branch code', province: 'Province', city: 'District', address: 'Location', branchPhone: 'Branch phone',
     branchInfo: 'Branch information',
-    managerInfo: 'Branch manager information', credentials: 'Login credentials', managerName: 'Name', managerSurname: 'Surname',
+    managerInfo: 'Branch manager information', documents: 'Manager documents', credentials: 'Login credentials', managerName: 'Name', managerSurname: 'Surname',
     fatherName: 'Father name', managerPhone: 'Mobile', nationalId: 'National ID', managerAddress: 'Home address', village: 'Village', managerPhoto: 'Manager photo',
     login: 'Email or username', password: 'Password', confirm: 'Confirm password',
     create: 'Create branch and account', cancel: 'Cancel', required: 'Complete all required fields.', mismatch: 'Passwords do not match.',
@@ -32,7 +32,7 @@ const labels = {
     add: 'افزودن شعبه', none: 'شعبه‌ای یافت نشد.', name: 'نام شعبه', location: 'موقعیت', manager: 'مدیر', username: 'نام کاربری',
     code: 'کد شعبه', province: 'ولایت', city: 'ولسوالی', address: 'موقعیت', branchPhone: 'شماره شعبه',
     branchInfo: 'معلومات شعبه',
-    managerInfo: 'معلومات مدیر شعبه', credentials: 'معلومات ورود', managerName: 'نام', managerSurname: 'تخلص', fatherName: 'نام پدر',
+    managerInfo: 'معلومات مدیر شعبه', documents: 'اسناد مدیر', credentials: 'معلومات ورود', managerName: 'نام', managerSurname: 'تخلص', fatherName: 'نام پدر',
     managerPhone: 'موبایل', nationalId: 'نمبر تذکره', managerAddress: 'آدرس خانه', village: 'قریه', managerPhoto: 'عکس مدیر',
     login: 'ایمیل یا نام کاربری', password: 'رمز عبور', confirm: 'تکرار رمز عبور', create: 'ایجاد شعبه و حساب',
     cancel: 'انصراف', required: 'خانه‌های ضروری را تکمیل کنید.', mismatch: 'رمزهای عبور یکسان نیست.',
@@ -230,7 +230,7 @@ function BranchRegistry({ language, onBack }) {
     {open && <Modal title={editing?t('Edit branch','ویرایش شعبه'):text.add} onClose={()=>setOpen(false)} busy={saving} className="branch-form-card">
       <form className="branch-form" onSubmit={submit}>
         <BranchDetailsFields language={language} form={form} update={update} editing={editing} files={files} selectedFiles={selectedFiles} setSelectedFiles={setSelectedFiles} />
-        {!editing&&<FormSection title={text.credentials} icon={<KeyRound size={18} />}>
+        {!editing&&<FormSection kind="credentials" title={text.credentials} icon={KeyRound}>
           <Field label={text.login} required value={form.login} onChange={value => update('login', value)} wide />
           <Field label={text.password} required type="password" value={form.password} onChange={value => update('password', value)} />
           <Field label={text.confirm} required type="password" value={form.confirm} onChange={value => update('confirm', value)} />
@@ -245,21 +245,25 @@ function BranchRegistry({ language, onBack }) {
   </div>
 }
 
-function FormSection({ title, icon, children }) { return <section className="branch-form-section"><h3>{icon}{title}</h3><div className="branch-form-fields">{children}</div></section> }
+function FormSection({ kind, title, icon: SectionIcon, children }) {
+  return <section className="branch-form-section" data-section={kind} aria-label={title}>
+    <h3><SectionIcon size={17} aria-hidden="true" />{title}</h3>
+    <div className="branch-form-fields">{children}</div>
+  </section>
+}
 function Field({ label, required, type = 'text', value, onChange, wide }) { return <label className={wide ? 'wide' : ''}><span>{label}{required ? ' *' : ''}</span><input required={required} type={type} value={value} onChange={event => onChange(event.target.value)} /></label> }
-
 
 export function BranchDetailsFields({ language, form, update, editing = null, files = {}, selectedFiles = {}, setSelectedFiles }) {
   const text = labels[language] || labels.en
   return <>
-        <FormSection title={text.branchInfo} icon={<Building2 size={18} />}>
+        <FormSection kind="branch" title={text.branchInfo} icon={Building2}>
           <Field label={text.name} required value={form.name} onChange={value => update('name', value)} />
           <Field label={text.code} value={form.code} onChange={value => update('code', value)} />
           <Field label={text.province} required value={form.province} onChange={value => update('province', value)} />
           <Field label={text.city} required value={form.city} onChange={value => update('city', value)} />
           <Field label={text.address} value={form.address} onChange={value => update('address', value)} wide />
         </FormSection>
-        <FormSection title={text.managerInfo} icon={<UserRound size={18} />}>
+        <FormSection kind="manager" title={text.managerInfo} icon={UserRound}>
           <Field label={text.managerName} required value={form.managerName} onChange={value => update('managerName', value)} />
           <Field label={text.managerSurname} value={form.managerSurname} onChange={value => update('managerSurname', value)} />
           <Field label={text.fatherName} value={form.fatherName} onChange={value => update('fatherName', value)} />
@@ -269,8 +273,21 @@ export function BranchDetailsFields({ language, form, update, editing = null, fi
             <Field label={text.city} value={form.homeDistrict} onChange={value => update('homeDistrict', value)} />
             <Field label={text.village} value={form.homeVillage} onChange={value => update('homeVillage', value)} />
           </fieldset>
-          <label><span>{text.managerPhoto}</span><input type="file" accept=".jpg,.jpeg,.png,.webp" onChange={event=>setSelectedFiles(current=>({...current,photo:event.target.files?.[0]||null}))}/>{(selectedFiles.photo||editing&&files[`${editing.id}:photo`])&&<small>{selectedFiles.photo?.name||files[`${editing.id}:photo`]?.file_name}</small>}</label>
-          {managerSlots.map(([key,en,fa])=><label key={key}><span>{language==='fa'?fa:en}</span><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={event=>setSelectedFiles(current=>({...current,[key]:event.target.files?.[0]||null}))}/>{editing&&files[`${editing.id}:${key}`]&&<small>{files[`${editing.id}:${key}`].file_name}</small>}</label>)}
+        </FormSection>
+        <FormSection kind="documents" title={text.documents} icon={Files}>
+          {[['photo',text.managerPhoto,text.managerPhoto],...managerSlots].map(([key,en,fa])=>{
+            const label = language==='fa'?fa:en
+            const fileName = selectedFiles[key]?.name || (editing && files[`${editing.id}:${key}`]?.file_name)
+            return <label className="branch-upload-field" key={key}>
+              <span>{label}</span>
+              <span className="branch-file-control">
+                <input type="file" aria-label={label} accept={key==='photo'?'.jpg,.jpeg,.png,.webp':'.pdf,.jpg,.jpeg,.png,.webp'}
+                  onChange={event=>setSelectedFiles(current=>({...current,[key]:event.target.files?.[0]||null}))}/>
+                <Upload size={15} aria-hidden="true" /><span aria-hidden="true">{language==='fa'?'انتخاب فایل':'Choose file'}</span>
+              </span>
+              {fileName && <small><bdi>{fileName}</bdi></small>}
+            </label>
+          })}
           {editing&&legacyManagerSlots.filter(([key])=>files[`${editing.id}:${key}`]).map(([key,en,fa])=><div className="branch-legacy-file" key={key}><strong>{language==='fa'?fa:en}</strong><a href={files[`${editing.id}:${key}`].url} target="_blank" rel="noreferrer">{files[`${editing.id}:${key}`].file_name}</a></div>)}
           <p className="wide booking-help">{language==='fa'?'فایل‌ها اختیاری اند. عکس و اسناد تا ۵ MB؛ سند جدید جای سند قبلی را در نمای شعبه می‌گیرد.':'Files are optional. Each photo or document can be up to 5 MB. A new upload replaces the file shown in the branch profile.'}</p>
         </FormSection>
@@ -302,7 +319,7 @@ export function BranchInformation({ language, details, files = {} }) {
         {item('home',text.managerAddress,manager.address,true)}
       </dl>
     </section>
-    <h3>{language==='fa'?'اسناد مدیر':'Manager documents'}</h3>
+    <h3>{text.documents}</h3>
     <div className="branch-manager-documents">
       {[...managerSlots,...legacyManagerSlots.filter(([key])=>files[`${details.id}:${key}`])].map(([key,en,fa])=>{
         const file=files[`${details.id}:${key}`]
