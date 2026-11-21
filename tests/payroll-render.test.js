@@ -4,7 +4,7 @@ import { createServer } from 'vite'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
-test('payroll cards show balances and history, and prevent payments to settled or archived employees', async () => {
+test('the payroll table shows balances and history, and prevents payments to settled or archived employees', async () => {
   const server = await createServer({server:{middlewareMode:true,hmr:false},appType:'custom'})
   try {
     const {PayrollCards} = await server.ssrLoadModule('/src/components/EmployeePayroll.jsx')
@@ -13,7 +13,7 @@ test('payroll cards show balances and history, and prevent payments to settled o
       const render = rows => renderToStaticMarkup(React.createElement(PayrollCards,{rows,language,onPay(){},onPrint(){}}))
       const html = render([row])
       for (const text of ['Employee One','0700000000','15,000.00 AFN','3,000.00 AFN','10,000.00 AFN','2,000.00 AFN','Kabul']) assert.ok(html.includes(text),text)
-      assert.match(html,/payroll-amounts/)
+      assert.match(html,/<table class="compact-table"/)
       assert.match(html,/Print payslip|چاپ برگه معاش/)
       assert.match(html,/Reversed|معکوس‌شده/)
       assert.doesNotMatch(html, /<button[^>]*disabled/)

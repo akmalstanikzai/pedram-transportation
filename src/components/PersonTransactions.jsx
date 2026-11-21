@@ -6,6 +6,7 @@ import { formatSolarHijri } from '../lib/solarHijri'
 import { personStatement, reportMoney, transactionNotes } from '../lib/financialReports'
 import { printRecord } from '../lib/recordExports'
 import { Modal } from './RecordTools'
+import CompactTable from './CompactTable'
 import SolarHijriDateInput from './SolarHijriDateInput'
 
 export default function PersonTransactions({ person, kind, language, onClose }) {
@@ -48,13 +49,28 @@ export default function PersonTransactions({ person, kind, language, onClose }) 
         </div>
         {printError && <p className="registry-notice error" role="alert">{printError}</p>}
         {!valid ? <p role="alert">{t('Choose a valid start and end date.', 'تاریخ آغاز و پایان درست انتخاب کنید.')}</p> : <>
-          {!!report.sections[0].rows.length && <div className="financial-statement-totals">{report.sections[0].rows.map(([unit, incoming, outgoing]) => <div key={unit}><strong>{unit}</strong><span>{t('Money In', 'آمد')}: <bdi>{incoming}</bdi></span><span>{t('Money Out', 'رفت')}: <bdi>{outgoing}</bdi></span></div>)}</div>}
-          {visible.length ? <div className="employee-transactions">{visible.map(item => <article key={item.id}>
-            <div><strong>{item.receipt_number ? `#${item.receipt_number} · ` : ''}{formatSolarHijri(item.date)}</strong><span>{item.branch} · {item.currency}</span></div>
-            <p>{item.description}</p>
-            <strong className={item.direction === 'out' ? 'simple-money-out' : 'simple-money-in'}>{item.direction === 'out' ? '−' : '+'}{reportMoney(cents(item.amount), item.currency)}</strong>
-            {transactionNotes(item, language) && <small className="loan-deadline">{transactionNotes(item, language)}</small>}
-          </article>)}</div> : <p>{t('No transactions for this period.', 'در این بازه معامله‌ای ثبت نشده است.')}</p>}
+          {!!report.sections[0].rows.length && <CompactTable className="financial-statement-totals" label={report.sections[0].title} columns={[
+            { label: t('Currency', 'واحد پول'), width: '23%' },
+            { label: t('Money In', 'آمد') },
+            { label: t('Money Out', 'رفت') },
+          ]}>{report.sections[0].rows.map(([unit, incoming, outgoing]) => <tr key={unit}>
+            <th scope="row">{unit}</th><td><bdi>{incoming}</bdi></td><td><bdi>{outgoing}</bdi></td>
+          </tr>)}</CompactTable>}
+          {visible.length ? <CompactTable label={t('Transactions', 'معاملات')} columns={[
+            { label: t('Date / receipt', 'تاریخ / رسید'), width: '24%' },
+            { label: t('Account / description', 'حساب / شرح') },
+            { label: t('Amount', 'مبلغ'), width: '29%' },
+          ]}>{visible.map(item => <tr key={item.id}>
+            <th scope="row"><bdi>{formatSolarHijri(item.date)}</bdi>
+              {item.receipt_number > 0 && <small><bdi>#{item.receipt_number}</bdi></small>}
+            </th>
+            <td><strong>{item.branch}</strong><small>{item.description}</small>
+              {transactionNotes(item, language) && <small>{transactionNotes(item, language)}</small>}
+            </td>
+            <td><strong className={item.direction === 'out' ? 'simple-money-out' : 'simple-money-in'}>
+              <bdi>{item.direction === 'out' ? '−' : '+'}{reportMoney(cents(item.amount), item.currency)}</bdi>
+            </strong></td>
+          </tr>)}</CompactTable> : <p>{t('No transactions for this period.', 'در این بازه معامله‌ای ثبت نشده است.')}</p>}
         </>}
       </>}
     </div>

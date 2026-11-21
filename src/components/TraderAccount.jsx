@@ -6,6 +6,7 @@ import { rpc, explain } from '../lib/operations'
 import { bookingBalances, traderBalance } from '../lib/traderAccounts'
 import { printRecord } from '../lib/recordExports'
 import { IconButton, Modal } from './RecordTools'
+import CompactTable from './CompactTable'
 import SolarHijriDateInput from './SolarHijriDateInput'
 import { formatSolarHijri } from '../lib/solarHijri'
 
@@ -148,22 +149,39 @@ export default function TraderAccount({ trader, language }) {
         <div className="registry-form-actions"><button type="button" disabled={busy} onClick={() => setMode('')}>{t('Cancel','انصراف')}</button><button className="registry-primary" disabled={busy}>{t('Save','ثبت')}</button></div>
       </form>}
       <h3>{t('Bookings','بوکینگ‌ها')}</h3>
-      <div className="simple-cashbook-list"><table>
-        <thead><tr>{bookingHeaders.map(header => <th key={header}>{header}</th>)}</tr></thead>
-        <tbody>{bookings.map(row => <tr key={row.id}>{bookingCells(row).map((cell, index) => <td key={index}>{cell}</td>)}</tr>)}
-          {!bookings.length && <tr><td colSpan={bookingHeaders.length}>{t('No bookings for this currency.','برای این واحد پول بوکینگ نیست.')}</td></tr>}
-        </tbody>
-      </table></div>
+      <CompactTable label={t('Bookings','بوکینگ‌ها')} columns={[
+        { label: t('Booking / route','بوکینگ / مسیر') },
+        { label: t('Charge / paid','بدهی / پرداخت'), width: '29%' },
+        { label: t('Remaining','باقی‌مانده'), width: '26%' },
+      ]}>
+        {bookings.map(row => {
+          const [date, number, route, charge, paid, remaining] = bookingCells(row)
+          return <tr key={row.id}>
+            <th scope="row"><strong><bdi>{number}</bdi></strong> · <bdi>{date}</bdi><small>{route}</small></th>
+            <td><bdi>{charge}</bdi><small><bdi>{paid}</bdi></small></td>
+            <td><strong><bdi>{remaining}</bdi></strong></td>
+          </tr>
+        })}
+        {!bookings.length && <tr><td colSpan={3}>{t('No bookings for this currency.','برای این واحد پول بوکینگ نیست.')}</td></tr>}
+      </CompactTable>
       <h3>{t('Account history','تاریخچه حساب')}</h3>
-      <div className="simple-cashbook-list"><table>
-        <thead><tr>{historyHeaders.map(header => <th key={header}>{header}</th>)}<th>{t('Action','عمل')}</th></tr></thead>
-        <tbody>{history.map(row => <tr key={`${row.type}-${row.id}`} className={row.voided_at ? 'trader-voided' : ''}>
-          {historyCells(row).map((cell, index) => <td key={index}>{cell}</td>)}
-          <td>{row.type === 'charge' && !row.booking_id && !row.voided_at && !trader.archived_at &&
-            <IconButton icon={Trash2} label={t('Cancel mistaken charge','لغو بدهی اشتباه')} disabled={busy} onClick={() => { setError(''); setVoiding(row) }}/>}</td>
-        </tr>)}
-        {!history.length && <tr><td colSpan={historyHeaders.length + 1}>{t('No account entries yet.','هنوز معامله‌ای در حساب ثبت نشده است.')}</td></tr>}</tbody>
-      </table></div>
+      <CompactTable label={t('Account history','تاریخچه حساب')} columns={[
+        { label: t('Date / description','تاریخ / شرح') },
+        { label: t('Charge','بدهی'), width: '24%' },
+        { label: t('Paid','پرداخت'), width: '24%' },
+      ]}>
+        {history.map(row => {
+          const [date, description, charge, paid] = historyCells(row)
+          return <tr key={`${row.type}-${row.id}`} className={row.voided_at ? 'trader-voided' : ''}>
+            <th scope="row"><bdi>{date}</bdi><small>{description}</small>
+              {row.type === 'charge' && !row.booking_id && !row.voided_at && !trader.archived_at &&
+                <IconButton icon={Trash2} label={t('Cancel mistaken charge','لغو بدهی اشتباه')} disabled={busy} onClick={() => { setError(''); setVoiding(row) }}/>}
+            </th>
+            <td><bdi>{charge}</bdi></td><td><bdi>{paid}</bdi></td>
+          </tr>
+        })}
+        {!history.length && <tr><td colSpan={3}>{t('No account entries yet.','هنوز معامله‌ای در حساب ثبت نشده است.')}</td></tr>}
+      </CompactTable>
     </>}
     {voiding && <Modal title={t('Cancel charge','لغو بدهی')} busy={busy} onClose={() => setVoiding(null)}>
       <div className="record-modal-body">

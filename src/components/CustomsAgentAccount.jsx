@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Plus, Printer, RefreshCw } from 'lucide-react'
+import { Plus, Printer, RefreshCw, WalletCards } from 'lucide-react'
 import { allRows, cents, currencies, kabulToday } from '../lib/cashbook'
 import { customsAgentReport, customsPaymentAccount, customsPaymentStatus, customsStatementView } from '../lib/customsAgentStatement'
 import { cashbookReceipt, reportMoney } from '../lib/financialReports'
@@ -8,12 +8,14 @@ import { printRecord } from '../lib/recordExports'
 import { formatSolarHijri } from '../lib/solarHijri'
 import { supabase } from '../lib/supabase'
 import SolarHijriDateInput from './SolarHijriDateInput'
+import CompactTable from './CompactTable'
+import { IconButton } from './RecordTools'
 
 export default function CustomsAgentAccount({ agent, language, initialAccount = '', onPayment, onBusyChange }) {
   const t = (en, fa) => language === 'fa' ? fa : en
   const [data, setData] = useState(null)
   const [lookups, setLookups] = useState(null)
-  const [filters, setFilters] = useState({ start: '', end: '', currency: '' })
+  const [currencyFilter, setCurrencyFilter] = useState('')
   const [form, setForm] = useState(null)
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -21,7 +23,6 @@ export default function CustomsAgentAccount({ agent, language, initialAccount = 
   const [notice, setNotice] = useState('')
   const saving = useRef(false)
   const [pending, setPending] = useState(null)
-  const validRange = !filters.start || !filters.end || filters.start <= filters.end
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -43,9 +44,8 @@ export default function CustomsAgentAccount({ agent, language, initialAccount = 
   }, [agent.id])
   useEffect(() => { void Promise.resolve().then(load) }, [load])
 
-  const view = data && customsStatementView(data, filters)
+  const view = data && customsStatementView(data, currencyFilter)
   const updateForm = (key, value) => setForm(current => ({ ...current, [key]: value }))
-  const updateFilter = (key, value) => setFilters(current => ({ ...current, [key]: value }))
   const showMoney = (amount, currency) => reportMoney(cents(amount), currency)
 
   function begin(fee = null) {
@@ -161,60 +161,73 @@ export default function CustomsAgentAccount({ agent, language, initialAccount = 
         <button className="registry-primary" disabled={busy}>{busy ? t('Saving…', 'در حال ثبت…') : retry ? t('Retry save', 'تلاش دوباره')
           : form.fee ? t('Save Money Out', 'ثبت پول رفت') : t('Save agreed fee', 'ثبت حق‌الزحمه')}</button></div>
     </form> : <>
-      <div className="customs-account-actions">
-        <button type="button" className="registry-primary" disabled={loading || !lookups} onClick={() => begin()}>
-          <Plus size={17} />{t('Record agreed fee', 'ثبت حق‌الزحمه')}
-        </button>
-        <button type="button" className="registry-secondary" disabled={loading} onClick={load}><RefreshCw size={17} />{t('Refresh', 'تازه‌سازی')}</button>
+      <div className="customs-account-toolbar">
+        <div className="customs-account-actions">
+          <button type="button" className="registry-primary" disabled={loading || !lookups} onClick={() => begin()}>
+            <Plus size={17} />{t('Record agreed fee', 'ثبت حق‌الزحمه')}
+          </button>
+          <button type="button" className="registry-secondary" disabled={loading} onClick={load}><RefreshCw size={17} />{t('Refresh', 'تازه‌سازی')}</button>
+        </div>
+        {!loading && view && <div className="customs-account-actions">
+          <select aria-label={t('Currency', 'واحد پول')} value={currencyFilter} onChange={e => setCurrencyFilter(e.target.value)}>
+            <option value="">{t('All currencies', 'همه واحدهای پول')}</option>
+            {currencies.map(unit => <option key={unit}>{unit}</option>)}
+          </select>
+          <button type="button" className="registry-secondary" onClick={() => print(customsAgentReport(agent.name, language, view))}>
+            <Printer size={17} />{t('Print / Save PDF', 'چاپ / ذخیره PDF')}
+          </button>
+        </div>}
       </div>
       {loading && <p role="status">{t('Loading account…', 'در حال بارگیری حساب…')}</p>}
       {!loading && view && <>
-        <h3>{t('Current balances', 'مانده فعلی')}</h3>
-        {view.totals.length ? <div className="financial-statement-totals">{view.totals.map(row => <div key={row.unit}>
-          <strong>{row.unit}</strong>
-          <span>{t('Agreed fees', 'حق‌الزحمه توافق‌شده')} <bdi>{reportMoney(row.agreed, row.unit)}</bdi></span>
-          <span>{t('Net paid', 'پرداخت خالص')} <bdi>{reportMoney(row.paid, row.unit)}</bdi></span>
-          <span>{t('Remaining', 'باقی‌مانده')} <bdi>{reportMoney(row.remaining, row.unit)}</bdi></span>
-        </div>)}</div> : <p>{t('No fees recorded in this currency.', 'در این واحد پول حق‌الزحمه‌ای ثبت نشده است.')}</p>}
-        <div className="financial-statement-controls">
-          <label><span>{t('From date', 'از تاریخ')}</span><SolarHijriDateInput language={language} value={filters.start} max={filters.end || undefined}
-            onChange={value => updateFilter('start', value)} ariaLabel={t('From date', 'از تاریخ')} /></label>
-          <label><span>{t('Through date', 'تا تاریخ')}</span><SolarHijriDateInput language={language} value={filters.end} min={filters.start || undefined}
-            onChange={value => updateFilter('end', value)} ariaLabel={t('Through date', 'تا تاریخ')} /></label>
-          <label><span>{t('Currency', 'واحد پول')}</span><select value={filters.currency} onChange={e => updateFilter('currency', e.target.value)}>
-            <option value="">{t('All currencies', 'همه واحدهای پول')}</option>{currencies.map(unit => <option key={unit}>{unit}</option>)}</select></label>
-          <button className="registry-secondary" disabled={!validRange} onClick={() => print(customsAgentReport(agent.name, language, view, filters.start, filters.end))}>
-            <Printer size={17} />{t('Print / Save PDF', 'چاپ / ذخیره PDF')}
-          </button>
-        </div>
-        {!validRange ? <p role="alert">{t('Choose a valid start and end date.', 'تاریخ آغاز و پایان درست انتخاب کنید.')}</p> : <>
-          <h3>{t('Agreed fees', 'حق‌الزحمه‌ها')}</h3>
-          <div className="employee-transactions">{view.fees.map(fee => <article key={fee.id}>
-            <div><strong>{fee.description}</strong><span>{formatSolarHijri(fee.date)}{fee.booking_number != null && ` · #${fee.booking_number}`}</span></div>
-            <dl className="customs-information-grid">
-              <div><dt>{t('Agreed fee', 'حق‌الزحمه')}</dt><dd><bdi>{showMoney(fee.amount, fee.currency)}</bdi></dd></div>
-              <div><dt>{t('Paid', 'پرداخت‌شده')}</dt><dd><bdi>{showMoney(fee.paid, fee.currency)}</bdi></dd></div>
-              <div><dt>{t('Remaining', 'باقی‌مانده')}</dt><dd><bdi>{showMoney(fee.remaining, fee.currency)}</bdi></dd></div>
-            </dl>
-            {Number(fee.remaining) > 0 && <button type="button" className="registry-secondary" onClick={() => begin(fee)}>
-              {t('Pay this fee', 'پرداخت این حق‌الزحمه')}</button>}
-          </article>)}</div>
-          {!view.fees.length && <p>{t('No fees in this period.', 'در این دوره حق‌الزحمه‌ای ثبت نشده است.')}</p>}
+        <section className="customs-account-section customs-balance-section">
+          <h3>{t('Current balances', 'مانده فعلی')} <small>{t('Totals by currency', 'مجموع به تفکیک واحد پول')}</small></h3>
+          {view.totals.length ? <CompactTable label={t('Current balances', 'مانده فعلی')} columns={[
+            { label: t('Currency', 'واحد پول'), width: '18%' },
+            { label: t('Total fees', 'مجموع حق‌الزحمه') },
+            { label: t('Net paid', 'پرداخت خالص') },
+            { label: t('Remaining', 'باقی‌مانده') },
+          ]}>{view.totals.map(row => <tr key={row.unit}>
+            <th scope="row"><bdi>{row.unit}</bdi></th>
+            <td><bdi>{reportMoney(row.agreed, row.unit)}</bdi></td>
+            <td><bdi>{reportMoney(row.paid, row.unit)}</bdi></td>
+            <td><strong><bdi>{reportMoney(row.remaining, row.unit)}</bdi></strong></td>
+          </tr>)}</CompactTable> : <p>{t('No balances to show.', 'مانده‌ای برای نمایش نیست.')}</p>}
+        </section>
+        <section className="customs-account-section customs-fees-section">
+          <h3>{t('Agreed fees', 'حق‌الزحمه‌ها')} <small>{t('One row per fee', 'هر حق‌الزحمه در یک ردیف')}</small></h3>
+          {view.fees.length ? <CompactTable label={t('Agreed fees', 'حق‌الزحمه‌ها')} columns={[
+            { label: t('Fee / date', 'حق‌الزحمه / تاریخ'), width: '31%' },
+            { label: t('Agreed / paid', 'توافق / پرداخت') },
+            { label: t('Remaining', 'باقی‌مانده') },
+            { label: t('Pay', 'پرداخت'), width: '60px' },
+          ]}>{view.fees.map(fee => <tr key={fee.id}>
+            <th scope="row"><strong>{fee.description}</strong>
+              <small><bdi>{formatSolarHijri(fee.date)}{fee.booking_number != null && ` · #${fee.booking_number}`}</bdi></small>
+            </th>
+            <td><bdi>{showMoney(fee.amount, fee.currency)}</bdi>
+              <small>{t('Paid', 'پرداخت‌شده')} · <bdi>{showMoney(fee.paid, fee.currency)}</bdi></small>
+            </td>
+            <td><strong><bdi>{showMoney(fee.remaining, fee.currency)}</bdi></strong></td>
+            <td>{Number(fee.remaining) > 0 && <IconButton icon={WalletCards} label={t('Pay this fee', 'پرداخت این حق‌الزحمه')} onClick={() => begin(fee)} />}</td>
+          </tr>)}</CompactTable> : <p>{t('No agreed fees to show.', 'حق‌الزحمه‌ای برای نمایش نیست.')}</p>}
+        </section>
+        <section className="customs-account-section">
           <h3>{t('Payment history', 'سابقه پرداخت‌ها')}</h3>
-          {view.payments.length > 0 && <div className="financial-statement-totals">{view.totals.map(row => <div key={row.unit}>
-            <span>{t('Net paid in this period', 'پرداخت خالص در این دوره')} <bdi>{reportMoney(row.periodPaid, row.unit)}</bdi></span>
-          </div>)}</div>}
-          <div className="employee-transactions">{view.payments.map(row => <article key={row.id}>
-            <div><strong>#{row.receipt_number} · {formatSolarHijri(row.date)}</strong><span>{customsPaymentAccount(row, t)}</span></div>
-            <p>{row.description}</p>
-            <strong><bdi>{showMoney(row.reversal ? -row.amount : row.amount, row.currency)}</bdi></strong>
-            {customsPaymentStatus(row, t) && <small>{customsPaymentStatus(row, t)}</small>}
-            <button type="button" className="registry-secondary" onClick={() => printPayment(row)}>
-              <Printer size={16} />{t('Print receipt', 'چاپ رسید')}
-            </button>
-          </article>)}</div>
-          {!view.payments.length && <p>{t('No payments in this period.', 'در این دوره پرداختی ثبت نشده است.')}</p>}
-        </>}
+          {view.payments.length ? <CompactTable label={t('Payment history', 'سابقه پرداخت‌ها')} columns={[
+            { label: t('Receipt / date', 'رسید / تاریخ'), width: '23%' },
+            { label: t('Account / description', 'حساب / شرح') },
+            { label: t('Amount', 'مبلغ'), width: '25%' },
+            { label: t('Print', 'چاپ'), width: '60px' },
+          ]}>{view.payments.map(row => <tr key={row.id}>
+            <th scope="row"><bdi>#{row.receipt_number}</bdi><small><bdi>{formatSolarHijri(row.date)}</bdi></small></th>
+            <td><strong>{customsPaymentAccount(row, t)}</strong><small>{row.description}</small>
+              {customsPaymentStatus(row, t) && <small>{customsPaymentStatus(row, t)}</small>}
+            </td>
+            <td><strong><bdi>{showMoney(row.reversal ? -row.amount : row.amount, row.currency)}</bdi></strong></td>
+            <td><IconButton icon={Printer} label={t('Print receipt', 'چاپ رسید')} onClick={() => printPayment(row)} /></td>
+          </tr>)}</CompactTable> : <p>{t('No payments to show.', 'پرداختی برای نمایش نیست.')}</p>}
+        </section>
       </>}
     </>}
   </div>

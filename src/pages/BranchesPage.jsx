@@ -5,6 +5,7 @@ import { rpc, explain } from '../lib/operations'
 import { ConfirmArchive, IconButton, Modal, RecordTools } from '../components/RecordTools'
 import { normalizeLogin } from '../lib/loginIdentity'
 import BranchPassword from '../components/BranchPassword'
+import CompactTable from '../components/CompactTable'
 import { branchAccountError } from '../lib/branchAccountError'
 import { loadBranchManagerFiles, uploadBranchManagerFile } from '../lib/branchManagerFiles'
 import { initialBranchForm as initialForm, branchFormFromRow, branchFormPayload } from '../lib/branchForm'
@@ -123,18 +124,24 @@ function BranchRegistry({ language }) {
   return <div className="registry-page branch-registry">
     <div className="registry-actions"><button className="registry-primary" onClick={() => { setMessage(null); setEditing(null);setForm(initialForm);setSelectedFiles({});request.current=null;setOpen(true) }}><Plus size={18} />{text.add}</button><button className="registry-secondary" aria-pressed={archived} onClick={()=>setArchived(!archived)}><Archive size={18}/>{language==='fa'?'بایگانی':'Archive'}</button></div>
     {message && <div className={`registry-notice ${message.type}`}>{message.code?text[message.code]:message.text}</div>}
-    <div className="branch-table-wrap"><table className="branch-table"><thead><tr><th>{text.name}</th><th>{text.location}</th><th>{text.manager}</th><th>{text.branchPhone}</th><th>{text.username}</th><th>{language==='fa'?'معلومات ورود':'Login settings'}</th><th>{language==='fa'?'حالت':'Account'}</th><th>{language==='fa'?'عملیات':'Actions'}</th></tr></thead><tbody>
-      {loading ? <tr><td colSpan="8" className="branch-table-empty"><span className="spinner dark" /></td></tr> : branches.filter(b=>!!b.archived_at===archived).length ? branches.filter(b=>!!b.archived_at===archived).map(branch => <tr key={branch.id}>
-        <td><span className="branch-name-cell">{files[`${branch.id}:photo`]?.url?<img className="branch-manager-thumb" src={files[`${branch.id}:photo`].url} alt=""/>:<span className="branch-table-icon"><Building2 size={18} /></span>}<strong>{branch.name}</strong></span></td>
-        <td>{branch.city}, {branch.province}</td>
-        <td>{branch.manager?.full_name || '—'}</td>
-        <td>{branch.phone || branch.manager?.phone || '—'}</td>
-        <td>{branch.manager?.username || '—'}</td>
-        <td><IconButton icon={KeyRound} label={language==='fa'?`معلومات ورود · ${branch.name}`:`Login settings · ${branch.name}`} disabled={saving||!!branch.archived_at||!branch.manager_user_id} onClick={()=>{setMessage(null);setPasswordBranch(branch)}}/></td>
-        <td><IconButton icon={Power} label={branch.manager?.account_enabled?(language==='fa'?'غیرفعال کردن حساب':'Disable login'):(language==='fa'?'فعال کردن حساب':'Enable login')} disabled={saving||!!branch.archived_at||!branch.manager_user_id} onClick={async()=>{setSaving(true);try{await rpc('set_account_enabled',{p_kind:'branch',p_id:branch.id,p_enabled:!branch.manager?.account_enabled});await loadBranches()}catch(e){setMessage({type:'error',text:explain(e,language)})}finally{setSaving(false)}}}/><small>{branch.manager?.account_enabled?(language==='fa'?'فعال':'Enabled'):(language==='fa'?'غیرفعال':'Disabled')}</small></td>
-        <td><RecordTools language={language} disabled={saving} archived={branch.archived_at} onView={()=>setDetails(branch)} onEdit={()=>edit(branch)} onArchive={()=>{setMessage(null);setDeletion(branch)}}/></td>
-      </tr>) : <tr><td colSpan="8" className="branch-table-empty"><Building2 size={28} /><strong>{text.none}</strong></td></tr>}
-    </tbody></table></div>
+    <CompactTable label={language==='fa'?'شعبات':'Branches'} columns={[
+      {label:text.name}, {label:text.manager}, {label:language==='fa'?'عملیات':'Actions',width:'33%'},
+    ]}>
+      {loading ? <tr><td colSpan={3} className="branch-table-empty"><span className="spinner dark" /></td></tr> : branches.filter(b=>!!b.archived_at===archived).length ? branches.filter(b=>!!b.archived_at===archived).map(branch => <tr key={branch.id}>
+        <th scope="row"><div className="compact-record-heading">
+          {files[`${branch.id}:photo`]?.url ? <img className="branch-manager-thumb" src={files[`${branch.id}:photo`].url} alt="" /> : <Building2 size={18} />}
+          <div><strong>{branch.name}</strong><small>{[branch.city,branch.province].filter(Boolean).join(' · ')}</small></div>
+        </div></th>
+        <td><strong>{branch.manager?.full_name || '—'}</strong><small><bdi dir="ltr">{branch.phone || branch.manager?.phone || '—'}</bdi></small>
+          <small>{branch.manager?.username || '—'} · {branch.manager?.account_enabled?(language==='fa'?'فعال':'Enabled'):(language==='fa'?'غیرفعال':'Disabled')}</small>
+        </td>
+        <td><div className="compact-table-actions">
+          <IconButton icon={KeyRound} label={language==='fa'?`معلومات ورود · ${branch.name}`:`Login settings · ${branch.name}`} disabled={saving||!!branch.archived_at||!branch.manager_user_id} onClick={()=>{setMessage(null);setPasswordBranch(branch)}}/>
+          <IconButton icon={Power} label={branch.manager?.account_enabled?(language==='fa'?'غیرفعال کردن حساب':'Disable login'):(language==='fa'?'فعال کردن حساب':'Enable login')} disabled={saving||!!branch.archived_at||!branch.manager_user_id} onClick={async()=>{setSaving(true);try{await rpc('set_account_enabled',{p_kind:'branch',p_id:branch.id,p_enabled:!branch.manager?.account_enabled});await loadBranches()}catch(e){setMessage({type:'error',text:explain(e,language)})}finally{setSaving(false)}}}/>
+          <RecordTools language={language} disabled={saving} archived={branch.archived_at} onView={()=>setDetails(branch)} onEdit={()=>edit(branch)} onArchive={()=>{setMessage(null);setDeletion(branch)}}/>
+        </div></td>
+      </tr>) : <tr><td colSpan={3} className="branch-table-empty"><Building2 size={28} /><strong>{text.none}</strong></td></tr>}
+    </CompactTable>
 
     {open && <div className="registry-modal" role="dialog" aria-modal="true"><div className="registry-form-card branch-form-card">
       <div className="registry-form-head"><span className="module-card-icon blue"><Building2 size={27} /></span><h2>{editing?(language==='fa'?'ویرایش شعبه':'Edit branch'):text.add}</h2></div>

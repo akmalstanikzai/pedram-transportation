@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Archive, Plus, Search, UsersRound, WalletCards } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import EmployeeRegistrationFields from '../components/EmployeeRegistrationFields'
+import CompactTable from '../components/CompactTable'
 import { uploadEmployeeFile } from '../lib/employeeFiles'
 import { persistEmployee, employeeFields as fields, validateEmployeeFiles } from '../lib/employeeSave'
 import { explain } from '../lib/operations'
@@ -101,13 +102,28 @@ export default function EmployeesPage({ language, profile }) {
     setDeletion(null)
     await load()
   }
-  const visible = rows.filter(row => Boolean(row.archived_at) === archived && `${row.first_name} ${row.last_name} ${row.phone} ${row.province} ${row.district} ${row.village}`.toLocaleLowerCase().includes(query.toLocaleLowerCase()))
+  const visible = rows.filter(row => Boolean(row.archived_at) === archived && `${row.first_name} ${row.last_name} ${row.occupation || ''} ${row.phone} ${row.province} ${row.district} ${row.village}`.toLocaleLowerCase().includes(query.toLocaleLowerCase()))
   return <div className="registry-page employees-page">
     <div className="booking-page-header"><h1>{payroll ? t('Monthly payroll', 'معاش ماهانه') : t('Employees', 'کارمندان')}</h1><div className="payroll-actions"><button className="registry-secondary" onClick={() => setPayroll(!payroll)}>{payroll ? t('Employees', 'کارمندان') : t('Monthly payroll', 'معاش ماهانه')}</button>{!payroll && <button className="registry-primary" onClick={() => start()}><Plus size={18} />{t('Add employee', 'افزودن کارمند')}</button>}</div></div>
     {payroll ? <EmployeePayroll language={language}/> : <>
     <div className="registry-toolbar"><label className="registry-search"><Search size={18} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder={t('Search employees', 'جستجوی کارمندان')} aria-label={t('Search employees', 'جستجوی کارمندان')} /></label><button className="registry-secondary" aria-pressed={archived} onClick={() => setArchived(!archived)}><Archive size={18} />{t('Archive', 'بایگانی')}</button></div>
     {error && !open && !deletion && <p className="registry-notice error" role="alert">{error}</p>}
-    {loading ? <div className="empty-state"><span className="spinner dark" /></div> : visible.length ? <div className="record-list">{visible.map(row => <article className="record-row" key={row.id}><UsersRound size={22} /><div className="record-row-main"><strong>{row.first_name} {row.last_name}</strong><small>{row.phone} · {row.province}, {row.district}, {row.village}</small></div><strong className="employee-salary">{Number(row.salary).toLocaleString(language === 'fa' ? 'fa-AF' : 'en-US')} AFN</strong><IconButton icon={WalletCards} label={t('Transactions', 'معاملات')} onClick={() => setStatement(row)} disabled={busy} /><RecordTools language={language} archived={row.archived_at} disabled={busy} onEdit={() => start(row)} onArchive={() => { setError(''); setDeletion(row) }} /></article>)}</div> : <div className="empty-state"><UsersRound size={28} /><h2>{archived ? t('No archived employees', 'کارمند بایگانی شده وجود ندارد') : t('No employees found', 'کارمندی یافت نشد')}</h2></div>}
+    {loading ? <div className="empty-state"><span className="spinner dark" /></div> : visible.length ? <CompactTable label={t('Employees', 'کارمندان')} columns={[
+      { label: t('Employee / contact', 'کارمند / تماس') },
+      { label: t('Occupation / salary', 'وظیفه / معاش') },
+      { label: t('Actions', 'عملیات'), width: '32%' },
+    ]}>{visible.map(row => <tr key={row.id}>
+      <th scope="row"><strong>{row.first_name} {row.last_name}</strong><small><bdi dir="ltr">{row.phone}</bdi></small>
+        <small>{[row.province, row.district, row.village].filter(Boolean).join(' · ')}</small>
+      </th>
+      <td>{row.occupation && <strong>{row.occupation}</strong>}
+        <small><bdi>{Number(row.salary).toLocaleString(language === 'fa' ? 'fa-AF' : 'en-US')} AFN</bdi></small>
+      </td>
+      <td><div className="compact-table-actions">
+        <IconButton icon={WalletCards} label={t('Transactions', 'معاملات')} onClick={() => setStatement(row)} disabled={busy} />
+        <RecordTools language={language} archived={row.archived_at} disabled={busy} onEdit={() => start(row)} onArchive={() => { setError(''); setDeletion(row) }} />
+      </div></td>
+    </tr>)}</CompactTable> : <div className="empty-state"><UsersRound size={28} /><h2>{archived ? t('No archived employees', 'کارمند بایگانی شده وجود ندارد') : t('No employees found', 'کارمندی یافت نشد')}</h2></div>}
     {open && <Modal title={editing ? t('Edit employee', 'ویرایش کارمند') : t('Add employee', 'افزودن کارمند')} busy={busy} onClose={closeForm}><form className="registry-form employee-registration-form" onSubmit={save}><fieldset disabled={busy || saved} className="booking-fields wide"><EmployeeRegistrationFields language={language} form={form} onChange={setForm} files={files} onFilesChange={setFiles} existing={editing?.employee_files || []} onView={viewFile}/></fieldset>{saved && error && <p className="wide booking-help">{t('Employee information is saved. Retry to finish the remaining uploads.','معلومات کارمند ثبت شد. برای تکمیل آپلودهای باقی‌مانده دوباره کوشش کنید.')}</p>}{error && <p className="wide registry-notice error" role="alert">{error}</p>}<div className="registry-form-actions"><button type="button" disabled={busy} onClick={closeForm}>{t('Cancel', 'انصراف')}</button><button className="registry-primary" disabled={busy}>{busy ? <span className="spinner" /> : saved ? t('Finish uploads', 'تکمیل آپلودها') : t('Save', 'ثبت')}</button></div></form></Modal>}
     {statement && <PersonTransactions key={statement.id} person={statement} kind="employee" language={language} onClose={() => setStatement(null)} />}
     {deletion && <ConfirmArchive language={language} busy={busy} error={error} restore={Boolean(deletion.archived_at)} onClose={() => setDeletion(null)} onConfirm={toggleArchive} />}

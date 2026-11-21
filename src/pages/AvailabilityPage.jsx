@@ -3,6 +3,7 @@ import SolarHijriDateInput from '../components/SolarHijriDateInput'
 import { kabulToday } from '../lib/cashbook'
 import { rpc, explain } from '../lib/operations'
 import { formatSolarHijri } from '../lib/solarHijri'
+import CompactTable from '../components/CompactTable'
 
 export default function AvailabilityPage({ language }) {
   const t = (en, fa) => language === 'fa' ? fa : en
@@ -57,10 +58,12 @@ export default function AvailabilityPage({ language }) {
     </div>
     {!current && start && <p role="status">{t('Loading schedule…', 'در حال بارگیری برنامه…')}</p>}
     {current?.error && <p className="registry-notice error" role="alert">{explain(current.error, language)}</p>}
-    {current?.data && <div className="simple-cashbook-list">
-      <table>
-        <thead><tr><th>{t('Vehicle / driver', 'واسطه / راننده')}</th><th>{t('Current status', 'وضعیت فعلی')}</th><th>{t('Scheduled work', 'کار برنامه‌ریزی‌شده')}</th></tr></thead>
-        <tbody>{resources.map(resource => {
+    {current?.data && <CompactTable label={t('Fleet availability', 'دسترسی وسایط و رانندگان')} columns={[
+        { label: t('Vehicle / driver', 'واسطه / راننده'), width: '25%' },
+        { label: t('Current status', 'وضعیت فعلی'), width: '25%' },
+        { label: t('Scheduled work', 'کار برنامه‌ریزی‌شده') },
+      ]}>
+        {resources.map(resource => {
           const jobs = jobsByResource.get(resource.id) ?? []
           const state = {
             available: t('Available', 'آماده'), inactive: t('Inactive', 'غیرفعال'),
@@ -76,8 +79,7 @@ export default function AvailabilityPage({ language }) {
                 {job.status === 'in_transit' && ` · ${t('On road', 'در راه')}`}</small>
             </li>)}</ul> : t('No bookings in this period', 'در این بازه بوکینگ ندارد')}</td>
           </tr>
-        })}{!resources.length && <tr><td colSpan={3}>{t('No matching records.', 'ریکارد مطابق یافت نشد.')}</td></tr>}</tbody>
-      </table>
-    </div>}
+        })}{!resources.length && <tr><td colSpan={3}>{t('No matching records.', 'ریکارد مطابق یافت نشد.')}</td></tr>}
+    </CompactTable>}
   </section>
 }

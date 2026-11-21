@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowDownLeft, ArrowUpRight, Printer, RefreshCw, WalletCards } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Pencil, Printer, RefreshCw, RotateCcw, WalletCards } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { allRows, cents, currencies, kabulToday, simpleLedger, ledgerPeriod } from '../lib/cashbook'
 import { rpc } from '../lib/operations'
-import { Modal } from '../components/RecordTools'
+import { IconButton, Modal } from '../components/RecordTools'
+import CompactTable from '../components/CompactTable'
 import CustomsAgentAccount from '../components/CustomsAgentAccount'
 import { printRecord } from '../lib/recordExports'
 import { canPrintReceipt, cashbookReceipt } from '../lib/financialReports'
@@ -276,30 +277,37 @@ export default function CashbookPage({ language, profile }) {
       {president&&<details className="simple-cashbook-description"><summary>{t('Repay a loan (Money In)','بازپرداخت قرض (پول آمد)')}</summary><label><span>{t('Open loan','قرض باز')}</span><select value={form.loan_repayment_entry_id} onChange={e=>setForm(previous=>({...previous,loan_repayment_entry_id:e.target.value,employee_id:'',driver_id:'',trader_id:'',booking_id:'',loan:false,loan_due_date:''}))}><option value="">—</option>{loans.filter(row=>row.currency===currency).map(row=><option key={row.id} value={row.id}>#{row.receipt_number} · {row.person} · {Number(row.remaining).toLocaleString()} {row.currency} {t('remaining','باقی‌مانده')}</option>)}</select></label>{!loans.some(row=>row.currency===currency)&&<p className="booking-help">{t('No open loans in this currency.','قرض بازی با این واحد پول وجود ندارد.')}</p>}</details>}
     </fieldset><div className="simple-cashbook-buttons"><button type="submit" value="in" className="cashbook-in" disabled={loading||!loaded||busy||!!form.employee_id||!!form.driver_id||form.loan||uncertain&&retryDirection!=='in'||(!president&&!profile?.branch_id)}><ArrowDownLeft size={20}/>{busy&&retryDirection==='in'?t('Saving…','در حال ثبت…'):uncertain&&retryDirection==='in'?t('Retry Money In','کوشش مجدد آمد'):t('Save Money In','ثبت پول آمد')}</button><button type="submit" value="out" className="cashbook-out" disabled={loading||!loaded||busy||!!form.loan_repayment_entry_id||uncertain&&retryDirection!=='out'||(!president&&!profile?.branch_id)}><ArrowUpRight size={20}/>{busy&&retryDirection==='out'?t('Saving…','در حال ثبت…'):uncertain&&retryDirection==='out'?t('Retry Money Out','کوشش مجدد رفت'):t('Save Money Out','ثبت پول رفت')}</button></div></form>
     {loading?<p role="status">{t('Loading…','در حال بارگیری…')}</p>:loaded&&!validPeriod?<p role="status">{t('Choose a valid start and end date.','تاریخ آغاز و پایان درست انتخاب کنید.')}</p>:loaded&&<>
-      <section className="cashbook-ledger" aria-label={t('Cashbook records','معاملات روزنامچه')}><h2>{t('Records','معاملات')}</h2><div className="simple-cashbook-list"><table><thead><tr><th scope="col">{t('Date','تاریخ')}</th><th scope="col">{t('Description','شرح معامله')}</th><th scope="col">{t('Money In','آمد')}</th><th scope="col">{t('Money Out','رفت')}</th>{president&&<th scope="col">{t('Correction','اصلاح')}</th>}</tr></thead><tbody>
-        {selectedLedger.rows.slice(0,shown).map(row=><tr key={row.id} className={row.direction==='in'?'cashbook-row-in':'cashbook-row-out'}>
-          <td data-label={t('Date','تاریخ')}>{formatSolarHijri(row.entry_date)}</td>
-          <td data-label={t('Description','شرح معامله')}>{row.receipt_number ? `#${row.receipt_number} · ` : ''}{description(row)}{canPrintReceipt(row)&&<button type="button" className="registry-secondary cashbook-print-receipt" disabled={loading||busy} onClick={()=>printReceipt(row)}><Printer size={16}/>{t('Print receipt','چاپ رسید')}</button>}</td>
-          <td data-label={t('Money In','آمد')} className="simple-money-in">{row.direction==='in'?money(cents(row.amount)):'—'}</td>
-          <td data-label={t('Money Out','رفت')} className="simple-money-out">{row.direction==='out'?money(cents(row.amount)):'—'}</td>
-          {president&&<td data-label={t('Correction','اصلاح')}>
-            {row.reversed_by ? `${t('Reversed by','اصلاح‌شده با')} #${row.reversed_by}`
-              : row.reversal ? `${t('Reversal of','اصلاح رسید')} #${row.reverses_receipt}`
-              : row.operation_id && <div className="cashbook-correction-actions">
-                {row.can_edit_amount&&<button type="button" className="registry-secondary" disabled={busy||uncertain} onClick={()=>openCorrection(row,'edit')}>{t('Edit amount','ویرایش مبلغ')}</button>}
-                <button type="button" className="registry-secondary" disabled={busy||uncertain} onClick={()=>openCorrection(row,'reverse')}>{t('Reverse','معکوس‌کردن')}</button>
-              </div>}
-            {!!row.corrections?.length&&<details className="cashbook-correction-history">
+      <section className="cashbook-ledger"><h2>{t('Records','معاملات')}</h2>
+        <CompactTable label={t('Cashbook records','معاملات روزنامچه')} columns={[
+          {label:t('Date','تاریخ'),width:'23%'}, {label:t('Description','شرح معامله')},
+          {label:t('Money In','آمد'),width:'20%'}, {label:t('Money Out','رفت'),width:'20%'},
+        ]}>
+        {selectedLedger.rows.slice(0,shown).map(row=><tr key={row.id}>
+          <th scope="row"><bdi>{formatSolarHijri(row.entry_date)}</bdi>{row.receipt_number > 0 && <small><bdi>#{row.receipt_number}</bdi></small>}</th>
+          <td>{description(row)}
+            {president && (row.reversed_by || row.reversal) && <small>{row.reversed_by
+              ? `${t('Reversed by','اصلاح‌شده با')} #${row.reversed_by}`
+              : `${t('Reversal of','اصلاح رسید')} #${row.reverses_receipt}`}</small>}
+            <div className="cashbook-row-actions">
+              {canPrintReceipt(row)&&<IconButton icon={Printer} label={t('Print receipt','چاپ رسید')} disabled={loading||busy} onClick={()=>printReceipt(row)}/>}
+              {president && row.operation_id && !row.reversed_by && !row.reversal && <>
+                {row.can_edit_amount && <IconButton icon={Pencil} label={t('Edit amount','ویرایش مبلغ')} disabled={busy||uncertain} onClick={()=>openCorrection(row,'edit')}/>}
+                <IconButton icon={RotateCcw} label={t('Reverse','معکوس‌کردن')} disabled={busy||uncertain} onClick={()=>openCorrection(row,'reverse')}/>
+              </>}
+            </div>
+            {president && !!row.corrections?.length&&<details className="cashbook-correction-history">
               <summary>{t('Amount history','تاریخچه مبلغ')}</summary>
               <ul>{row.corrections.map(item=><li key={item.request_id}>
                 <bdi>{money(cents(item.previous_amount))} → {money(cents(item.corrected_amount))}</bdi>
                 <span>{formatSolarHijri(item.changed_at)} · {item.reason}</span>
               </li>)}</ul>
             </details>}
-          </td>}
+          </td>
+          <td className="simple-money-in">{row.direction==='in'?<bdi>{money(cents(row.amount))}</bdi>:'—'}</td>
+          <td className="simple-money-out">{row.direction==='out'?<bdi>{money(cents(row.amount))}</bdi>:'—'}</td>
         </tr>)}
-        {!selectedLedger.rows.length&&<tr><td colSpan={president?5:4} className="simple-cashbook-empty">{t('No records for this period.','در این بازه معامله‌ای ثبت نشده است.')}</td></tr>}
-      </tbody></table></div>{selectedLedger.rows.length>shown&&<button type="button" className="cashbook-see-more" onClick={()=>setShown(current=>current+20)}>{t('See more','نمایش بیشتر')}</button>}</section>
+        {!selectedLedger.rows.length&&<tr><td colSpan={4} className="simple-cashbook-empty">{t('No records for this period.','در این بازه معامله‌ای ثبت نشده است.')}</td></tr>}
+      </CompactTable>{selectedLedger.rows.length>shown&&<button type="button" className="cashbook-see-more" onClick={()=>setShown(current=>current+20)}>{t('See more','نمایش بیشتر')}</button>}</section>
     </>}
     {customsDirectory && president && <Modal title={t('Commission agent payments', 'پرداخت‌های کمیشن کار')}
       busy={customsBusy || customsDirectory.loading} onClose={() => setCustomsDirectory(null)}>

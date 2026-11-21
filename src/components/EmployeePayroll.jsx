@@ -1,22 +1,42 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Printer, RefreshCw } from 'lucide-react'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
+import { Printer, RefreshCw, WalletCards } from 'lucide-react'
 import { allRows, cents, kabulToday } from '../lib/cashbook'
 import { rpc, explain } from '../lib/operations'
 import { supabase } from '../lib/supabase'
 import { solarHijriToday, formatSolarHijri } from '../lib/solarHijri'
 import { payrollMonths, payrollMoney, payrollMonthLabel, payrollTotals, payrollStatus, payrollPayslip } from '../lib/payroll'
 import { printRecord } from '../lib/recordExports'
-import { Modal } from './RecordTools'
+import { IconButton, Modal } from './RecordTools'
+import CompactTable from './CompactTable'
 import SolarHijriDateInput from './SolarHijriDateInput'
 
 export function PayrollCards({rows, language, onPay, onPrint}) {
   const t = (en,fa) => language === 'fa' ? fa : en
-  return <div className="payroll-list">{rows.map(row => <article className="payroll-card" key={row.id}>
-    <div className="payroll-card-heading"><div><strong>{row.name}</strong><small><bdi dir="ltr">{row.phone}</bdi>{row.archived ? ` · ${t('Archived','بایگانی‌شده')}` : ''}</small></div><span>{payrollStatus(row,language)}</span></div>
-    <dl className="payroll-amounts">{[['salary','Monthly salary','معاش ماهانه'],['advances','Salary advances','پیش‌پرداخت معاش'],['paid','Salary payments','پرداخت معاش'],['remaining','Remaining','باقی‌مانده']].map(([key,en,fa]) => <div key={key}><dt>{t(en,fa)}</dt><dd><bdi dir="ltr">{payrollMoney(cents(row[key]))}</bdi></dd></div>)}</dl>
-    <div className="payroll-actions"><button className="registry-primary" disabled={row.archived || cents(row.remaining) <= 0} onClick={() => onPay(row)}>{t('Record payment','ثبت پرداخت')}</button><button className="registry-secondary" onClick={() => onPrint(row)}><Printer size={16}/>{t('Print payslip','چاپ برگه معاش')}</button></div>
-    {!!row.payments.length && <details className="payroll-history"><summary>{t('Payment history','تاریخچه پرداخت')}</summary>{row.payments.map(payment => <div key={payment.id}><span>{formatSolarHijri(payment.date)} · {payment.kind === 'advance' ? t('Salary advance','پیش‌پرداخت معاش') : t('Salary payment','پرداخت معاش')} · {payment.account}</span><strong><bdi dir="ltr">{payrollMoney(cents(payment.amount))}</bdi>{payment.reversed ? ` · ${t('Reversed','معکوس‌شده')}` : ''}</strong></div>)}</details>}
-  </article>)}</div>
+  const amount = value => <bdi dir="ltr">{payrollMoney(cents(value))}</bdi>
+  return <CompactTable label={t('Monthly payroll','معاش ماهانه')} columns={[
+    {label:t('Employee','کارمند')}, {label:t('Salary / advance','معاش / پیش‌پرداخت')},
+    {label:t('Paid / remaining','پرداخت / باقی‌مانده')}, {label:t('Actions','عملیات'),width:'24%'},
+  ]}>{rows.map(row => <Fragment key={row.id}>
+    <tr>
+      <th scope="row"><strong>{row.name}</strong><small><bdi dir="ltr">{row.phone}</bdi></small>
+        <small>{row.archived ? t('Archived','بایگانی‌شده') : payrollStatus(row,language)}</small>
+      </th>
+      <td>{amount(row.salary)}<small>{t('Advance','پیش‌پرداخت')} · {amount(row.advances)}</small></td>
+      <td>{amount(row.paid)}<small>{t('Remaining','باقی‌مانده')} · <strong>{amount(row.remaining)}</strong></small></td>
+      <td><div className="compact-table-actions">
+        <IconButton icon={WalletCards} label={t('Record payment','ثبت پرداخت')} disabled={row.archived || cents(row.remaining) <= 0} onClick={() => onPay(row)} />
+        <IconButton icon={Printer} label={t('Print payslip','چاپ برگه معاش')} onClick={() => onPrint(row)} />
+      </div></td>
+    </tr>
+    {!!row.payments.length && <tr className="payroll-history-row"><td colSpan={4}>
+      <details className="payroll-history"><summary>{t('Payment history','تاریخچه پرداخت')} · {row.name}</summary>
+        {row.payments.map(payment => <div key={payment.id}>
+          <span>{formatSolarHijri(payment.date)} · {payment.kind === 'advance' ? t('Salary advance','پیش‌پرداخت معاش') : t('Salary payment','پرداخت معاش')} · {payment.account}</span>
+          <strong>{amount(payment.amount)}{payment.reversed ? ` · ${t('Reversed','معکوس‌شده')}` : ''}</strong>
+        </div>)}
+      </details>
+    </td></tr>}
+  </Fragment>)}</CompactTable>
 }
 
 export default function EmployeePayroll({language}) {

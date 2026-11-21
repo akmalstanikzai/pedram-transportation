@@ -9,6 +9,7 @@ import DriverAccount from '../components/DriverAccount'
 import DriverTransactions from '../components/DriverTransactions'
 import SolarHijriDateInput from '../components/SolarHijriDateInput'
 import FleetInformation from '../components/FleetInformation'
+import CompactTable from '../components/CompactTable'
 import { loadFleetPhotos, uploadFleetPhoto, uploadDriverDocument, uploadVehicleDocument, uploadOwnerIdentity } from '../lib/fleetPhotos'
 import { vehicleWeightsFromRow, vehicleWeightsPayload } from '../lib/capacity'
 import VehicleUploads from '../components/VehicleUploads'
@@ -101,7 +102,22 @@ export default function VehiclesPage({language,profile}){
  <div className="fleet-panel-heading"><h2><ActiveIcon size={22}/>{title(active)}</h2><button className="registry-primary" disabled={loading||!!loadFailure||busy||(branchManager&&!profile.branch_id)} onClick={()=>edit(active)}><Plus size={18}/>{active==='vehicle'?t('Add vehicle','افزودن واسطه'):active==='driver'?t('Add driver','افزودن راننده'):t('Add owner','افزودن مالک')}</button></div>
  <div className="registry-toolbar"><label className="registry-search"><Search size={18}/><input aria-label={active==='vehicle'?t('Search vehicles','جستجوی وسایط'):active==='driver'?t('Search drivers','جستجوی رانندگان'):t('Search owners','جستجوی مالکان')} placeholder={active==='vehicle'?t('Search plate, type or VIN','جستجوی پلیت، نوع یا شاسی'):t('Search name or mobile','جستجوی نام یا موبایل')} value={query} onChange={e=>setQueries({...queries,[active]:e.target.value})}/></label><button className="registry-secondary" onClick={()=>setArchives({...archives,[active]:!archived})} aria-pressed={archived}><Archive size={18}/>{archived?t('Archived','بایگانی‌شده'):t('Archive','بایگانی')}</button></div>
  {error&&!editor&&!deletion&&!scopeEditor&&<p className="registry-notice error" role="alert">{error}</p>}{loading&&<p role="status">{t('Loading…','در حال بارگیری…')}</p>}
- <div className="record-list">{rows.map(row=><article className="record-row" key={row.id}>{photos[row.id]?<img className="fleet-profile-thumb" src={photos[row.id]} alt=""/>:<span className="fleet-profile-thumb placeholder"><ActiveIcon size={23}/></span>}<div className="record-row-main"><strong>{rowName(row)}</strong><small>{active==='vehicle'?`${row.vehicle_type} · ${data.owner.find(o=>o.id===row.owner_id)?.full_name||'—'}`:row.phone}{active==='driver'&&row.archived_at&&row.destination_company?` · ${t('Moved to','رفت به')} ${row.destination_company}`:''}</small></div>{row.status&&<span className={`status-pill ${row.status}`}>{statusLabel(row.status)}</span>}{active==='driver'&&president&&<IconButton icon={WalletCards} label={t('Transactions','معاملات')} disabled={busy} onClick={()=>setDriverTransactions(row)}/>}<RecordTools language={language} archived={row.archived_at} disabled={busy} onView={()=>setDetail({kind:active,row})} onScope={president?()=>openScope(active,row):undefined} onEdit={canManage(row)?()=>edit(active,row):undefined} onDocuments={canManage(row)?()=>setDetail({kind:active,row,documents:true}):undefined} onAccount={active==='driver'&&profile?.role==='president'?()=>setAccount(row):undefined} onArchive={canManage(row)?()=>{setError('');setDestinationCompany('');request.current=null;setDeletion({kind:active,row})}:undefined}/></article>)}</div>
+ {rows.length>0&&<CompactTable label={t('Fleet records','ریکاردهای وسایط')} columns={[
+   {label:active==='vehicle'?t('Vehicle','واسطه'):t('Name','نام')}, {label:t('Details','معلومات')},
+   {label:t('Actions','عملیات'),width:'36%'},
+ ]}>{rows.map(row=><tr key={row.id}>
+   <th scope="row"><div className="compact-record-heading">
+     {photos[row.id]?<img className="fleet-profile-thumb" src={photos[row.id]} alt=""/>:<span className="fleet-profile-thumb placeholder"><ActiveIcon size={20}/></span>}
+     <div><strong>{rowName(row)}</strong>{row.status&&<small>{statusLabel(row.status)}</small>}</div>
+   </div></th>
+   <td>{active==='vehicle'?<>{row.vehicle_type}<small>{data.owner.find(owner=>owner.id===row.owner_id)?.full_name||'—'}</small></>:<bdi dir="ltr">{row.phone}</bdi>}
+     {active==='driver'&&row.archived_at&&row.destination_company&&<small>{t('Moved to','رفت به')} · {row.destination_company}</small>}
+   </td>
+   <td><div className="compact-table-actions">
+     {active==='driver'&&president&&<IconButton icon={WalletCards} label={t('Transactions','معاملات')} disabled={busy} onClick={()=>setDriverTransactions(row)}/>}
+     <RecordTools language={language} archived={row.archived_at} disabled={busy} onView={()=>setDetail({kind:active,row})} onScope={president?()=>openScope(active,row):undefined} onEdit={canManage(row)?()=>edit(active,row):undefined} onDocuments={canManage(row)?()=>setDetail({kind:active,row,documents:true}):undefined} onAccount={active==='driver'&&profile?.role==='president'?()=>setAccount(row):undefined} onArchive={canManage(row)?()=>{setError('');setDestinationCompany('');request.current=null;setDeletion({kind:active,row})}:undefined}/>
+   </div></td>
+ </tr>)}</CompactTable>}
  {!rows.length&&!loading&&!loadFailure&&<div className="registry-empty"><ActiveIcon size={34}/><strong>{query?t('No matching records.','معلومات مطابق یافت نشد.'):archived?t('No archived records in this section.','در این بخش معلومات بایگانی‌شده موجود نیست.'):branchManager?t('No branch or shared records in this section. Add a branch record or ask the President to share one.','در این بخش ریکارد شعبه یا مشترک وجود ندارد. ریکارد شعبه اضافه کنید یا از رئیس بخواهید ریکاردی را شریک کند.'):t('No records in this section yet.','هنوز در این بخش معلومات ثبت نشده است.')}</strong></div>}
  </section>
  {scopeEditor&&president&&<Modal title={`${t('Branch access','دسترسی شعبه')} · ${rowName(scopeEditor.row)}`} busy={busy} onClose={()=>setScopeEditor(null)}>

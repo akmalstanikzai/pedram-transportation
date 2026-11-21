@@ -8,6 +8,7 @@ import { bookingColumns, rpc, explain } from '../lib/operations'
 import { ConfirmArchive, IconButton, Modal, RecordTools } from '../components/RecordTools'
 import SolarHijriDateInput from '../components/SolarHijriDateInput'
 import BookingInformation from '../components/BookingInformation'
+import CompactTable from '../components/CompactTable'
 import { formatSolarHijri, todayISO } from '../lib/solarHijri'
 
 const blank = { booking_date: '',branch_id:'', trader_id: '', trader_first_name: '', trader_last_name: '', trader_phone: '', trader_address: '', sender_is_trader: false, sender_name: '', sender_phone: '', sender_address: '', receiver_is_trader:false, receiver_name: '', receiver_phone: '', receiver_address: '', goods: '', quantity_unit:'tons', quantity_amount:'', origin: '', destination: '', vehicle_id: '', driver_id: '', service_type: 'arrangement',commission_amount:'',commission_currency:'AFN',freight_amount:'',carrier_cost:'',other_expenses:[],received_now:'' }
@@ -161,16 +162,30 @@ export default function BookingsPage({ language, profile }) {
     {president&&<div className="booking-branch-filter"><label><span><Building2 size={17}/>{t('Branch','شعبه')}</span><select value={scope} onChange={e=>setScope(e.target.value)}><option value="all">{t('All branches','تمام شعبات')}</option><option value="head-office">{t('Head office','دفتر مرکزی')}</option>{[...branches].sort((a,b)=>a.name.localeCompare(b.name)).map(branch=><option key={branch.id} value={branch.id}>{branch.name}{branch.archived_at?` · ${t('Archived','بایگانی‌شده')}`:''}</option>)}</select></label></div>}
     {branchManager&&(!profile.branch_id||(ready&&!canBookForBranch))&&<p role="alert" className="registry-notice error">{t('Your account needs an active branch assignment before you can book. Ask the President to check the branch manager account.','برای ثبت بوکینگ حساب شما باید به شعبه فعال وصل باشد. از رئیس بخواهید حساب مدیر شعبه را بررسی کند.')}</p>}
     {message && !open && <div role="alert" className="registry-notice error">{message}</div>}
-    <label className="registry-search"><Search size={17} /><input aria-label={t('Search bookings','جستجوی بوکینگ‌ها')} placeholder={t('Search booking, trader or route','جستجوی بوکینگ، تاجر یا مسیر')} value={query} onChange={e => setQuery(e.target.value)} /></label>
-    <button className="registry-secondary" aria-pressed={archived} onClick={()=>setArchived(!archived)}><Archive size={18}/>{t('Archive','بایگانی')}</button>
+    <div className="registry-toolbar">
+      <label className="registry-search"><Search size={17} /><input aria-label={t('Search bookings','جستجوی بوکینگ‌ها')} placeholder={t('Search booking, trader or route','جستجوی بوکینگ، تاجر یا مسیر')} value={query} onChange={e => setQuery(e.target.value)} /></label>
+      <button className="registry-secondary" aria-pressed={archived} onClick={()=>setArchived(!archived)}><Archive size={18}/>{t('Archive','بایگانی')}</button>
+    </div>
     {selected.length>0&&<div className="registry-toolbar"><span aria-label={t('Selected bookings','بوکینگ‌های انتخاب‌شده')}>{selected.length}</span><button className="registry-secondary" onClick={()=>setSelected([])}>{t('Clear selection','پاک‌کردن انتخاب')}</button><button className="registry-primary" onClick={()=>setBulkAction('archive')}>{t('Archive selected','بایگانی انتخاب‌شده‌ها')}</button><button className="registry-secondary" onClick={()=>setBulkAction('delete')}>{t('Delete selected','حذف انتخاب‌شده‌ها')}</button></div>}
     <div className="booking-list">{visibleRows.map(r => <article className="booking-record" key={r.id}>
       <h3>{r.status==='completed'&&!r.archived_at&&<input type="checkbox" aria-label={`${t('Select booking','انتخاب بوکینگ')} #${r.booking_number}`} checked={selected.includes(r.id)} onChange={e=>setSelected(current=>e.target.checked?[...current,r.id]:current.filter(id=>id!==r.id))}/>}<ClipboardList size={20} />#{r.booking_number} · {r.trader_first_name ? `${r.trader_first_name} ${r.trader_last_name || ''}` : r.traders?.full_name}</h3>
       <div className="booking-record-actions"><span className={`status-pill ${r.status}`}>{statuses[r.status]}</span><RecordTools language={language} disabled={busy} archived={r.archived_at} onView={()=>{setMessage('');setDetail(r)}} onEdit={r.status==='confirmed'?()=>edit(r):undefined} onArchive={()=>{setMessage('');setDeletion(r)}}/>{!r.archived_at&&<div className="record-tools">{president&&r.trader_id&&bookingDue(r.charged,r.paid)>0&&<button type="button" className="registry-secondary" disabled={busy} onClick={()=>openPayment(r)}>{t('Receive payment','دریافت پول')}</button>}{r.status==='confirmed'&&<IconButton icon={Play} disabled={busy} label={t('Start journey','شروع سفر')} onClick={()=>changeStatus(r,'in_transit')}/>} {r.status==='in_transit'&&<IconButton icon={CheckCircle2} disabled={busy} label={t('Complete journey','تکمیل سفر')} onClick={()=>changeStatus(r,'completed')}/>} {['confirmed','in_transit'].includes(r.status)&&<IconButton icon={XCircle} disabled={busy} label={t('Cancel booking','لغو بوکینگ')} onClick={()=>{setMessage('');setCancelRow(r)}}/>}</div>}</div>
       {!r.archived_at&&['confirmed','in_transit'].includes(r.status)&&(r.driver_delivered_at?<p className="driver-booking-report"><CheckCheck size={20}/>{t('Driver reported delivery · confirm completion','راننده تحویل بار را گزارش داد · تکمیل سفر را تأیید کنید')}</p>:r.driver_accepted_at?<p className="driver-booking-report"><BadgeCheck size={20}/>{t('Driver accepted','راننده برنامه را پذیرفت')}</p>:null)}
-      <p><strong>{t('Date','تاریخ')}:</strong> {formatSolarHijri(r.booking_date)} · {r.service_type === 'managed' ? t('Company-managed transport','انتقال توسط شرکت') : t('Vehicle arrangement','معرفی واسطه')}{president&&<> · {t('Trader owes','بدهی تاجر')}: {money(bookingDue(r.charged,r.paid)/100,r.commission_currency)}</>}</p>
-      <p>{r.origin} → {r.destination} · {r.goods} · {quantityText(r)}</p>
-      <p>{t('Sender','فرستنده')}: {r.sender_name || '—'} · {t('Receiver','گیرنده')}: {r.receiver_name || '—'}</p><p>{r.vehicles?.plate_number || '—'} · {r.drivers?.full_name || '—'}</p>
+      <CompactTable className="booking-summary-table" label={t('Booking summary','خلاصه بار نامه')} columns={[
+        {label:t('Route / cargo','مسیر / بار')}, {label:t('Date / service','تاریخ / خدمات')},
+      ]}>
+        <tr>
+          <td><strong>{r.origin} → {r.destination}</strong><small>{r.goods} · {quantityText(r)}</small></td>
+          <td><bdi>{formatSolarHijri(r.booking_date)}</bdi>
+            <small>{r.service_type === 'managed' ? t('Company-managed transport','انتقال توسط شرکت') : t('Vehicle arrangement','معرفی واسطه')}</small>
+            {president&&<small>{t('Trader owes','بدهی تاجر')} · <bdi>{money(bookingDue(r.charged,r.paid)/100,r.commission_currency)}</bdi></small>}
+          </td>
+        </tr>
+        <tr>
+          <td><small>{t('Sender','فرستنده')} · {r.sender_name || '—'}</small><small>{t('Receiver','گیرنده')} · {r.receiver_name || '—'}</small></td>
+          <td><bdi>{r.vehicles?.plate_number || '—'}</bdi><small>{r.drivers?.full_name || '—'}</small></td>
+        </tr>
+      </CompactTable>
       <details className="booking-contact-details"><summary>{t('Contact details','مشخصات تماس')}</summary><dl className="booking-preview"><dt>{t('Trader contact / address','تماس / آدرس تاجر')}</dt><dd>{r.trader_phone || r.traders?.phone || '—'} · {r.trader_address || '—'}</dd><dt>{t('Sender contact / address','تماس / آدرس فرستنده')}</dt><dd>{r.sender_phone || '—'} · {r.sender_address || '—'}</dd><dt>{t('Receiver contact / address','تماس / آدرس گیرنده')}</dt><dd>{r.receiver_phone || '—'} · {r.receiver_address || '—'}</dd></dl></details>
     </article>)}</div>
     {ready && !visibleRows.length && <div className="registry-empty"><ClipboardList size={32} />{rows.length?t('No bookings match these filters.','هیچ بوکینگی با این فیلترها مطابقت ندارد.'):t('No bookings registered yet.','هنوز بوکینگ ثبت نشده است.')}</div>}

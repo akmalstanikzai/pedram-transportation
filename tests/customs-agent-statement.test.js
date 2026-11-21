@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { customsAgentReport, customsStatementView } from '../src/lib/customsAgentStatement.js'
 
-test('date filters preserve current balances and include reversals in period totals', () => {
+test('the all-dates statement shows separate currency balances, fees and payment history', () => {
   const statement = {
     fees: [
       { date: '2026-11-01', currency: 'AFN', amount: 5000, paid: 0, remaining: 5000 },
@@ -14,18 +14,23 @@ test('date filters preserve current balances and include reversals in period tot
       { date: '2026-11-11', currency: 'USD', amount: 25, receipt_number: 9, description: 'Part payment' },
     ],
   }
-  const view = customsStatementView(statement, { start: '2026-11-08', end: '', currency: '' })
-  assert.equal(view.fees.length, 1)
+  const view = customsStatementView(statement, '')
+  assert.equal(view.fees.length, 2)
   assert.deepEqual(view.totals, [
-    { unit: 'AFN', agreed: 500000, paid: 0, remaining: 500000, periodPaid: -200000 },
-    { unit: 'USD', agreed: 10000, paid: 2500, remaining: 7500, periodPaid: 2500 },
+    { unit: 'AFN', agreed: 500000, paid: 0, remaining: 500000 },
+    { unit: 'USD', agreed: 10000, paid: 2500, remaining: 7500 },
   ])
-  const pdf = customsAgentReport('Ahmad', 'en', view, '2026-11-08', '')
+  const pdf = customsAgentReport('Ahmad', 'en', view)
+  assert.equal(pdf.subtitle, 'All dates')
+  assert.deepEqual(pdf.sections.map(section => section.title), ['Current balances', 'Agreed fees', 'Payment history'])
   assert.deepEqual(pdf.sections[2].rows.map(row => row.slice(1)), [
+    ['#7', 'Kabul', 'Reversed by #8', '2,000.00 AFN'],
     ['#8', 'Kabul', 'Wrong payment · Reversal of #7', '-2,000.00 AFN'],
     ['#9', 'Admin account', 'Part payment', '25.00 USD'],
   ])
-  const afn = customsStatementView(statement, { start: '', end: '', currency: 'AFN' })
+  const afn = customsStatementView(statement, 'AFN')
   assert.equal(afn.totals.length, 1)
-  assert.equal(afn.totals[0].periodPaid, 0)
+  assert.equal(afn.totals[0].paid, 0)
+  assert.equal(afn.fees.length, 1)
+  assert.deepEqual(afn.payments.map(row => row.receipt_number), [7, 8])
 })
