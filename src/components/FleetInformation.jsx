@@ -3,10 +3,10 @@ import { formatSolarHijri } from '../lib/solarHijri'
 const hasValue = value => value !== null && value !== undefined && String(value).trim() !== ''
 const normalizeAddress = value => String(value || '').replace(/[,،\s]+/g, ' ').trim()
 
-export function InformationGroup({ title, fields, address = false }) {
+export function InformationGroup({ title, fields, address = false, tone }) {
   const visible = fields.filter(field => !field.optional || hasValue(field.value))
   if (!visible.length) return null
-  return <section className="fleet-information-section" aria-label={title}>
+  return <section className="fleet-information-section" aria-label={title} data-tone={tone}>
     <h3>{title}</h3>
     <dl className={`record-details fleet-information-grid ${address ? 'fleet-address-grid' : ''}`}>
       {visible.map(({ key, label, value, wide, ltr }) => <div key={key} className={wide ? 'wide' : ''}>

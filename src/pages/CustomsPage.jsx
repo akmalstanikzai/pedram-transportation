@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Plus, RefreshCw, Search, Stamp, WalletCards } from 'lucide-react'
+import { Files, Plus, RefreshCw, Search, Stamp, UserRound, WalletCards } from 'lucide-react'
 import CustomsAgentAccount from '../components/CustomsAgentAccount'
 import CompactTable from '../components/CompactTable'
 import CustomsAgentFields from '../components/CustomsAgentFields'
+import Icon from '../components/Icon'
+import { RegistrationSection } from '../components/RegistrationFields'
+import './CustomsPage.css'
 import { IconButton, Modal, RecordTools } from '../components/RecordTools'
 import { getTranslation } from '../lib/i18n'
 import { explain } from '../lib/operations'
@@ -12,12 +15,15 @@ import { loadCustomsAgents, saveCustomsAgent, uploadCustomsAgentFile, customsAge
 function AgentDetails({ row, language, onView }) {
   const t = (en, fa) => language === 'fa' ? fa : en
   const files = latestCustomsAgentFiles(row.customs_agent_files)
-  return <div className="record-modal-body">
-    {[customsAgentFields.slice(0, 3), customsAgentFields.slice(3)].map(group => <dl className="customs-information-grid" key={group[0][0]}>
+  return <div className="record-modal-body customs-detail-sections">
+    <RegistrationSection kind="agent" tone="blue" title={t('Agent information','معلومات کمیشن کار')} icon={UserRound}>
+    {[customsAgentFields.slice(0, 3), customsAgentFields.slice(3)].map(group => <dl className="customs-information-grid wide" key={group[0][0]}>
       {group.map(([key, en, fa]) => <div key={key}><dt>{t(en, fa)}</dt>
         <dd>{key === 'phone' ? <bdi dir="ltr">{row[key]}</bdi> : row[key] || '—'}</dd></div>)}
     </dl>)}
-    <div className="customs-saved-documents">
+    </RegistrationSection>
+    <RegistrationSection kind="documents" tone="amber" title={t('Documents','اسناد')} icon={Files}>
+    <div className="customs-saved-documents wide">
       {customsAgentFileTypes.map(([type, en, fa]) => {
         const file = files.find(item => item.document_type === type)
         return <div key={type}>
@@ -28,10 +34,11 @@ function AgentDetails({ row, language, onView }) {
         </div>
       })}
     </div>
+    </RegistrationSection>
   </div>
 }
 
-export default function CustomsPage({ language, profile }) {
+export default function CustomsPage({ language, profile, onBack }) {
   const text = getTranslation(language)
   const t = (en, fa) => language === 'fa' ? fa : en
   const allowed = profile?.role === 'president' && profile.account_enabled !== false
@@ -130,20 +137,18 @@ export default function CustomsPage({ language, profile }) {
   return <section className="registry-page customs-page" aria-labelledby="customs-title">
     <div className="booking-page-header customs-page-heading">
       <div className="customs-title">
-        <span className="module-card-icon cyan"><Stamp size={30} strokeWidth={1.8} aria-hidden="true" /></span>
-        <div><h1 id="customs-title">{text.customs}</h1><p>{t('Commission agents', 'کمیشن کاران')}</p></div>
+        {onBack && <button type="button" className="module-back" onClick={onBack}><Icon name="back" size={16}/>{t('Back','بازگشت')}</button>}
+        <Stamp size={22} aria-hidden="true" /><h1 id="customs-title">{text.customs}</h1>
       </div>
-      <button type="button" className="registry-primary" disabled={loading || busy} onClick={() => start()}>
-        <Plus size={18} />{t('Add commission agent', 'افزودن کمیشن کار')}
-      </button>
+      <IconButton icon={RefreshCw} label={t('Refresh','تازه‌سازی')} disabled={loading || busy} onClick={load} />
     </div>
     <div className="registry-toolbar customs-toolbar">
       <label className="registry-search"><Search size={18} />
         <input aria-label={t('Search commission agents', 'جستجوی کمیشن کاران')} placeholder={t('Search name, mobile or location', 'جستجوی نام، موبایل یا محل')}
           value={query} onChange={event => setQuery(event.target.value)} />
       </label>
-      <button type="button" className="registry-secondary" disabled={loading || busy} onClick={load}>
-        <RefreshCw size={17} />{t('Refresh', 'تازه‌سازی')}
+      <button type="button" className="registry-primary" disabled={loading || busy} onClick={() => start()}>
+        <Plus size={17} />{t('Add commission agent', 'افزودن کمیشن کار')}
       </button>
     </div>
     {message && !open && !details && <p className="registry-notice error" role="alert">{message}</p>}
@@ -151,7 +156,7 @@ export default function CustomsPage({ language, profile }) {
     {!loading && filtered.length > 0 && <CompactTable label={t('Commission agents', 'کمیشن کاران')} columns={[
       { label: t('Name / mobile', 'نام / موبایل') },
       { label: t('Location', 'موقعیت') },
-      { label: t('Actions', 'عملیات'), width: '29%' },
+      { label: t('Actions', 'عملیات'), width: '39%' },
     ]}>
       {filtered.map(row => <tr key={row.id}>
         <th scope="row"><strong>{row.name}</strong>
@@ -160,8 +165,8 @@ export default function CustomsPage({ language, profile }) {
         </th>
         <td>{[row.province, row.district, row.village].filter(Boolean).join(' · ') || '—'}</td>
         <td><div className="compact-table-actions">
-          <IconButton icon={WalletCards} label={t('Fees & payments', 'حق‌الزحمه و پرداخت‌ها')} onClick={() => setAccount(row)} />
           <RecordTools language={language} onView={() => { setError(null); setDetails(row) }} onEdit={() => start(row)} />
+          <IconButton icon={WalletCards} label={t('Fees & payments', 'حق‌الزحمه و پرداخت‌ها')} onClick={() => setAccount(row)} />
         </div></td>
       </tr>)}
     </CompactTable>}
@@ -170,15 +175,15 @@ export default function CustomsPage({ language, profile }) {
       <h2>{search ? t('No matching commission agents', 'کمیشن کار مطابق یافت نشد') : t('No commission agents yet', 'هنوز کمیشن کار ثبت نشده است')}</h2>
     </div>}
     {open && <Modal title={editing ? t('Edit commission agent', 'ویرایش کمیشن کار') : t('Add commission agent', 'افزودن کمیشن کار')}
-      busy={busy} onClose={closeForm} className="customs-agent-modal">
-      <form className="registry-form customs-agent-form" onSubmit={save}>
-        <fieldset className="customs-agent-fields" disabled={busy || saved}>
+      busy={busy} onClose={closeForm} className="registration-form-card">
+      <form className="registration-form" onSubmit={save}>
+        <fieldset className="registration-fieldset" disabled={busy || saved}>
           <CustomsAgentFields language={language} form={form} onChange={setForm} files={files} onFilesChange={setFiles}
             existing={editing?.customs_agent_files} onView={viewFile} />
         </fieldset>
         {saved && message && <p className="booking-help">{t('Information is saved. Retry to finish the remaining uploads.', 'معلومات ثبت شد. برای تکمیل آپلود اسناد باقی‌مانده دوباره کوشش کنید.')}</p>}
         {message && <p className="registry-notice error" role="alert">{message}</p>}
-        <div className="registry-form-actions">
+        <div className="registry-form-actions registration-actions">
           <button type="button" disabled={busy} onClick={closeForm}>{t('Cancel', 'انصراف')}</button>
           <button className="registry-primary" disabled={busy}>
             {busy ? t('Saving…', 'در حال ثبت…') : saved ? t('Finish uploads', 'تکمیل آپلودها') : t('Save', 'ثبت')}

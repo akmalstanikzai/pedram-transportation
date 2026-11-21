@@ -399,7 +399,7 @@ html[dir='rtl'] .brand strong { font-family: var(--font-dari); letter-spacing: 0
 
 /* Module pages */
 .module-page { padding-top: 28px; }
-.module-back { display: flex; align-items: center; gap: 7px; padding: 0; border: 0; color: var(--navy); background: none; font-size: 12px; font-weight: 800; }
+.module-back { display: flex; align-items: center; gap: 7px; padding: 0; border: 0; color: var(--navy); background: none; font-size: 11px; font-weight: 750; }
 .module-shell { margin-top: 24px; overflow: hidden; border: 1px solid var(--line); border-radius: 15px; background: var(--white); box-shadow: 0 10px 30px rgba(18,42,63,.05); }
 .module-heading { display: flex; align-items: center; gap: 20px; padding: 30px 34px; border-bottom: 1px solid var(--line); }
 .module-icon { width: 76px; height: 76px; flex: none; }

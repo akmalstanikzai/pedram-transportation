@@ -1,0 +1,63 @@
+.bookings-registry { padding: clamp(8px, 2vw, 20px) 0; background: transparent; }
+.bookings-registry > .booking-page-header { margin: 0 0 10px; gap: 8px; }
+.bookings-registry > .booking-page-header h1 { color: #245981; }
+.bookings-registry > :is(.registry-toolbar, .booking-branch-filter) {
+  margin-bottom: 8px;
+  padding: 7px 9px;
+  border: 1px solid #bdd5e8;
+  border-radius: 9px;
+  background: #edf5fb;
+}
+.bookings-registry .booking-list { margin-top: 10px; gap: 9px; }
+.bookings-registry .booking-record {
+  min-width: 0;
+  padding: 9px;
+  border-color: #b7d8c9;
+  border-block-start: 3px solid #1a6453;
+}
+.bookings-registry .booking-record h3 { color: #245346; overflow-wrap: anywhere; }
+.bookings-registry .booking-record h3 svg { flex-shrink: 0; }
+.bookings-registry .booking-record-actions { margin: 8px 0; gap: 5px; }
+.bookings-registry .booking-summary-table th { background: #eaf6f0; color: #245346; }
+.bookings-registry .booking-contact-details summary { color: #245981; }
+.booking-form .registration-grid label.registry-check { display: flex; }
+.booking-form .registry-check input[type='checkbox'] { width: 17px; min-height: 0; height: 17px; flex-shrink: 0; }
+.booking-form .solar-date-picker { width: 100%; }
+.booking-form .solar-date-trigger { min-width: 0; justify-content: start; padding-inline: 6px; }
+.booking-form .booking-preview { padding: 8px; background: #ffffffb8; }
+.booking-form div.booking-preview { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .6fr); gap: 6px; }
+.booking-form div.booking-preview > button { justify-self: start; min-height: 36px; color: #983b49; background: #fff2f4; border: 1px solid #e6c4cb; border-radius: 7px; }
+.booking-form .booking-section-heading { padding: 5px 0; margin: 0; font-size: 13px; color: #523775; }
+.booking-form [data-section='finance'] > .registration-grid > p { padding: 6px 8px; border-radius: 6px; background: #eadef7; }
+.booking-form [data-section='finance'] label:has(small) { grid-column: 1 / -1; }
+@media (max-width: 640px) {
+  .booking-form .solar-date-popover { position: fixed; top: 50%; inset-inline: 12px; width: auto; max-width: 340px; max-height: calc(100dvh - 24px); margin-inline: auto; overflow-y: auto; transform: translateY(-50%); }
+  .bookings-registry .booking-record-actions .record-icon-button { width: 33px; height: 36px; }
+}
+.module-page.bookings-module { padding-top: 6px; }
+.bookings-module .module-shell { margin-top: 0; }
+.booking-top, .booking-title-row, .booking-top-controls { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.booking-top { justify-content: space-between; flex-wrap: wrap; margin-bottom: 8px; }
+.booking-title-row h1 { margin: 0; color: #245981; font-size: clamp(21px, 4vw, 28px); }
+.booking-title-row .booking-back { padding-inline: 6px; min-height: 40px; }
+.booking-top-controls { flex: 0 1 auto; }
+.booking-top-controls .registry-search { flex: 1 1 170px; min-width: 0; }
+.booking-top-controls button { flex-shrink: 0; white-space: nowrap; padding-inline: 7px; gap: 4px; }
+.booking-top-controls button svg { width: 15px; }
+.booking-top-controls button[aria-pressed='true'] { background: #fff0d9; color: #734719; }
+.bookings-registry > .booking-branch-filter { width: fit-content; max-width: 100%; }
+.booking-information-view .fleet-information-section[data-tone] {
+  padding: 0; margin-bottom: 9px; border: 1px solid var(--detail-line);
+  border-radius: 9px; background: var(--detail-fill); overflow: hidden;
+}
+.booking-information-view [data-tone='blue'] { --detail-header: #245981; --detail-fill: #edf5fb; --detail-line: #bdd5e8; }
+.booking-information-view [data-tone='teal'] { --detail-header: #1a6453; --detail-fill: #eaf6f0; --detail-line: #b7d8c9; }
+.booking-information-view [data-tone='amber'] { --detail-header: #804b19; --detail-fill: #fff3df; --detail-line: #e7cda7; }
+.booking-information-view [data-tone='purple'] { --detail-header: #624387; --detail-fill: #f5effc; --detail-line: #d6c7ea; }
+.booking-information-view .fleet-information-section[data-tone] h3 { margin: 0; padding: 7px 9px; color: #fff; background: var(--detail-header); }
+.booking-information-view .fleet-information-section .fleet-information-grid { gap: 1px; background: var(--detail-line); }
+.booking-information-view .fleet-information-grid > div { background: var(--detail-fill); }
+@media (max-width: 640px) {
+  .booking-top-controls { flex: 1 1 100%; }
+  .booking-top-controls .registry-search { padding-inline: 5px; gap: 4px; }
+}
