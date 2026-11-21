@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Archive, Plus, RefreshCw, Search, Truck, UserRound, Users, WalletCards } from 'lucide-react'
+import { Archive, ClipboardList, Plus, RefreshCw, Search, Truck, UserRound, Users, WalletCards } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { allRows } from '../lib/cashbook'
 import { rpc, explain } from '../lib/operations'
@@ -8,9 +8,9 @@ import Icon from '../components/Icon'
 import DocumentsPanel from '../components/DocumentsPanel'
 import DriverAccount from '../components/DriverAccount'
 import DriverTransactions from '../components/DriverTransactions'
-import SolarHijriDateInput from '../components/SolarHijriDateInput'
 import FleetInformation from '../components/FleetInformation'
 import CompactTable from '../components/CompactTable'
+import { RegistrationSection } from '../components/RegistrationFields'
 import { loadFleetPhotos, uploadFleetPhoto, uploadDriverDocument, uploadVehicleDocument, uploadOwnerIdentity } from '../lib/fleetPhotos'
 import { vehicleWeightsFromRow, vehicleWeightsPayload } from '../lib/capacity'
 import VehicleUploads from '../components/VehicleUploads'
@@ -24,11 +24,11 @@ import './VehiclesPage.css'
 const tables={vehicle:'vehicles',owner:'vehicle_owners',driver:'drivers'}
 const vehicleTypes=[['لنډی','Landi'],['تیلر','Trailer']]
 const vehicleConditions=[['یخچالی','Refrigerated'],['تخته فرش','Flatbed'],['ترپال کش','Tarpaulin'],['کانتینری','Container'],['تانکر','Tanker']]
-const fields={
- owner:[['full_name','Name','نام','text',true],['father_name','Father name','نام پدر'],['phone','Mobile','موبایل','tel',true],['national_id','Tazkira number','نمبر تذکره'],['province','Province','ولایت'],['address','Address','آدرس'],['notes','Notes','ملاحظات']],
- driver:[['full_name','Name','نام','text',true],['father_name','Father name','نام پدر'],['phone','Mobile','موبایل','tel',true],['national_id','Tazkira number','نمبر تذکره'],['address','Address','آدرس'],['license_number','Licence number','نمبر لایسنس'],['previous_company','Previous company','شرکت قبلی']],
- vehicle:[['plate_number','Plate number','نمبر پلیت','text',true],['province','Province','ولایت'],['foreign_plate_number','Foreign plate (optional)','پلیت خارجی (اختیاری)'],['vehicle_type','Vehicle type','نوعیت','vehicle_type',true],['vehicle_condition','Body style','حالت','vehicle_condition'],['model','Model','ماډل'],['color','Color','رنگ'],['capacity_tons','Weight capacity','ظرفیت','capacity'],['notes','Notes','ملاحظات']]
-}
+const vehicleRegistrationFields = [
+ ['plate_number','Plate number','نمبر پلیت',true], ['province','Province','ولایت'],
+ ['foreign_plate_number','Foreign plate (optional)','پلیت خارجی (اختیاری)'],
+]
+const vehicleDetailFields = [['model','Model','ماډل'],['color','Color','رنگ']]
 export default function VehiclesPage({language,profile,onBack}){
  const branchManager=profile?.role==='branch_manager'
  const president=profile?.role==='president'
@@ -165,9 +165,34 @@ export default function VehiclesPage({language,profile,onBack}){
    </div>
   </form>
  </Modal>}
- {editor&&<Modal key={inlineOwner?'inline-owner':'fleet-editor'} title={inlineOwner?t('Create new owner','ایجاد مالک جدید'):editor.row?t('Edit','ویرایش'):t('Register','ثبت')} onClose={()=>inlineOwner?setInlineOwner(false):setEditor(null)} busy={busy}>{inlineOwner?<VehicleOwnerForm language={language} branchId={form.branch_id||null} onBusyChange={setBusy} onCreated={owner=>{setData(current=>({...current,owner:[...current.owner.filter(row=>row.id!==owner.id),owner]}));setForm(current=>({...current,owner_id:owner.id}))}} onCancel={()=>setInlineOwner(false)} onDone={()=>setInlineOwner(false)}/>:<form className={`registry-form ${editor.kind==='vehicle'?'vehicle-registration-form':editor.kind==='driver'?'driver-registration-form':editor.kind==='owner'?'owner-registration-form':''}`} onSubmit={save}><fieldset className="booking-fields wide" disabled={busy}>
- {editor.kind==='vehicle'?<VehicleRegistrationFields language={language} form={form} onChange={setForm} owners={data.owner} onCreateOwner={()=>setInlineOwner(true)} capacity={capacity} onCapacityChange={setCapacity} typeCustom={typeCustom} onTypeCustom={setTypeCustom} conditionCustom={conditionCustom} onConditionCustom={setConditionCustom}/>:editor.kind==='driver'?<DriverRegistrationFields language={language} form={form} onChange={setForm} files={driverFiles} onFilesChange={setDriverFiles}/>:editor.kind==='owner'?<OwnerRegistrationFields language={language} form={form} onChange={setForm} files={ownerFiles} onFilesChange={setOwnerFiles}/>:fields[editor.kind].map(([key,en,fa,type='text',required=false])=>type==='capacity'?<CapacityField key={key} language={language} value={capacity} onChange={setCapacity}/>:type==='vehicle_type'||type==='vehicle_condition'?<VehicleChoiceField key={key} label={t(en,fa)} required={required} language={language} options={type==='vehicle_type'?vehicleTypes:vehicleConditions} value={form[key]||''} custom={type==='vehicle_type'?typeCustom:conditionCustom} onCustom={type==='vehicle_type'?setTypeCustom:setConditionCustom} onChange={value=>setForm(current=>({...current,[key]:value}))}/>:<label key={key}><span>{t(en,fa)}{required?' *':''}</span>{type==='date'?<SolarHijriDateInput required={required} language={language} value={form[key]??''} onChange={value=>setForm({...form,[key]:value})} ariaLabel={t(en,fa)}/>:<input required={required} type={type} inputMode={key==='model_year'?'numeric':undefined} pattern={key==='model_year'?'[0-9]+':undefined} step={type==='number'?'0.001':undefined} min={type==='number'?'0.001':undefined} value={form[key]??''} onChange={e=>setForm({...form,[key]:e.target.value})}/>}</label>)}
- {editor.kind==='vehicle'&&<VehicleUploads language={language} photo={photoFile} onPhotoChange={setPhotoFile} files={vehicleFiles} onFilesChange={setVehicleFiles}/>}</fieldset>{error&&<p role="alert" className="wide registry-notice error">{error}</p>}<div className="registry-form-actions"><button type="button" disabled={busy} onClick={()=>setEditor(null)}>{t('Cancel','انصراف')}</button><button className="registry-primary" disabled={busy}>{t('Save','ثبت')}</button></div></form>}</Modal>}
+ {editor&&<Modal key={inlineOwner?'inline-owner':'fleet-editor'} className="registration-form-card"
+   title={inlineOwner?t('Create new owner','ایجاد مالک جدید'):editor.row?t('Edit','ویرایش'):addLabel}
+   onClose={()=>inlineOwner?setInlineOwner(false):setEditor(null)} busy={busy}>
+  {inlineOwner ? <VehicleOwnerForm language={language} branchId={form.branch_id||null} onBusyChange={setBusy}
+    onCreated={owner=>{
+     setData(current=>({...current,owner:[...current.owner.filter(row=>row.id!==owner.id),owner]}))
+     setForm(current=>({...current,owner_id:owner.id}))
+    }} onCancel={()=>setInlineOwner(false)} onDone={()=>setInlineOwner(false)} />
+  : <form className="registration-form" onSubmit={save}>
+    <fieldset className="registration-fieldset" disabled={busy}>
+     {editor.kind==='vehicle' && <>
+      <VehicleRegistrationFields language={language} form={form} onChange={setForm} owners={data.owner}
+       onCreateOwner={()=>setInlineOwner(true)} capacity={capacity} onCapacityChange={setCapacity}
+       typeCustom={typeCustom} onTypeCustom={setTypeCustom} conditionCustom={conditionCustom} onConditionCustom={setConditionCustom}/>
+      <VehicleUploads language={language} photo={photoFile} onPhotoChange={setPhotoFile} files={vehicleFiles} onFilesChange={setVehicleFiles}/>
+     </>}
+     {editor.kind==='driver' && <DriverRegistrationFields language={language} form={form} onChange={setForm}
+      files={driverFiles} onFilesChange={setDriverFiles}/>}
+     {editor.kind==='owner' && <OwnerRegistrationFields language={language} form={form} onChange={setForm}
+      files={ownerFiles} onFilesChange={setOwnerFiles}/>}
+    </fieldset>
+    {error&&<p role="alert" className="registry-notice error">{error}</p>}
+    <div className="registry-form-actions registration-actions">
+     <button type="button" disabled={busy} onClick={()=>setEditor(null)}>{t('Cancel','انصراف')}</button>
+     <button className="registry-primary" disabled={busy}>{t('Save','ثبت')}</button>
+    </div>
+   </form>}
+ </Modal>}
  {detailRow&&<Modal title={rowName(detailRow)} onClose={()=>setDetail(null)}>{detail.documents?<div className="record-modal-body"><DocumentsPanel kind={detail.kind} parentId={detailRow.id} language={language} archived={!!detailRow.archived_at} onChanged={async()=>{await load()}}/></div>:<FleetInformation kind={detail.kind} row={detailRow} language={language} photoUrl={photos[detailRow.id]} owner={data.owner.find(owner=>owner.id===detailRow.owner_id)}/>}</Modal>}
  {driverTransactions&&<DriverTransactions driver={driverTransactions} language={language} onClose={()=>setDriverTransactions(null)}/>}
  {account&&<Modal title={t('Driver login','حساب ورود راننده')} onClose={()=>setAccount(null)} busy={busy} className={account.user_id?'branch-password-modal':''}><DriverAccount driver={account} language={language} onBusyChange={setBusy} onChanged={async()=>{const updated=await load();setAccount(updated.driver.find(d=>d.id===account.id))}}/></Modal>}
@@ -183,15 +208,51 @@ export function CapacityField({language,value,onChange}) {
  </div></fieldset>
 }
 
-function VehicleChoiceField({label,required,language,options,value,custom,onCustom,onChange,wide=false}) {
+function VehicleChoiceField({label,required,language,options,value,custom,onCustom,onChange}) {
  const t=(en,fa)=>language==='fa'?fa:en
- return <label className={`vehicle-choice-field ${wide?'wide':''}`}><span>{label}{required?' *':''}</span><select required={required&&!custom} value={custom?'other':value} onChange={e=>{const other=e.target.value==='other';onCustom(other);onChange(other?'':e.target.value)}}><option value="">—</option>{options.map(([id,en])=><option key={id} value={id}>{t(en,id)}</option>)}<option value="other">{t('Other / write name','دیگر / نوشتن نام')}</option></select>{custom&&<input required={required} value={value} onChange={e=>onChange(e.target.value)} aria-label={t(`Other ${label}`,`نام دیگر ${label}`)} placeholder={t('Write a name','نام را بنویسید')}/>}</label>
+ return <label className="vehicle-choice-field">
+  <span>{label}{required?' *':''}</span>
+  <select required={required&&!custom} value={custom?'other':value} onChange={e=>{
+   const other=e.target.value==='other'
+   onCustom(other)
+   onChange(other?'':e.target.value)
+  }}>
+   <option value="">—</option>
+   {options.map(([id,en])=><option key={id} value={id}>{t(en,id)}</option>)}
+   <option value="other">{t('Other / write name','دیگر / نوشتن نام')}</option>
+  </select>
+  {custom&&<input required={required} value={value} onChange={e=>onChange(e.target.value)}
+   aria-label={t(`Other ${label}`,`نام دیگر ${label}`)} placeholder={t('Write a name','نام را بنویسید')}/>}
+ </label>
 }
 
 export function VehicleRegistrationFields({language,form,onChange,owners=[],onCreateOwner,capacity,onCapacityChange,typeCustom=false,onTypeCustom,conditionCustom=false,onConditionCustom}) {
  const t=(en,fa)=>language==='fa'?fa:en
+ const field=([key,en,fa,required])=><label key={key} className={key==='foreign_plate_number'||key==='notes'?'wide':undefined}>
+  <span>{t(en,fa)}{required?' *':''}</span>
+  <input type="text" required={required} value={form[key]??''} onChange={e=>onChange({...form,[key]:e.target.value})}/>
+ </label>
  return <>
-  <label className="wide"><span>{t('Owner (optional)','مالک (اختیاری)')}</span><select value={form.owner_id||''} onChange={e=>e.target.value==='__new_owner__'?onCreateOwner?.():onChange({...form,owner_id:e.target.value||null})}><option value="">{t('Optional','اختیاری')}</option><option value="__new_owner__">{t('Create new owner…','ایجاد مالک جدید…')}</option>{owners.filter(o=>(!o.archived_at||o.id===form.owner_id)&&(!o.branch_id||o.branch_id===(form.branch_id||null))).map(o=><option key={o.id} value={o.id}>{o.full_name} · {o.phone}</option>)}</select></label>
-  {fields.vehicle.map(([key,en,fa,type='text',required=false])=>type==='capacity'?<CapacityField key={key} language={language} value={capacity} onChange={onCapacityChange}/>:type==='vehicle_type'||type==='vehicle_condition'?<VehicleChoiceField key={key} label={t(en,fa)} required={required} language={language} options={type==='vehicle_type'?vehicleTypes:vehicleConditions} value={form[key]||''} custom={type==='vehicle_type'?typeCustom:conditionCustom} onCustom={type==='vehicle_type'?onTypeCustom:onConditionCustom} onChange={value=>onChange({...form,[key]:value})}/>:<label key={key} className={['plate_number','province','model','color'].includes(key)?'':'wide'}><span>{t(en,fa)}{required?' *':''}</span><input required={required} type={type} value={form[key]??''} onChange={e=>onChange({...form,[key]:e.target.value})}/></label>)}
+  <RegistrationSection kind="registration" tone="blue" title={t('Vehicle registration','ثبت واسطه')} icon={ClipboardList}>
+   <label className="wide">
+    <span>{t('Owner (optional)','مالک (اختیاری)')}</span>
+    <select value={form.owner_id||''} onChange={e=>e.target.value==='__new_owner__'?onCreateOwner?.():onChange({...form,owner_id:e.target.value||null})}>
+     <option value="">{t('Optional','اختیاری')}</option>
+     <option value="__new_owner__">{t('Create new owner…','ایجاد مالک جدید…')}</option>
+     {owners.filter(o=>(!o.archived_at||o.id===form.owner_id)&&(!o.branch_id||o.branch_id===(form.branch_id||null)))
+      .map(o=><option key={o.id} value={o.id}>{o.full_name} · {o.phone}</option>)}
+    </select>
+   </label>
+   {vehicleRegistrationFields.map(field)}
+  </RegistrationSection>
+  <RegistrationSection kind="vehicle" tone="teal" title={t('Vehicle details','مشخصات واسطه')} icon={Truck}>
+   <VehicleChoiceField label={t('Vehicle type','نوعیت')} required language={language} options={vehicleTypes}
+    value={form.vehicle_type||''} custom={typeCustom} onCustom={onTypeCustom} onChange={value=>onChange({...form,vehicle_type:value})}/>
+   <VehicleChoiceField label={t('Body style','حالت')} language={language} options={vehicleConditions}
+    value={form.vehicle_condition||''} custom={conditionCustom} onCustom={onConditionCustom} onChange={value=>onChange({...form,vehicle_condition:value})}/>
+   {vehicleDetailFields.map(field)}
+   <CapacityField language={language} value={capacity} onChange={onCapacityChange}/>
+   {field(['notes','Notes','ملاحظات'])}
+  </RegistrationSection>
  </>
 }

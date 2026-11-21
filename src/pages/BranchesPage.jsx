@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Archive, Building2, Ellipsis, Eye, Files, KeyRound, Pencil, Plus, Power, RotateCcw, Upload, UserRound } from 'lucide-react'
+import { Archive, Building2, Ellipsis, Eye, Files, KeyRound, Pencil, Plus, Power, RotateCcw, UserRound } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { rpc, explain } from '../lib/operations'
 import { ConfirmArchive, IconButton, Modal } from '../components/RecordTools'
@@ -7,6 +7,7 @@ import Icon from '../components/Icon'
 import { normalizeLogin } from '../lib/loginIdentity'
 import BranchPassword from '../components/BranchPassword'
 import CompactTable from '../components/CompactTable'
+import { RegistrationSection, RegistrationUpload } from '../components/RegistrationFields'
 import { branchAccountError } from '../lib/branchAccountError'
 import { loadBranchManagerFiles, uploadBranchManagerFile } from '../lib/branchManagerFiles'
 import { initialBranchForm as initialForm, branchFormFromRow, branchFormPayload } from '../lib/branchForm'
@@ -227,16 +228,16 @@ function BranchRegistry({ language, onBack }) {
         </div>
       </div>
     </Modal>}
-    {open && <Modal title={editing?t('Edit branch','ویرایش شعبه'):text.add} onClose={()=>setOpen(false)} busy={saving} className="branch-form-card">
-      <form className="branch-form" onSubmit={submit}>
+    {open && <Modal title={editing?t('Edit branch','ویرایش شعبه'):text.add} onClose={()=>setOpen(false)} busy={saving} className="registration-form-card branch-form-card">
+      <form className="registration-form branch-form" onSubmit={submit}>
         <BranchDetailsFields language={language} form={form} update={update} editing={editing} files={files} selectedFiles={selectedFiles} setSelectedFiles={setSelectedFiles} />
-        {!editing&&<FormSection kind="credentials" title={text.credentials} icon={KeyRound}>
+        {!editing&&<RegistrationSection kind="credentials" tone="purple" title={text.credentials} icon={KeyRound}>
           <Field label={text.login} required value={form.login} onChange={value => update('login', value)} wide />
           <Field label={text.password} required type="password" value={form.password} onChange={value => update('password', value)} />
           <Field label={text.confirm} required type="password" value={form.confirm} onChange={value => update('confirm', value)} />
-        </FormSection>}
+        </RegistrationSection>}
         {message?.type === 'error' && <div className="registry-notice error branch-form-message" role="alert">{message.text}</div>}
-        <div className="registry-form-actions branch-actions"><button type="button" disabled={saving} onClick={() => setOpen(false)}>{text.cancel}</button><button className="registry-primary" disabled={saving}>{saving ? <span className="spinner" /> : editing?t('Save','ثبت'):text.create}</button></div>
+        <div className="registry-form-actions registration-actions branch-actions"><button type="button" disabled={saving} onClick={() => setOpen(false)}>{text.cancel}</button><button className="registry-primary" disabled={saving}>{saving ? <span className="spinner" /> : editing?t('Save','ثبت'):text.create}</button></div>
       </form>
     </Modal>}
     {details&&<Modal title={details.name} onClose={()=>setDetails(null)}><BranchInformation language={language} details={details} files={files}/></Modal>}
@@ -245,25 +246,19 @@ function BranchRegistry({ language, onBack }) {
   </div>
 }
 
-function FormSection({ kind, title, icon: SectionIcon, children }) {
-  return <section className="branch-form-section" data-section={kind} aria-label={title}>
-    <h3><SectionIcon size={17} aria-hidden="true" />{title}</h3>
-    <div className="branch-form-fields">{children}</div>
-  </section>
-}
 function Field({ label, required, type = 'text', value, onChange, wide }) { return <label className={wide ? 'wide' : ''}><span>{label}{required ? ' *' : ''}</span><input required={required} type={type} value={value} onChange={event => onChange(event.target.value)} /></label> }
 
 export function BranchDetailsFields({ language, form, update, editing = null, files = {}, selectedFiles = {}, setSelectedFiles }) {
   const text = labels[language] || labels.en
   return <>
-        <FormSection kind="branch" title={text.branchInfo} icon={Building2}>
+        <RegistrationSection kind="branch" tone="blue" title={text.branchInfo} icon={Building2}>
           <Field label={text.name} required value={form.name} onChange={value => update('name', value)} />
           <Field label={text.code} value={form.code} onChange={value => update('code', value)} />
           <Field label={text.province} required value={form.province} onChange={value => update('province', value)} />
           <Field label={text.city} required value={form.city} onChange={value => update('city', value)} />
           <Field label={text.address} value={form.address} onChange={value => update('address', value)} wide />
-        </FormSection>
-        <FormSection kind="manager" title={text.managerInfo} icon={UserRound}>
+        </RegistrationSection>
+        <RegistrationSection kind="manager" tone="teal" title={text.managerInfo} icon={UserRound}>
           <Field label={text.managerName} required value={form.managerName} onChange={value => update('managerName', value)} />
           <Field label={text.managerSurname} value={form.managerSurname} onChange={value => update('managerSurname', value)} />
           <Field label={text.fatherName} value={form.fatherName} onChange={value => update('fatherName', value)} />
@@ -273,24 +268,17 @@ export function BranchDetailsFields({ language, form, update, editing = null, fi
             <Field label={text.city} value={form.homeDistrict} onChange={value => update('homeDistrict', value)} />
             <Field label={text.village} value={form.homeVillage} onChange={value => update('homeVillage', value)} />
           </fieldset>
-        </FormSection>
-        <FormSection kind="documents" title={text.documents} icon={Files}>
+        </RegistrationSection>
+        <RegistrationSection kind="documents" tone="amber" title={text.documents} icon={Files}>
           {[['photo',text.managerPhoto,text.managerPhoto],...managerSlots].map(([key,en,fa])=>{
             const label = language==='fa'?fa:en
             const fileName = selectedFiles[key]?.name || (editing && files[`${editing.id}:${key}`]?.file_name)
-            return <label className="branch-upload-field" key={key}>
-              <span>{label}</span>
-              <span className="branch-file-control">
-                <input type="file" aria-label={label} accept={key==='photo'?'.jpg,.jpeg,.png,.webp':'.pdf,.jpg,.jpeg,.png,.webp'}
-                  onChange={event=>setSelectedFiles(current=>({...current,[key]:event.target.files?.[0]||null}))}/>
-                <Upload size={15} aria-hidden="true" /><span aria-hidden="true">{language==='fa'?'انتخاب فایل':'Choose file'}</span>
-              </span>
-              {fileName && <small><bdi>{fileName}</bdi></small>}
-            </label>
+            return <RegistrationUpload key={key} language={language} label={label} imageOnly={key==='photo'} fileName={fileName}
+              onChange={file=>setSelectedFiles(current=>({...current,[key]:file}))} />
           })}
           {editing&&legacyManagerSlots.filter(([key])=>files[`${editing.id}:${key}`]).map(([key,en,fa])=><div className="branch-legacy-file" key={key}><strong>{language==='fa'?fa:en}</strong><a href={files[`${editing.id}:${key}`].url} target="_blank" rel="noreferrer">{files[`${editing.id}:${key}`].file_name}</a></div>)}
           <p className="wide booking-help">{language==='fa'?'فایل‌ها اختیاری اند. عکس و اسناد تا ۵ MB؛ سند جدید جای سند قبلی را در نمای شعبه می‌گیرد.':'Files are optional. Each photo or document can be up to 5 MB. A new upload replaces the file shown in the branch profile.'}</p>
-        </FormSection>
+        </RegistrationSection>
   </>
 }
 

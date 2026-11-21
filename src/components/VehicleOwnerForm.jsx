@@ -27,12 +27,12 @@ export default function VehicleOwnerForm({ language, branchId, onCreated, onCanc
     } catch (failure) { setError(explain(failure,language)) }
     finally { setBusy(false); onBusyChange(false) }
   }
-  return <form className="registry-form owner-registration-form" onSubmit={submit}>
-    <fieldset className="booking-fields wide" disabled={busy || !!savedOwner}>
+  return <form className="registration-form" onSubmit={submit}>
+    <fieldset className="registration-fieldset" disabled={busy || !!savedOwner}>
       <OwnerRegistrationFields language={language} form={form} onChange={setForm} files={files} onFilesChange={setFiles}/>
     </fieldset>
-    {error && <p className="wide registry-notice error" role="alert">{error}</p>}
-    <div className="registry-form-actions">
+    {error && <p className="registry-notice error" role="alert">{error}</p>}
+    <div className="registry-form-actions registration-actions">
       <button type="button" disabled={busy} onClick={onCancel}>{t('Back to vehicle','بازگشت به واسطه')}</button>
       <button className="registry-primary" disabled={busy}>{savedOwner ? t('Finish uploads','تکمیل آپلودها') : t('Save owner and select','ثبت و انتخاب مالک')}</button>
     </div>

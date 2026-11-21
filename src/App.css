@@ -566,19 +566,6 @@ html[dir='rtl'] .brand strong { font-family: var(--font-dari); letter-spacing: 0
 .booking-form-card .registry-form-head { justify-content: space-between; }
 .booking-form { display: block; }
 .booking-fields { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; border: 0; padding: 0; margin: 0; min-width: 0; }
-.capacity-entry { min-width: 0; margin: 0; padding: 0; border: 0; }
-.capacity-entry legend { margin-bottom: 8px; color: #455460; font-size: 12px; font-weight: 800; }
-.capacity-choice { display: inline-flex; gap: 3px; margin-bottom: 10px; padding: 3px; border: 1px solid var(--line); border-radius: 8px; background: #f5f8f7; }
-.capacity-choice button { min-height: 34px; padding: 5px 12px; border: 0; border-radius: 6px; color: #52636c; background: transparent; font-size: 12px; font-weight: 750; }
-.capacity-choice button.active { color: #fff; background: var(--green); }
-.capacity-entry > input { display: block; max-width: 150px; }
-.capacity-fraction { width: 84px; display: grid; gap: 5px; }
-.capacity-fraction input { text-align: center; }
-.capacity-fraction input:first-child { border-bottom: 2px solid #52636c; }
-.vehicle-choice-field input { margin-top: 8px; }
-.vehicle-document-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; padding-top: 14px; border-top: 1px solid var(--line); }
-.vehicle-document-fields > strong { grid-column: 1/-1; font-size: 13px; }
-@media (max-width: 600px) { .vehicle-document-fields { grid-template-columns: minmax(0,1fr); } }
 .booking-section-heading { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; padding: 18px 0 10px; margin: 8px 0 0; border-bottom: 1px solid var(--line); font-size: 17px; font-weight: 800; }
 .booking-section-heading:first-child { margin-top: 0; padding-top: 0; }
 .booking-section-heading svg { color: #277658; }
@@ -908,63 +895,6 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 .booking-information-expenses li > * { min-width: 0; overflow-wrap: anywhere; }
 @media (max-width: 520px) {
   .booking-information-actions button { width: 100%; justify-content: center; }
-}
-@media (max-width: 640px) {
-}
-
-.vehicle-registration-form .booking-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.vehicle-registration-form .booking-fields > .wide { grid-column: 1 / -1; }
-.vehicle-registration-form .booking-fields > label { min-width: 0; }
-.vehicle-registration-form input, .vehicle-registration-form select { min-width: 0; font-family: inherit; }
-.vehicle-registration-form .capacity-fraction { width: min(150px, 100%); }
-.vehicle-registration-form .capacity-fraction input { min-height: 44px; }
-.vehicle-registration-form .vehicle-weight-fields, .vehicle-registration-form .vehicle-upload-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 10px; }
-.vehicle-weight-fields > input, .vehicle-upload-grid > label { min-width: 0; }
-.vehicle-registration-form .booking-fields > .vehicle-choice-field { display: flex; flex-direction: column; justify-content: flex-start; }
-.vehicle-upload-grid > .wide { grid-column: 1/-1; }
-.vehicle-upload-grid input { min-width: 0; }
-.vehicle-upload-grid label > span { min-height: 1.5em; }
-.vehicle-upload-grid input::file-selector-button { max-width: 100%; white-space: normal; }
-.vehicle-upload-grid small { display: block; margin-top: 6px; overflow-wrap: anywhere; }
-.driver-registration-form .booking-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.driver-registration-form .booking-fields > .wide { grid-column: 1 / -1; }
-.driver-registration-form .booking-fields > label { min-width: 0; }
-.driver-registration-form .booking-fields > label:not(.driver-upload-field) { display: flex; flex-direction: column; justify-content: flex-end; }
-.driver-registration-form .driver-address-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; min-width: 0; padding: 0; margin: 0; border: 0; }
-.driver-address-row legend { margin-bottom: 10px; color: #455460; font-size: 13px; font-weight: 800; }
-.driver-address-row label { min-width: 0; }
-.driver-registration-form input { min-width: 0; font-family: inherit; }
-.driver-registration-form label > span { font-size: 13px; line-height: 1.5; }
-.driver-registration-form .driver-upload-field input { height: auto; min-height: 46px; padding: 8px; font-size: 12px; }
-.driver-registration-form .driver-upload-field > span { min-height: 1.5em; }
-.driver-upload-field input::file-selector-button { max-width: 100%; white-space: normal; }
-.driver-upload-field small { font-size: 11px; font-weight: 400; }
-.driver-upload-field .driver-file-name { display: block; margin-top: 6px; overflow-wrap: anywhere; }
-.owner-registration-form .booking-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.owner-registration-form .booking-fields > .wide { grid-column: 1 / -1; }
-.owner-registration-form .booking-fields > label { display: flex; flex-direction: column; justify-content: flex-end; min-width: 0; }
-.owner-registration-form .owner-address-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; min-width: 0; padding: 0; margin: 0; border: 0; }
-.owner-address-row legend { margin-bottom: 10px; color: #455460; font-size: 13px; font-weight: 800; }
-.owner-address-row label { min-width: 0; }
-.owner-registration-form input { min-width: 0; font-family: inherit; }
-.owner-registration-form label > span { font-size: 13px; line-height: 1.5; }
-.owner-registration-form .owner-upload-field { justify-content: flex-start; }
-.owner-registration-form .owner-upload-field > span { min-height: 1.5em; }
-.owner-registration-form .owner-upload-field input { height: auto; min-height: 46px; padding: 8px; font-size: 12px; }
-.owner-upload-field input::file-selector-button { max-width: 100%; white-space: normal; }
-.owner-upload-field small { font-size: 11px; font-weight: 400; }
-.owner-upload-field .owner-file-name { display: block; margin-top: 6px; overflow-wrap: anywhere; }
-@media (max-width: 640px) {
-  .owner-registration-form .booking-fields { gap: 16px 10px; }
-  .owner-registration-form input:not([type='file']) { min-height: 46px; padding-inline: 8px; font-size: 16px; }
-  .driver-registration-form .booking-fields { gap: 16px 10px; }
-  .driver-registration-form input:not([type='file']) { min-height: 46px; padding-inline: 8px; font-size: 16px; }
-  .vehicle-registration-form .booking-fields { gap: 16px 10px; }
-  .vehicle-registration-form label > span, .vehicle-registration-form .capacity-entry legend { font-size: 13px; line-height: 1.5; }
-  .vehicle-registration-form input:not([type='file']), .vehicle-registration-form select { min-height: 46px; padding-inline: 8px; font-size: 16px; }
-  .vehicle-registration-form input[type='file'] { height: auto; min-height: 46px; padding: 8px; }
-  .vehicle-registration-form small { display: block; margin-top: 6px; overflow-wrap: anywhere; }
-  .vehicle-registration-form .vehicle-document-fields { grid-template-columns: minmax(0, 1fr); }
 }
 .employee-salary { white-space: nowrap; font-size: .9rem; }
 .employee-transactions { display: grid; gap: .75rem; }
