@@ -2,8 +2,8 @@ export const employeeFields = [
   ['first_name','Name','نام'], ['last_name','Surname','تخلص'],
   ['father_name','Father name','نام پدر'], ['phone','Contact','موبایل'],
   ['province','Province','ولایت'], ['district','District','ولسوالی'], ['village','Village','قریه'],
-  ['salary','Salary (AFN)','معاش (افغانی)'],
   ['occupation','Occupation','وظیفه'],
+  ['salary','Salary (AFN)','معاش (افغانی)'],
 ]
 export const employeeFileTypes = [['photo', 'Employee photo', 'عکس کارمند'], ['identity', 'National ID / Tazkira', 'تذکره'], ['other', 'Other document', 'سند دیگر']]
 const mime = { pdf:'application/pdf', jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', webp:'image/webp' }

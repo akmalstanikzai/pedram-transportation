@@ -89,7 +89,14 @@ test('branch navigation and direct Branches URL never render branch management c
       assert.match(capacityFields, /inputMode="decimal"/)
     }
     const { default: Cashbook } = await server.ssrLoadModule('/src/pages/CashbookPage.jsx')
+    globalThis.window.location.hash = '#/cashbook'
     for (const language of ['en','fa']) {
+      for (const role of ['president', 'branch_manager']) {
+        const page = renderToStaticMarkup(React.createElement(Dashboard, { language, profile: { ...profile, role }, session: { user: {} } }))
+        const heading = page.split('<header class="cashbook-heading">')[1].split('</header>')[0]
+        assert.equal((page.match(/class="module-back\b/g) || []).length, 1)
+        assert.match(heading, /cashbook-back[^>]*>.*(?:Back|بازگشت)<\/button>/)
+      }
       const branchCashbook = renderToStaticMarkup(React.createElement(Cashbook, { language, profile }))
       const toolbar = branchCashbook.split('cashbook-filters')[1].split('<form')[0]
       assert.ok(toolbar.indexOf('cashbook-account-display') < toolbar.indexOf('solar-date-picker'))
@@ -104,6 +111,13 @@ test('branch navigation and direct Branches URL never render branch management c
       const presidentToolbar = presidentCashbook.split('cashbook-filters')[1].split('<form')[0]
       assert.ok(presidentToolbar.indexOf('value="admin"') < presidentToolbar.indexOf('solar-date-picker'))
       assert.match(presidentCashbook, /cashbook-customs-button/)
+    }
+    globalThis.window.location.hash = '#/vehicles'
+    for (const role of ['president', 'branch_manager']) {
+      const fleetPage = renderToStaticMarkup(React.createElement(Dashboard, { language: 'en', profile: { ...profile, role }, session: { user: {} } }))
+      assert.match(fleetPage, /class="module-page fleet-module"/)
+      assert.match(fleetPage.split('<header class="fleet-heading">')[1].split('</header>')[0], /module-back fleet-back.*Back<\/button>/)
+      assert.doesNotMatch(fleetPage, /Use the branch icon to assign a record/)
     }
   } finally {
     if (previousWindow === undefined) delete globalThis.window

@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { allRows, cents, currencies, kabulToday, simpleLedger, ledgerPeriod } from '../lib/cashbook'
 import { rpc } from '../lib/operations'
 import { IconButton, Modal } from '../components/RecordTools'
+import Icon from '../components/Icon'
 import CompactTable from '../components/CompactTable'
 import CustomsAgentAccount from '../components/CustomsAgentAccount'
 import { printRecord } from '../lib/recordExports'
@@ -24,7 +25,7 @@ function periodBounds(period){
   return ['0001-01-01',today]
 }
 
-export default function CashbookPage({ language, profile }) {
+export default function CashbookPage({ language, profile, onBack }) {
   const t=(en,fa)=>language==='fa'?fa:en
   const president=profile?.role==='president'
   const [data,setData]=useState({branches:[],accounts:[],entries:[]})
@@ -263,7 +264,12 @@ export default function CashbookPage({ language, profile }) {
   }
   return <div className="simple-cashbook">
     <header className="cashbook-heading">
-      <h1><Landmark size={22}/>{t('Cashbook','روزنامچه')}</h1>
+      <div className="cashbook-heading-start">
+        {onBack && <button type="button" className="module-back cashbook-back" onClick={onBack}>
+          <Icon name="back" size={16}/>{t('Back','بازگشت')}
+        </button>}
+        <h1><Landmark size={22} aria-hidden="true"/>{t('Cashbook','روزنامچه')}</h1>
+      </div>
       <IconButton icon={RefreshCw} label={t('Refresh','تازه‌سازی')} disabled={loading||busy} onClick={refresh}/>
     </header>
     <section className="cashbook-filters" aria-label={t('Statement options','گزینه‌های صورت حساب')}>

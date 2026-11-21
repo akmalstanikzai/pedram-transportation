@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { allRows } from '../lib/cashbook'
 import { rpc, explain } from '../lib/operations'
 import { ConfirmArchive, IconButton, Modal, RecordTools } from '../components/RecordTools'
+import Icon from '../components/Icon'
 import DocumentsPanel from '../components/DocumentsPanel'
 import DriverAccount from '../components/DriverAccount'
 import DriverTransactions from '../components/DriverTransactions'
@@ -18,6 +19,7 @@ import DriverRegistrationFields from '../components/DriverRegistrationFields'
 import { driverFormFromRow, driverFormPayload } from '../lib/driverForm'
 import OwnerRegistrationFields from '../components/OwnerRegistrationFields'
 import { ownerFormFromRow, ownerFormPayload } from '../lib/ownerForm'
+import './VehiclesPage.css'
 
 const tables={vehicle:'vehicles',owner:'vehicle_owners',driver:'drivers'}
 const vehicleTypes=[['لنډی','Landi'],['تیلر','Trailer']]
@@ -27,7 +29,7 @@ const fields={
  driver:[['full_name','Name','نام','text',true],['father_name','Father name','نام پدر'],['phone','Mobile','موبایل','tel',true],['national_id','Tazkira number','نمبر تذکره'],['address','Address','آدرس'],['license_number','Licence number','نمبر لایسنس'],['previous_company','Previous company','شرکت قبلی']],
  vehicle:[['plate_number','Plate number','نمبر پلیت','text',true],['province','Province','ولایت'],['foreign_plate_number','Foreign plate (optional)','پلیت خارجی (اختیاری)'],['vehicle_type','Vehicle type','نوعیت','vehicle_type',true],['vehicle_condition','Body style','حالت','vehicle_condition'],['model','Model','ماډل'],['color','Color','رنگ'],['capacity_tons','Weight capacity','ظرفیت','capacity'],['notes','Notes','ملاحظات']]
 }
-export default function VehiclesPage({language,profile}){
+export default function VehiclesPage({language,profile,onBack}){
  const branchManager=profile?.role==='branch_manager'
  const president=profile?.role==='president'
  const canManage=row=>president||(branchManager&&!!profile.branch_id&&row.branch_id===profile.branch_id)
@@ -43,6 +45,9 @@ export default function VehiclesPage({language,profile}){
  const icons={vehicle:Truck,driver:UserRound,owner:Users}
  const ActiveIcon=icons[active]
  const query=queries[active],archived=archives[active]
+ const addLabel=active==='vehicle'?t('Add vehicle','افزودن واسطه'):active==='driver'?t('Add driver','افزودن راننده'):t('Add owner','افزودن مالک')
+ const searchLabel=active==='vehicle'?t('Search vehicles','جستجوی وسایط'):active==='driver'?t('Search drivers','جستجوی رانندگان'):t('Search owners','جستجوی مالکان')
+ const archiveLabel=archived?t('Archived','بایگانی‌شده'):t('Archive','بایگانی')
  const request=useRef(null)
  const load=useCallback(async()=>{
   const [vehicle,owner,driver]=await Promise.all(Object.values(tables).map(table=>allRows(supabase,table)))
@@ -91,31 +96,54 @@ export default function VehiclesPage({language,profile}){
  const rows=data[active].filter(r=>!!r.archived_at===archived&&`${rowName(r)} ${r.phone||''} ${r.phone_secondary||''} ${r.vehicle_type||''} ${r.vin_number||''} ${r.license_number||''} ${r.previous_company||''} ${r.destination_company||''}`.toLowerCase().includes(query.trim().toLowerCase())).sort((a,b)=>rowName(a).localeCompare(rowName(b),'en',{numeric:true}))
  function tabKey(e){const index=kinds.indexOf(active),forward=language==='fa'?'ArrowLeft':'ArrowRight',back=language==='fa'?'ArrowRight':'ArrowLeft';let next;if(e.key===forward)next=kinds[(index+1)%kinds.length];else if(e.key===back)next=kinds[(index+kinds.length-1)%kinds.length];else if(e.key==='Home')next=kinds[0];else if(e.key==='End')next=kinds.at(-1);if(next){e.preventDefault();setActive(next);document.getElementById(`fleet-tab-${next}`)?.focus()}}
  return <div className="registry-page fleet-registry">
- <div className="registry-toolbar">
-  <p className="booking-help">{president?t('Use the branch icon to assign a record to one branch or share it with all branches.','با آیکن شعبه، ریکارد را به یک شعبه اختصاص دهید یا با همه شعبه‌ها شریک کنید.'):t('Fleet shows your branch records and records shared from head office.','وسایط، ریکاردهای شعبه شما و ریکاردهای مشترک دفتر مرکزی را نشان می‌دهد.')}</p>
+ <header className="fleet-heading">
+  <div className="fleet-heading-start">
+   {onBack&&<button type="button" className="module-back fleet-back" onClick={onBack}>
+    <Icon name="back" size={16}/>{t('Back','بازگشت')}
+   </button>}
+   <h1><Truck size={22} aria-hidden="true"/>{t('Fleet','وسایط')}</h1>
+  </div>
   <IconButton icon={RefreshCw} label={t('Refresh fleet','تازه‌سازی وسایط')} disabled={loading||busy} onClick={refresh}/>
- </div>
+ </header>
  {branchManager&&!profile.branch_id&&<p role="alert" className="registry-notice error">{t('Your login has no assigned branch. Ask the President to check the branch manager account.','حساب شما به شعبه وصل نیست. از رئیس بخواهید حساب مدیر شعبه را بررسی کند.')}</p>}
  {loadFailure&&<p role="alert" className="registry-notice error">{t('Fleet records could not load. Use Refresh fleet to try again.','ریکاردهای وسایط بارگیری نشد. برای کوشش دوباره، وسایط را تازه‌سازی کنید.')}</p>}
- <div className="fleet-tabs" role="tablist" aria-label={t('Fleet sections','بخش‌های وسایط')} onKeyDown={tabKey}>{kinds.map(kind=>{const Icon=icons[kind];return <button type="button" role="tab" id={`fleet-tab-${kind}`} aria-selected={active===kind} aria-controls={`fleet-panel-${kind}`} tabIndex={active===kind?0:-1} className={active===kind?'active':''} key={kind} onClick={()=>setActive(kind)}><Icon size={25}/><strong>{title(kind)}</strong><span>{loading||loadFailure?'—':data[kind].filter(r=>!r.archived_at).length}</span></button>})}</div>
- <section className="fleet-panel" id={`fleet-panel-${active}`} role="tabpanel" aria-labelledby={`fleet-tab-${active}`} tabIndex={0}>
- <div className="fleet-panel-heading"><h2><ActiveIcon size={22}/>{title(active)}</h2><button className="registry-primary" disabled={loading||!!loadFailure||busy||(branchManager&&!profile.branch_id)} onClick={()=>edit(active)}><Plus size={18}/>{active==='vehicle'?t('Add vehicle','افزودن واسطه'):active==='driver'?t('Add driver','افزودن راننده'):t('Add owner','افزودن مالک')}</button></div>
- <div className="registry-toolbar"><label className="registry-search"><Search size={18}/><input aria-label={active==='vehicle'?t('Search vehicles','جستجوی وسایط'):active==='driver'?t('Search drivers','جستجوی رانندگان'):t('Search owners','جستجوی مالکان')} placeholder={active==='vehicle'?t('Search plate, type or VIN','جستجوی پلیت، نوع یا شاسی'):t('Search name or mobile','جستجوی نام یا موبایل')} value={query} onChange={e=>setQueries({...queries,[active]:e.target.value})}/></label><button className="registry-secondary" onClick={()=>setArchives({...archives,[active]:!archived})} aria-pressed={archived}><Archive size={18}/>{archived?t('Archived','بایگانی‌شده'):t('Archive','بایگانی')}</button></div>
+ <div className="fleet-tabs" role="tablist" aria-label={t('Fleet sections','بخش‌های وسایط')} onKeyDown={tabKey}>
+  {kinds.map(kind=>{
+   const TabIcon=icons[kind]
+   return <button type="button" role="tab" id={`fleet-tab-${kind}`} data-fleet-kind={kind} aria-selected={active===kind}
+    aria-controls="fleet-record-panel" tabIndex={active===kind?0:-1} key={kind} onClick={()=>setActive(kind)}>
+    <TabIcon size={16} aria-hidden="true"/><strong>{title(kind)}</strong>
+    <span className="fleet-tab-count">{loading||loadFailure?'—':data[kind].filter(r=>!r.archived_at).length}</span>
+   </button>
+  })}
+ </div>
+ <section className="fleet-panel" id="fleet-record-panel" data-fleet-kind={active} role="tabpanel" aria-labelledby={`fleet-tab-${active}`} tabIndex={0}>
+ <div className="fleet-controls">
+  <label className="fleet-search"><Search size={16} aria-hidden="true"/><input type="search" aria-label={searchLabel}
+   placeholder={t('Search','جستجو')} value={query} onChange={e=>setQueries({...queries,[active]:e.target.value})}/></label>
+  <button type="button" className="fleet-archive-toggle" title={archiveLabel} aria-label={t('Archive','بایگانی')}
+   onClick={()=>setArchives({...archives,[active]:!archived})} aria-pressed={archived}>
+   <Archive size={16} aria-hidden="true"/><span>{archiveLabel}</span>
+  </button>
+  <button type="button" className="registry-primary fleet-add" disabled={loading||!!loadFailure||busy||(branchManager&&!profile.branch_id)}
+   onClick={()=>edit(active)}><Plus size={16} aria-hidden="true"/>{addLabel}</button>
+ </div>
  {error&&!editor&&!deletion&&!scopeEditor&&<p className="registry-notice error" role="alert">{error}</p>}{loading&&<p role="status">{t('Loading…','در حال بارگیری…')}</p>}
  {rows.length>0&&<CompactTable label={t('Fleet records','ریکاردهای وسایط')} columns={[
-   {label:active==='vehicle'?t('Vehicle','واسطه'):t('Name','نام')}, {label:t('Details','معلومات')},
-   {label:t('Actions','عملیات'),width:'36%'},
+   {label:active==='vehicle'?t('Plate','پلیت'):t('Name','نام')},
+   {label:active==='vehicle'?t('Type / owner','نوعیت / مالک'):t('Mobile','موبایل')},
+   {label:t('Actions','عملیات'),width:'38%'},
  ]}>{rows.map(row=><tr key={row.id}>
    <th scope="row"><div className="compact-record-heading">
      {photos[row.id]?<img className="fleet-profile-thumb" src={photos[row.id]} alt=""/>:<span className="fleet-profile-thumb placeholder"><ActiveIcon size={20}/></span>}
-     <div><strong>{rowName(row)}</strong>{row.status&&<small>{statusLabel(row.status)}</small>}</div>
+     <div><strong><bdi>{rowName(row)}</bdi></strong>{row.status&&<small className="fleet-record-status" data-status={row.status}>{statusLabel(row.status)}</small>}</div>
    </div></th>
    <td>{active==='vehicle'?<>{row.vehicle_type}<small>{data.owner.find(owner=>owner.id===row.owner_id)?.full_name||'—'}</small></>:<bdi dir="ltr">{row.phone}</bdi>}
      {active==='driver'&&row.archived_at&&row.destination_company&&<small>{t('Moved to','رفت به')} · {row.destination_company}</small>}
    </td>
-   <td><div className="compact-table-actions">
-     {active==='driver'&&president&&<IconButton icon={WalletCards} label={t('Transactions','معاملات')} disabled={busy} onClick={()=>setDriverTransactions(row)}/>}
+   <td><div className="compact-table-actions fleet-row-actions">
      <RecordTools language={language} archived={row.archived_at} disabled={busy} onView={()=>setDetail({kind:active,row})} onScope={president?()=>openScope(active,row):undefined} onEdit={canManage(row)?()=>edit(active,row):undefined} onDocuments={canManage(row)?()=>setDetail({kind:active,row,documents:true}):undefined} onAccount={active==='driver'&&profile?.role==='president'?()=>setAccount(row):undefined} onArchive={canManage(row)?()=>{setError('');setDestinationCompany('');request.current=null;setDeletion({kind:active,row})}:undefined}/>
+     {active==='driver'&&president&&<IconButton icon={WalletCards} label={t('Transactions','معاملات')} disabled={busy} onClick={()=>setDriverTransactions(row)}/>}
    </div></td>
  </tr>)}</CompactTable>}
  {!rows.length&&!loading&&!loadFailure&&<div className="registry-empty"><ActiveIcon size={34}/><strong>{query?t('No matching records.','معلومات مطابق یافت نشد.'):archived?t('No archived records in this section.','در این بخش معلومات بایگانی‌شده موجود نیست.'):branchManager?t('No branch or shared records in this section. Add a branch record or ask the President to share one.','در این بخش ریکارد شعبه یا مشترک وجود ندارد. ریکارد شعبه اضافه کنید یا از رئیس بخواهید ریکاردی را شریک کند.'):t('No records in this section yet.','هنوز در این بخش معلومات ثبت نشده است.')}</strong></div>}
