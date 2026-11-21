@@ -35,7 +35,14 @@
   border-radius: 10px;
 }
 
-.cashbook-filters { padding: 8px 10px; background: #eef4fa; border-color: #cdddea; }
+.cashbook-filters {
+  --cashbook-border: #b1c8e8;
+  padding: 8px 10px;
+  background: #deebfc;
+  border-inline-start: 3px solid #3766a5;
+}
+
+.cashbook-filters .cashbook-field { color: #234c80; }
 .cashbook-filter-row {
   display: grid;
   align-items: end;
@@ -84,7 +91,7 @@
   border-radius: 7px;
 }
 
-.simple-cashbook .cashbook-filter-row > .record-icon-button { background: #e0edf8; }
+.simple-cashbook .cashbook-filter-row > .record-icon-button { background: #2e5890; border-color: #2e5890; color: #fff; }
 .cashbook-entry-row .solar-date-icon-trigger { color: var(--cashbook-teal); border-color: #b9d5ca; background: #eaf5ef; }
 .simple-cashbook .solar-date-icon-trigger[aria-expanded='true'] { background: #d8eae9; }
 .simple-cashbook :is(.cashbook-filter-row, .cashbook-entry-row) > .solar-date-picker { width: var(--cashbook-control-height); }
@@ -92,18 +99,18 @@
 .cashbook-range { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; max-width: 340px; margin-top: 8px; }
 .cashbook-range .solar-date-picker { width: 100%; }
 
-.cashbook-balances { background: #f3f5fa; border-color: #d9e1ee; }
-.cashbook-balances h2 { padding: 7px 10px; margin: 0; color: #374f70; font-size: 13px; }
-.cashbook-balances dl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin: 0; background: #d9e1ee; border-top: 1px solid #d9e1ee; border-radius: 0 0 9px 9px; overflow: hidden; }
-.cashbook-balances dl > div { min-width: 0; padding: 6px 10px; background: #fafbfe; }
-.cashbook-balances dl > .cashbook-closing { background: #e7edf8; }
-.cashbook-balances dt { font-size: 12px; color: #425874; }
+.cashbook-balances { border-color: #d3c4ed; background: #f7f2ff; }
+.cashbook-balances h2 { padding: 7px 10px; margin: 0; color: #fff; background: #5d408c; border-radius: 9px 9px 0 0; font-size: 13px; }
+.cashbook-balances dl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin: 0; background: #d3c4ed; border-radius: 0 0 9px 9px; overflow: hidden; }
+.cashbook-balances dl > div { min-width: 0; padding: 6px 10px; background: #f7f2ff; }
+.cashbook-balances dl > .cashbook-closing { background: #e9dcfa; }
+.cashbook-balances dt { font-size: 12px; color: #50376c; }
 .cashbook-balances dd { margin: 1px 0 0; font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 
-.simple-cashbook-form { border-color: #bbd9cc; background: #fff; }
-.cashbook-section-heading { flex-wrap: wrap; padding: 8px 10px; background: #eaf5ef; border-bottom: 1px solid #bbd9cc; border-radius: 9px 9px 0 0; }
-.cashbook-section-heading h2, .cashbook-ledger h2 { margin: 0; color: var(--cashbook-teal); font-size: 16px; }
-.cashbook-section-heading small { color: #3f6058; font-size: 12px; overflow-wrap: anywhere; }
+.simple-cashbook-form { --cashbook-border: #b9dbcd; background: #eef8f3; }
+.cashbook-section-heading { flex-wrap: wrap; padding: 8px 10px; background: #166455; color: #fff; border-radius: 9px 9px 0 0; }
+.cashbook-section-heading h2, .cashbook-ledger h2 { margin: 0; font-size: 16px; }
+.cashbook-section-heading small { color: #e2f4ed; font-size: 12px; overflow-wrap: anywhere; }
 .cashbook-entry-fields { min-width: 0; margin: 0; border: 0; padding: 9px 10px; display: grid; gap: 9px; }
 .cashbook-entry-row { display: grid; grid-template-columns: var(--cashbook-control-height) minmax(0, 13ch) 74px; align-items: end; gap: 8px; }
 .cashbook-entry-row input[type='number'] { text-align: end; appearance: textfield; }
@@ -116,30 +123,31 @@
 .cashbook-loan-details { display: grid; gap: 4px; padding: 6px 8px; border-inline-start: 2px solid #e1be81; background: #fffbf3; }
 .cashbook-loan-details small, .cashbook-link-panel small { color: #53666e; font-size: 12px; }
 
-.cashbook-links { display: grid; min-width: 0; gap: 6px; padding-top: 8px; border-top: 1px solid var(--cashbook-border); }
-.cashbook-links h3 { margin: 0; color: #3c5960; font-size: 13px; }
+.cashbook-links { --cashbook-border: #e5c99e; display: grid; min-width: 0; gap: 6px; padding: 7px; border: 1px solid var(--cashbook-border); border-radius: 8px; background: #fff0d9; }
+.cashbook-links h3 { margin: 0; color: #754313; font-size: 13px; }
 .cashbook-link-buttons { display: flex; flex-wrap: wrap; gap: 5px; }
-.cashbook-link-button { display: inline-flex; gap: 4px; align-items: center; padding: 4px 7px; min-height: 36px; border: 1px solid #cedfe0; border-radius: 7px; color: #28565b; background: #f4f9f9; font-size: 12px; font-weight: 700; }
+.cashbook-link-button { display: inline-flex; gap: 4px; align-items: center; padding: 4px 7px; min-height: 36px; border: 1px solid var(--cashbook-border); border-radius: 7px; color: #694015; background: #fffaf2; font-size: 12px; font-weight: 700; }
 .cashbook-link-button svg { flex: none; }
-.cashbook-link-button[aria-expanded='true'] { border-color: #6ca997; background: #e3f2eb; color: #165748; }
-.cashbook-link-button[data-linked='true'] { box-shadow: inset 0 -2px #3d8772; }
-.cashbook-customs-button { border-color: #c9d8e6; color: #264e72; background: #ecf3f9; }
-.cashbook-link-panel { min-width: 0; padding: 7px 8px; border: 1px solid var(--cashbook-border); border-radius: 7px; background: #f7faf9; }
+.cashbook-link-button[aria-expanded='true'] { border-color: #a87135; background: #f9e1ba; color: #5e340c; }
+.cashbook-link-button[data-linked='true'] { box-shadow: inset 0 -2px #a87135; }
+.cashbook-customs-button { border-color: #d2ab75; color: #643d13; background: #f8e3be; }
+.cashbook-link-panel { min-width: 0; padding: 7px 8px; border: 1px solid var(--cashbook-border); border-radius: 7px; background: #fffbf5; }
 .cashbook-trader-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 
-.simple-cashbook-buttons { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; padding: 8px 10px; border-top: 1px solid var(--cashbook-border); }
+.simple-cashbook-buttons { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; padding: 8px 10px; border-top: 1px solid #ecc7ce; border-radius: 0 0 9px 9px; background: #fceef1; }
 .simple-cashbook-buttons button { display: inline-flex; gap: 5px; align-items: center; justify-content: center; min-height: 42px; padding: 5px 11px; border: 1px solid transparent; border-radius: 8px; font-size: 13px; line-height: 1.3; font-weight: 800; }
 .simple-cashbook-buttons svg { flex: none; }
 .cashbook-in { color: #fff; background: #146251; }
-.simple-cashbook-buttons .cashbook-out { color: #8d2d37; background: #fcecee; border-color: #e5aeb6; }
+.simple-cashbook-buttons .cashbook-out { color: #fff; background: #a43b4e; }
 :is(.simple-cashbook-buttons, .cashbook-links) button:disabled { opacity: .55; cursor: not-allowed; }
 
-.cashbook-ledger { min-width: 0; border-top: 1px solid var(--cashbook-border); padding-top: 9px; }
-.cashbook-ledger h2 { margin-bottom: 7px; color: var(--navy); }
-.cashbook-ledger .compact-table thead th { background: #edf3f6; }
-.cashbook-ledger .compact-table tbody tr:nth-child(even) { background: #f8fbfc; }
+.cashbook-ledger { min-width: 0; padding-bottom: 8px; border: 1px solid #bdced4; border-radius: 10px; background: #eef3f5; }
+.cashbook-ledger h2 { padding: 7px 10px; color: #fff; background: #324d58; border-radius: 9px 9px 0 0; }
+.cashbook-ledger .compact-table-frame { border: 0; border-radius: 0; }
+.cashbook-ledger .compact-table thead th { color: #2d4955; background: #dee9ee; }
+.cashbook-ledger .compact-table tbody tr:nth-child(even) { background: #f2f6f8; }
 .cashbook-ledger .cashbook-row-actions .record-icon-button { width: 30px; height: 30px; flex-basis: 30px; border-radius: 6px; }
-.cashbook-see-more { display: block; margin: 8px auto 0; min-height: 40px; padding: 4px 12px; border: 1px solid var(--cashbook-border); border-radius: 7px; color: var(--cashbook-teal); background: #f5faf8; font-weight: 700; font-size: 13px; }
+.cashbook-see-more { display: block; margin: 8px auto 0; min-height: 40px; padding: 4px 12px; border: 1px solid #bdced4; border-radius: 7px; color: #2d4955; background: #fff; font-weight: 700; font-size: 13px; }
 .simple-cashbook :is(button, input, select):focus-visible { outline: 2px solid #48978a; outline-offset: 2px; }
 
 @media (max-width: 640px) {
