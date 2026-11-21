@@ -545,17 +545,6 @@ html[dir='rtl'] .brand strong { font-family: var(--font-dari); letter-spacing: 0
 .customs-empty-state { min-height: 240px; border: 1px solid var(--line); border-radius: 16px; background: #fff; }
 .customs-toolbar .registry-search { flex: 1; width: auto; max-width: 500px; min-width: 0; }
 .customs-profile-account { padding-top: 0; }
-.customs-account-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
-.customs-account-actions { display: flex; align-items: stretch; gap: 8px; min-width: 0; }
-.customs-account-actions > * { min-width: 0; min-height: 44px; }
-.customs-account-actions button { justify-content: center; white-space: normal; }
-.customs-account-actions svg { flex-shrink: 0; }
-.customs-account-actions select { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); font: inherit; font-size: 16px; }
-.registry-form.customs-account-form { padding: 0; }
-.customs-account-form h3, .customs-account-form p { margin: 0; }
-.customs-account-form input, .customs-account-form select { min-width: 0; }
-.customs-account-form .booking-fields { gap: 12px 8px; }
-.customs-account-form .booking-fields > .wide { grid-column: 1 / -1; }
 .customs-cashbook-picker { border-bottom: 1px solid var(--line); }
 .customs-cashbook-picker label { display: grid; gap: 6px; }
 .customs-cashbook-picker select { width: 100%; min-height: 44px; border: 1px solid var(--line); padding: 8px; border-radius: 8px; }
@@ -1145,15 +1134,7 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 .compact-table .fleet-profile-thumb { width: 34px; height: 34px; flex-basis: 34px; }
 .compact-table .compact-record-heading { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .compact-record-heading > div { min-width: 0; }
-.customs-account-section { margin-block-start: 16px; }
-.customs-account-section h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 0 0 6px; font-size: 16px; color: var(--section-heading, var(--navy)); }
-.customs-account-section h3 small { color: var(--muted); font-size: 12px; font-weight: 500; }
-.customs-account-section > p { margin: 0; color: var(--muted); font-size: 13px; }
-.customs-balance-section { --section-heading: #125447; --section-tint: #e4f4ef; --section-border: #a2c9bd; }
-.customs-fees-section { --section-heading: #754510; --section-tint: #fff1d9; --section-border: #dfc091; }
-:is(.customs-balance-section, .customs-fees-section) .compact-table-frame { border-color: var(--section-border); overflow: hidden; }
-:is(.customs-balance-section, .customs-fees-section) .compact-table thead th { background: var(--section-tint); color: var(--section-heading); }
-.customs-account-form .booking-fields, .booking-form .booking-fields, .trader-account-form .booking-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.booking-form .booking-fields, .trader-account-form .booking-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .booking-form .booking-fields > label { display: flex; flex-direction: column; justify-content: flex-end; min-width: 0; }
 .booking-form .booking-fields > .registry-check { flex-direction: row; justify-content: flex-start; }
 .booking-form .booking-fields :is(input, select), .booking-form .solar-date-trigger { min-width: 0; }
@@ -1180,7 +1161,6 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
   .compact-table .record-icon-button { width: 38px; height: 40px; }
   .compact-table .compact-record-heading > :is(img, svg, .placeholder) { display: none; }
   .compact-table-actions, .compact-table .record-tools { gap: 3px; }
-  .customs-account-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); flex: 1 1 240px; }
   .trader-account-toolbar, .trader-account-totals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .trader-account-toolbar > * { min-width: 0; }
   .trader-account-toolbar label { min-width: 0; }
@@ -1191,9 +1171,9 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
   .trader-account-totals dd { font-size: 14px; overflow-wrap: anywhere; }
   .trader-portal { margin-block: 12px; padding-inline: 12px; }
   .trader-portal-section { margin-top: 12px; padding: 10px; }
-  :is(.customs-account-form, .booking-form, .trader-account-form) .booking-fields :is(input:not([type='checkbox']), select) { min-height: 44px; font-size: 16px; }
-  :is(.customs-account-form, .booking-form, .trader-account-form) .solar-date-trigger { width: 100%; min-width: 0; }
-  :is(.customs-account-form, .booking-form, .trader-account-form) .booking-fields { gap: 10px 8px; }
+  :is(.booking-form, .trader-account-form) .booking-fields :is(input:not([type='checkbox']), select) { min-height: 44px; font-size: 16px; }
+  :is(.booking-form, .trader-account-form) .solar-date-trigger { width: 100%; min-width: 0; }
+  :is(.booking-form, .trader-account-form) .booking-fields { gap: 10px 8px; }
   .driver-job-facts, .driver-contacts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
   .driver-job-facts > div, .driver-contact { padding: 7px; border: 1px solid var(--line); border-radius: 7px; }
   .driver-job-facts > div > svg { width: 16px; }

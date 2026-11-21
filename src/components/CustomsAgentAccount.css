@@ -1,0 +1,124 @@
+.record-modal-body.customs-account { display: grid; gap: 10px; }
+.customs-account > .registry-notice { margin: 0; }
+
+.customs-account-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid #bbcee9;
+  border-inline-start: 3px solid #3c66a0;
+  border-radius: 9px;
+  background: #e6effb;
+}
+
+.customs-account-toolbar select {
+  flex: 1 1 150px;
+  max-width: 180px;
+  min-width: 0;
+  min-height: 42px;
+  padding: 4px 8px;
+  border: 1px solid #bbcee9;
+  border-radius: 7px;
+  background: #fff;
+  color: #294e7d;
+  font: inherit;
+  font-size: 16px;
+}
+
+.customs-account-toolbar .record-icon-button { width: 42px; height: 42px; flex: 0 0 42px; color: #294e7d; border-color: #bbcee9; }
+
+.customs-balance-section { --agent-accent: #176653; --agent-ink: #1e5547; --agent-tint: #e2f3ec; --agent-border: #b9dace; }
+.customs-fees-section { --agent-accent: #794914; --agent-ink: #674116; --agent-tint: #fff0d9; --agent-border: #e4c79b; }
+.customs-payment-section { --agent-accent: #2b5384; --agent-ink: #294e7d; --agent-tint: #e6effb; --agent-border: #c0d2e9; }
+
+.customs-account-section, .customs-account-form {
+  min-width: 0;
+  border: 1px solid var(--agent-border);
+  border-radius: 9px;
+  background: var(--agent-tint);
+}
+
+.customs-section-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 7px 9px;
+  border-radius: 8px 8px 0 0;
+  color: #fff;
+  background: var(--agent-accent);
+}
+
+.customs-section-header h3 { margin: 0; font-size: 15px; }
+.customs-section-header small { font-size: 11px; }
+.customs-account-section > p { margin: 0; padding: 9px; color: var(--agent-ink); font-size: 13px; }
+.customs-account-section .compact-table-frame { border: 0; border-radius: 0 0 8px 8px; }
+.customs-account-section .compact-table thead th { background: var(--agent-tint); color: var(--agent-ink); }
+.customs-account-section .compact-table :is(th, td) { border-color: var(--agent-border); }
+.customs-account-section .compact-table td.customs-remaining { background: var(--agent-tint); color: var(--agent-ink); }
+.customs-account-section .compact-table small { line-height: 1.45; }
+.customs-account-section .compact-table .customs-payment-status, .customs-reversed-amount { color: #8e374b; }
+
+.customs-add-fee, .customs-pay-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  min-height: 34px;
+  padding: 3px 6px;
+  border: 1px solid var(--agent-border);
+  border-radius: 6px;
+  background: #fffaf2;
+  color: #674116;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.customs-add-fee svg, .customs-pay-button svg { flex: none; }
+.customs-pay-button { display: flex; width: fit-content; margin-top: 4px; }
+.customs-receipt-action { margin-top: 4px; }
+.customs-receipt-action .record-icon-button { width: 34px; height: 34px; border-color: var(--agent-border); color: var(--agent-ink); }
+.customs-receipt-action svg { width: 16px; }
+
+.customs-fee-context {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--agent-border);
+  color: var(--agent-ink);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.customs-fee-context bdi { font-weight: 800; }
+.customs-form-fields { display: grid; gap: 8px; min-width: 0; margin: 0; padding: 8px 10px; border: 0; }
+.customs-form-field { display: grid; gap: 3px; min-width: 0; color: var(--agent-ink); font-size: 12px; font-weight: 700; }
+.customs-form-amount-row, .customs-form-description-row { display: grid; align-items: end; gap: 6px; }
+.customs-form-amount-row { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) 68px; max-width: 420px; }
+.customs-form-description-row { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
+.customs-form-field :is(input, select, .solar-date-picker) { min-width: 0; width: 100%; }
+.customs-form-field :is(input, select, .solar-date-trigger) { min-height: 42px; border: 1px solid var(--agent-border); border-radius: 7px; background: #fff; color: var(--ink); }
+.customs-form-field :is(input, select) { padding: 4px 6px; font: inherit; font-size: 16px; font-weight: 500; }
+.customs-form-field select { text-overflow: ellipsis; }
+.customs-form-field .solar-date-trigger { padding-inline: 5px; gap: 3px; }
+.customs-form-field .solar-date-trigger svg { flex-shrink: 0; width: 14px; }
+.customs-form-field :is(input[readonly], select:disabled) { background: var(--agent-tint); color: var(--agent-ink); opacity: 1; }
+.customs-form-field input[type='number'] { text-align: end; appearance: textfield; }
+.customs-form-field input::-webkit-inner-spin-button, .customs-form-field input::-webkit-outer-spin-button { appearance: none; margin: 0; }
+.customs-retry { margin: 0; padding: 0 10px 8px; }
+.customs-form-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; padding: 7px 9px; border-top: 1px solid var(--agent-border); }
+.customs-form-actions button { padding-inline: 10px; }
+.customs-form-actions .customs-section-button { background: var(--agent-accent); border-color: var(--agent-accent); color: #fff; }
+.customs-account :is(button, select, input):focus-visible { outline: 2px solid #416a9e; outline-offset: 2px; }
+
+@media (max-width: 640px) {
+  .record-modal-body.customs-account { padding: 10px; }
+  .customs-account-form .solar-date-popover { position: fixed; top: 50%; inset-inline: 12px; width: auto; max-width: 340px; max-height: calc(100dvh - 24px); margin-inline: auto; overflow-y: auto; transform: translateY(-50%); }
+}

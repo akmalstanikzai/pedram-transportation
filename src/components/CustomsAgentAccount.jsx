@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase'
 import SolarHijriDateInput from './SolarHijriDateInput'
 import CompactTable from './CompactTable'
 import { IconButton } from './RecordTools'
+import './CustomsAgentAccount.css'
 
 export default function CustomsAgentAccount({ agent, language, initialAccount = '', onPayment, onBusyChange }) {
   const t = (en, fa) => language === 'fa' ? fa : en
@@ -125,63 +126,68 @@ export default function CustomsAgentAccount({ agent, language, initialAccount = 
   return <div className="record-modal-body customs-account">
     {notice && <p className="registry-notice success" role="status">{notice}</p>}
     {message && <p className="registry-notice error" role="alert">{message}</p>}
-    {form ? <form className="registry-form customs-account-form" onSubmit={save}>
-      <h3 className="wide">{form.fee ? t('Pay commission agent', 'پرداخت کمیشن کار') : t('Record agreed fee', 'ثبت حق‌الزحمه')}</h3>
-      {form.fee && <p className="wide booking-help">{form.fee.description} · {t('Remaining', 'باقی‌مانده')} <bdi>{showMoney(form.fee.remaining, form.currency)}</bdi></p>}
-      <fieldset className="booking-fields wide" disabled={busy || retry}>
-        {form.fee && <label className="wide"><span>{t('Paying Cashbook account', 'حساب پرداخت‌کننده روزنامچه')}</span>
+    {form ? <form className={`customs-account-form ${form.fee ? 'customs-payment-section' : 'customs-fees-section'}`} onSubmit={save}>
+      <header className="customs-section-header">
+        <h3>{form.fee ? t('Pay commission agent', 'پرداخت کمیشن کار') : t('Record agreed fee', 'ثبت حق‌الزحمه')}</h3>
+      </header>
+      {form.fee && <div className="customs-fee-context">
+        <strong>{form.fee.description}</strong>
+        <span>{t('Remaining', 'باقی‌مانده')} <bdi>{showMoney(form.fee.remaining, form.currency)}</bdi></span>
+      </div>}
+      <fieldset className="customs-form-fields" disabled={busy || retry}>
+        {form.fee && <label className="customs-form-field"><span>{t('Paying Cashbook account', 'حساب پرداخت‌کننده روزنامچه')}</span>
           <select required value={form.branch} onChange={e => updateForm('branch', e.target.value)}>
             <option value="">{t('Choose the paying account', 'حساب پرداخت‌کننده را انتخاب کنید')}</option>
             <option value="admin">{t('Admin account', 'حساب مرکزی')}</option>
             {lookups.branches.map(row => <option key={row.id} value={row.id}>{row.name}</option>)}
           </select>
         </label>}
-        <label><span>{t('Date', 'تاریخ')}</span><SolarHijriDateInput required max={kabulToday()} min={form.fee?.date} language={language}
-          value={form.date} onChange={value => updateForm('date', value)} ariaLabel={t('Date', 'تاریخ')} /></label>
-        <label><span>{t('Currency', 'واحد پول')}</span><select value={form.currency} disabled={!!form.fee}
-          onChange={e => updateForm('currency', e.target.value)}>
-          {currencies.map(unit => <option key={unit}>{unit}</option>)}
-        </select></label>
-        <label><span>{t('Amount', 'مبلغ')}</span><input required type="number" inputMode="decimal" min="0.01" step="0.01"
-          max={form.fee?.remaining ?? '999999999999.99'} value={form.amount} onChange={e => updateForm('amount', e.target.value)} /></label>
-        <label><span>{t('Booking', 'بار نامه')}</span>
-          {form.fee?.booking_number != null
-            ? <input readOnly value={`#${form.fee.booking_number}`} />
-            : <select value={form.booking} onChange={e => updateForm('booking', e.target.value)}>
-              <option value="">{t('No booking selected', 'بار نامه انتخاب نشده است')}</option>
-              {lookups.bookings.map(row => <option key={row.id} value={row.id}>#{row.booking_number} · {row.origin} → {row.destination}</option>)}
-            </select>}
-        </label>
-        <label className="wide"><span>{t('Description', 'شرح')}</span><input required maxLength={500}
-          value={form.description} onChange={e => updateForm('description', e.target.value)} /></label>
+        <div className="customs-form-amount-row">
+          <div className="customs-form-field"><span>{t('Date', 'تاریخ')}</span>
+            <SolarHijriDateInput required max={kabulToday()} min={form.fee?.date} language={language}
+              value={form.date} onChange={value => updateForm('date', value)} ariaLabel={t('Date', 'تاریخ')} />
+          </div>
+          <label className="customs-form-field"><span>{t('Amount', 'مبلغ')}</span><input required type="number" dir="ltr" inputMode="decimal" min="0.01" step="0.01"
+            max={form.fee?.remaining ?? '999999999999.99'} value={form.amount} onChange={e => updateForm('amount', e.target.value)} /></label>
+          <label className="customs-form-field"><span>{t('Currency', 'واحد پول')}</span><select dir="ltr" value={form.currency} disabled={!!form.fee}
+            onChange={e => updateForm('currency', e.target.value)}>
+            {currencies.map(unit => <option key={unit}>{unit}</option>)}
+          </select></label>
+        </div>
+        <div className="customs-form-description-row">
+          <label className="customs-form-field"><span>{t('Booking', 'بار نامه')}</span>
+            {form.fee?.booking_number != null
+              ? <input readOnly dir="ltr" value={`#${form.fee.booking_number}`} />
+              : <select value={form.booking} onChange={e => updateForm('booking', e.target.value)}>
+                <option value="">{t('No booking', 'بدون بار نامه')}</option>
+                {lookups.bookings.map(row => <option key={row.id} value={row.id}>#{row.booking_number} · {row.origin} → {row.destination}</option>)}
+              </select>}
+          </label>
+          <label className="customs-form-field"><span>{t('Description', 'تفصیلات')}</span><input required maxLength={500}
+            value={form.description} onChange={e => updateForm('description', e.target.value)} /></label>
+        </div>
       </fieldset>
-      {retry && !busy && <p className="wide booking-help">{t('Save was not confirmed. Retry these same details, or check the history before entering it again.',
+      {retry && !busy && <p className="customs-retry booking-help">{t('Save was not confirmed. Retry these same details, or check the history before entering it again.',
         'ثبت تأیید نشد. با همین معلومات دوباره کوشش کنید یا پیش از ثبت دوباره، سابقه را بررسی کنید.')}</p>}
-      <div className="registry-form-actions"><button type="button" disabled={busy} onClick={() => { setForm(null); void load() }}>{t('Cancel', 'انصراف')}</button>
-        <button className="registry-primary" disabled={busy}>{busy ? t('Saving…', 'در حال ثبت…') : retry ? t('Retry save', 'تلاش دوباره')
+      <div className="customs-form-actions"><button type="button" className="registry-secondary" disabled={busy} onClick={() => { setForm(null); void load() }}>{t('Cancel', 'انصراف')}</button>
+        <button type="submit" className="registry-primary customs-section-button" disabled={busy}>{busy ? t('Saving…', 'در حال ثبت…') : retry ? t('Retry save', 'تلاش دوباره')
           : form.fee ? t('Save Money Out', 'ثبت پول رفت') : t('Save agreed fee', 'ثبت حق‌الزحمه')}</button></div>
     </form> : <>
       <div className="customs-account-toolbar">
-        <div className="customs-account-actions">
-          <button type="button" className="registry-primary" disabled={loading || !lookups} onClick={() => begin()}>
-            <Plus size={17} />{t('Record agreed fee', 'ثبت حق‌الزحمه')}
-          </button>
-          <button type="button" className="registry-secondary" disabled={loading} onClick={load}><RefreshCw size={17} />{t('Refresh', 'تازه‌سازی')}</button>
-        </div>
-        {!loading && view && <div className="customs-account-actions">
-          <select aria-label={t('Currency', 'واحد پول')} value={currencyFilter} onChange={e => setCurrencyFilter(e.target.value)}>
-            <option value="">{t('All currencies', 'همه واحدهای پول')}</option>
-            {currencies.map(unit => <option key={unit}>{unit}</option>)}
-          </select>
-          <button type="button" className="registry-secondary" onClick={() => print(customsAgentReport(agent.name, language, view))}>
-            <Printer size={17} />{t('Print / Save PDF', 'چاپ / ذخیره PDF')}
-          </button>
-        </div>}
+        <select aria-label={t('Currency', 'واحد پول')} value={currencyFilter} disabled={loading || !view} onChange={e => setCurrencyFilter(e.target.value)}>
+          <option value="">{t('All currencies', 'همه واحدهای پول')}</option>
+          {currencies.map(unit => <option key={unit}>{unit}</option>)}
+        </select>
+        <IconButton icon={Printer} label={t('Print / Save PDF', 'چاپ / ذخیره PDF')} disabled={loading || !view}
+          onClick={() => print(customsAgentReport(agent.name, language, view))} />
+        <IconButton icon={RefreshCw} label={t('Refresh', 'تازه‌سازی')} disabled={loading} onClick={load} />
       </div>
       {loading && <p role="status">{t('Loading account…', 'در حال بارگیری حساب…')}</p>}
       {!loading && view && <>
         <section className="customs-account-section customs-balance-section">
-          <h3>{t('Current balances', 'مانده فعلی')} <small>{t('Totals by currency', 'مجموع به تفکیک واحد پول')}</small></h3>
+          <header className="customs-section-header">
+            <h3>{t('Current balances', 'مانده فعلی')}</h3><small>{t('Totals by currency', 'مجموع به تفکیک واحد پول')}</small>
+          </header>
           {view.totals.length ? <CompactTable label={t('Current balances', 'مانده فعلی')} columns={[
             { label: t('Currency', 'واحد پول'), width: '18%' },
             { label: t('Total fees', 'مجموع حق‌الزحمه') },
@@ -191,16 +197,20 @@ export default function CustomsAgentAccount({ agent, language, initialAccount = 
             <th scope="row"><bdi>{row.unit}</bdi></th>
             <td><bdi>{reportMoney(row.agreed, row.unit)}</bdi></td>
             <td><bdi>{reportMoney(row.paid, row.unit)}</bdi></td>
-            <td><strong><bdi>{reportMoney(row.remaining, row.unit)}</bdi></strong></td>
+            <td className="customs-remaining"><strong><bdi>{reportMoney(row.remaining, row.unit)}</bdi></strong></td>
           </tr>)}</CompactTable> : <p>{t('No balances to show.', 'مانده‌ای برای نمایش نیست.')}</p>}
         </section>
         <section className="customs-account-section customs-fees-section">
-          <h3>{t('Agreed fees', 'حق‌الزحمه‌ها')} <small>{t('One row per fee', 'هر حق‌الزحمه در یک ردیف')}</small></h3>
+          <header className="customs-section-header">
+            <h3>{t('Agreed fees', 'حق‌الزحمه‌ها')}</h3>
+            <button type="button" className="customs-add-fee" disabled={!lookups} onClick={() => begin()}>
+              <Plus size={15} aria-hidden="true" />{t('Record agreed fee', 'ثبت حق‌الزحمه')}
+            </button>
+          </header>
           {view.fees.length ? <CompactTable label={t('Agreed fees', 'حق‌الزحمه‌ها')} columns={[
-            { label: t('Fee / date', 'حق‌الزحمه / تاریخ'), width: '31%' },
-            { label: t('Agreed / paid', 'توافق / پرداخت') },
-            { label: t('Remaining', 'باقی‌مانده') },
-            { label: t('Pay', 'پرداخت'), width: '60px' },
+            { label: t('Fee / date', 'حق‌الزحمه / تاریخ') },
+            { label: t('Agreed / paid', 'توافق / پرداخت'), width: '29%' },
+            { label: t('Remaining', 'باقی‌مانده'), width: '29%' },
           ]}>{view.fees.map(fee => <tr key={fee.id}>
             <th scope="row"><strong>{fee.description}</strong>
               <small><bdi>{formatSolarHijri(fee.date)}{fee.booking_number != null && ` · #${fee.booking_number}`}</bdi></small>
@@ -208,24 +218,28 @@ export default function CustomsAgentAccount({ agent, language, initialAccount = 
             <td><bdi>{showMoney(fee.amount, fee.currency)}</bdi>
               <small>{t('Paid', 'پرداخت‌شده')} · <bdi>{showMoney(fee.paid, fee.currency)}</bdi></small>
             </td>
-            <td><strong><bdi>{showMoney(fee.remaining, fee.currency)}</bdi></strong></td>
-            <td>{Number(fee.remaining) > 0 && <IconButton icon={WalletCards} label={t('Pay this fee', 'پرداخت این حق‌الزحمه')} onClick={() => begin(fee)} />}</td>
+            <td className="customs-remaining"><strong><bdi>{showMoney(fee.remaining, fee.currency)}</bdi></strong>
+              {Number(fee.remaining) > 0 && <button type="button" className="customs-pay-button"
+                aria-label={t('Pay this fee', 'پرداخت این حق‌الزحمه')} onClick={() => begin(fee)}>
+                <WalletCards size={14} aria-hidden="true" />{t('Pay', 'پرداخت')}
+              </button>}
+            </td>
           </tr>)}</CompactTable> : <p>{t('No agreed fees to show.', 'حق‌الزحمه‌ای برای نمایش نیست.')}</p>}
         </section>
-        <section className="customs-account-section">
-          <h3>{t('Payment history', 'سابقه پرداخت‌ها')}</h3>
+        <section className="customs-account-section customs-payment-section">
+          <header className="customs-section-header"><h3>{t('Payment history', 'سابقه پرداخت‌ها')}</h3></header>
           {view.payments.length ? <CompactTable label={t('Payment history', 'سابقه پرداخت‌ها')} columns={[
             { label: t('Receipt / date', 'رسید / تاریخ'), width: '23%' },
-            { label: t('Account / description', 'حساب / شرح') },
-            { label: t('Amount', 'مبلغ'), width: '25%' },
-            { label: t('Print', 'چاپ'), width: '60px' },
+            { label: t('Account / description', 'حساب / تفصیلات') },
+            { label: t('Amount', 'مبلغ'), width: '29%' },
           ]}>{view.payments.map(row => <tr key={row.id}>
             <th scope="row"><bdi>#{row.receipt_number}</bdi><small><bdi>{formatSolarHijri(row.date)}</bdi></small></th>
             <td><strong>{customsPaymentAccount(row, t)}</strong><small>{row.description}</small>
-              {customsPaymentStatus(row, t) && <small>{customsPaymentStatus(row, t)}</small>}
+              {customsPaymentStatus(row, t) && <small className="customs-payment-status">{customsPaymentStatus(row, t)}</small>}
             </td>
-            <td><strong><bdi>{showMoney(row.reversal ? -row.amount : row.amount, row.currency)}</bdi></strong></td>
-            <td><IconButton icon={Printer} label={t('Print receipt', 'چاپ رسید')} onClick={() => printPayment(row)} /></td>
+            <td><strong className={row.reversal ? 'customs-reversed-amount' : undefined}><bdi>{showMoney(row.reversal ? -row.amount : row.amount, row.currency)}</bdi></strong>
+              <div className="customs-receipt-action"><IconButton icon={Printer} label={t('Print receipt', 'چاپ رسید')} onClick={() => printPayment(row)} /></div>
+            </td>
           </tr>)}</CompactTable> : <p>{t('No payments to show.', 'پرداختی برای نمایش نیست.')}</p>}
         </section>
       </>}
