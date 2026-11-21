@@ -27,6 +27,11 @@ test('branch navigation and direct Branches URL never render branch management c
     assert.equal(renderToStaticMarkup(React.createElement(Branches, { language: 'en', profile })), '')
     const presidentHtml = renderToStaticMarkup(React.createElement(Branches, { language: 'en', profile: { ...profile, role: 'president' } }))
     assert.match(presidentHtml, /Add Branch/)
+    globalThis.window.location.hash = '#/branches'
+    const presidentBranches = renderToStaticMarkup(React.createElement(Dashboard, { language: 'en', profile: { ...profile, role: 'president' }, session: { user: {} } }))
+    assert.match(presidentBranches, /module-page branches-module/)
+    assert.match(presidentBranches.split('<header class="branches-heading">')[1].split('</header>')[0], /module-back branches-back.*Back<\/button>/)
+    assert.doesNotMatch(presidentBranches, /Use the branch icon to assign a record/)
     assert.equal(renderToStaticMarkup(React.createElement(Branches, { language: 'en', profile: { ...profile, role: 'president', account_enabled: false } })), '')
     const { BranchDetailsFields, BranchInformation } = await server.ssrLoadModule('/src/pages/BranchesPage.jsx')
     const branchDetail = { id:'branch',name:'Branch',code:'05',province:'Kabul',city:'District',address:'Location text',phone:'hidden-branch-phone',manager:{ first_name:'Ahmad',surname:'Ahmadi',father_name:'Father',phone:'0700000000',national_id:'hidden-national-id',address:'Home text' } }

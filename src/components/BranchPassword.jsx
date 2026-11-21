@@ -54,7 +54,7 @@ export default function BranchPassword({branch, language, onClose, onUpdated}) {
       setStoredPassword(''); setStoredVisible(false)
       await accountAction({branch_id:branch.id,action:'password',password})
       setPassword(''); setConfirm(''); setVisible(false)
-      setNotice(branch.manager?.account_enabled ? t('Password saved. The manager can sign in with the new password.','رمز عبور ثبت شد. مدیر می‌تواند با رمز جدید وارد شود.') : t('Password saved. Enable the branch login using the power button to allow sign-in.','رمز ثبت شد. برای ورود، حساب شعبه را با دکمه روشن/خاموش فعال کنید.'))
+      setNotice(branch.manager?.account_enabled ? t('Password saved. The manager can sign in with the new password.','رمز عبور ثبت شد. مدیر می‌تواند با رمز جدید وارد شود.') : t('Password saved. To allow sign-in, open the branch’s Options and choose Enable login.','رمز عبور ثبت شد. برای ورود، گزینه‌های شعبه را باز کنید و «فعال کردن ورود» را بزنید.'))
       void onUpdated?.()
     })
   }

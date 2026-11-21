@@ -38,6 +38,7 @@ const moduleDefinitions = [
 ]
 
 const registryModules = ['vehicles', 'bookings', 'customs', 'cashbook', 'traders', 'employees', 'availability']
+const compactModuleClasses = { cashbook: 'cashbook-module', vehicles: 'fleet-module', branches: 'branches-module' }
 
 function getModuleFromHash() {
   const raw = window.location.hash.replace('#/', '')
@@ -51,8 +52,7 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
   const displayName = profile?.full_name || session?.user?.email?.split('@')[0] || 'User'
   const [requestedModule, setActiveModule] = useState(getModuleFromHash)
   const activeModule = requestedModule && canAccessModule(role, requestedModule.id) ? requestedModule : null
-  const isCashbook = activeModule?.id === 'cashbook'
-  const isFleet = activeModule?.id === 'vehicles'
+  const compactModuleClass = compactModuleClasses[activeModule?.id]
   const ActiveModuleIcon = activeModule?.icon
 
   useEffect(() => {
@@ -95,14 +95,14 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
       </header>
 
       {activeModule ? (
-        <section className={isCashbook ? 'module-page cashbook-module' : isFleet ? 'module-page fleet-module' : 'module-page'}>
-          {!isCashbook && !isFleet && <button className="module-back" onClick={closeModule}><Icon name="back" size={17} /> {role === 'president' ? text.presidentDashboard : text.roles.branch_manager}</button>}
+        <section className={compactModuleClass ? `module-page ${compactModuleClass}` : 'module-page'}>
+          {!compactModuleClass && <button className="module-back" onClick={closeModule}><Icon name="back" size={17} /> {role === 'president' ? text.presidentDashboard : text.roles.branch_manager}</button>}
           <div className={`module-shell ${activeModule.id === 'branches' ? 'branch-shell' : registryModules.includes(activeModule.id) ? 'fleet-shell' : ''}`}>
             {activeModule.id !== 'branches' && !registryModules.includes(activeModule.id) && <div className="module-heading">
               <div className={`module-icon ${activeModule.color}`}><ActiveModuleIcon size={38} strokeWidth={1.8} /></div>
               <div><span className="section-label">{text.managementModule}</span><h1>{text[activeModule.titleKey]}</h1><p>{text[activeModule.pageKey]}</p></div>
             </div>}
-            {activeModule.id === 'customs' ? <CustomsPage language={language} profile={profile} /> : activeModule.id === 'availability' ? <AvailabilityPage language={language} /> : activeModule.id === 'employees' ? <EmployeesPage language={language} profile={profile} /> : activeModule.id === 'traders' ? <TradersPage language={language} profile={profile} /> : isCashbook ? <CashbookPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'branches' ? <BranchesPage language={language} profile={profile} /> : isFleet ? <VehiclesPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'bookings' ? <BookingsPage language={language} profile={profile} /> : <div className="empty-state">
+            {activeModule.id === 'customs' ? <CustomsPage language={language} profile={profile} /> : activeModule.id === 'availability' ? <AvailabilityPage language={language} /> : activeModule.id === 'employees' ? <EmployeesPage language={language} profile={profile} /> : activeModule.id === 'traders' ? <TradersPage language={language} profile={profile} /> : activeModule.id === 'cashbook' ? <CashbookPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'branches' ? <BranchesPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'vehicles' ? <VehiclesPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'bookings' ? <BookingsPage language={language} profile={profile} /> : <div className="empty-state">
               <div className="empty-state-mark"><Icon name="layers" size={27} /></div>
               <h2>{text.readyTitle}</h2>
               <p>{text.readyText}</p>

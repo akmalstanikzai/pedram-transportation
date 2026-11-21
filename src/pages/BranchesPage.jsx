@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Archive, Building2, KeyRound, Plus, Power, UserRound } from 'lucide-react'
+import { Archive, Building2, Ellipsis, Eye, KeyRound, Pencil, Plus, Power, RotateCcw, UserRound } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { rpc, explain } from '../lib/operations'
-import { ConfirmArchive, IconButton, Modal, RecordTools } from '../components/RecordTools'
+import { ConfirmArchive, IconButton, Modal } from '../components/RecordTools'
+import Icon from '../components/Icon'
 import { normalizeLogin } from '../lib/loginIdentity'
 import BranchPassword from '../components/BranchPassword'
 import CompactTable from '../components/CompactTable'
 import { branchAccountError } from '../lib/branchAccountError'
 import { loadBranchManagerFiles, uploadBranchManagerFile } from '../lib/branchManagerFiles'
 import { initialBranchForm as initialForm, branchFormFromRow, branchFormPayload } from '../lib/branchForm'
+import './BranchesPage.css'
 
 const managerSlots=[['identity','Tazkira / National ID','تذکره'],['cv','CV','سی وی'],['education','Educational documents','سند تحصیلی'],['contract','Contract','قرارداد'],['extra','Extra documents','اسناد دیگر']]
 const legacyManagerSlots=[['doc1','Previous document 1','سند قبلی ۱'],['doc2','Previous document 2','سند قبلی ۲'],['doc3','Previous document 3','سند قبلی ۳'],['doc4','Previous document 4','سند قبلی ۴']]
@@ -40,13 +42,14 @@ const labels = {
   },
 }
 
-export default function BranchesPage({ language, profile }) {
+export default function BranchesPage({ language, profile, onBack }) {
   if (profile?.role !== 'president' || profile.account_enabled !== true) return null
-  return <BranchRegistry language={language} />
+  return <BranchRegistry language={language} onBack={onBack} />
 }
 
-function BranchRegistry({ language }) {
+function BranchRegistry({ language, onBack }) {
   const text = labels[language] || labels.en
+  const t = (en, fa) => language === 'fa' ? fa : en
   const [branches, setBranches] = useState([])
   const [form, setForm] = useState(initialForm)
   const [open, setOpen] = useState(false)
@@ -58,9 +61,12 @@ function BranchRegistry({ language }) {
   const [deletion,setDeletion]=useState(null)
   const [archived,setArchived]=useState(false)
   const [passwordBranch,setPasswordBranch]=useState(null)
+  const [optionsId,setOptionsId]=useState(null)
   const [files,setFiles]=useState({})
   const [selectedFiles,setSelectedFiles]=useState({})
   const request=useRef(null)
+  const visibleBranches = branches.filter(branch => !!branch.archived_at === archived)
+  const optionsBranch = branches.find(branch => branch.id === optionsId)
 
   const loadBranches = useCallback(async () => {
     const { data, error } = await supabase.from('branches').select('*, manager:profiles!branches_manager_user_id_fkey(*)').order('name')
@@ -74,9 +80,24 @@ function BranchRegistry({ language }) {
   useEffect(() => { void loadBranches() }, [loadBranches])
 
   function update(name, value) { setForm(current => ({ ...current, [name]: value })) }
+  function startCreate() {
+    setMessage(null); setEditing(null); setForm(initialForm); setSelectedFiles({}); request.current=null; setOpen(true)
+  }
   function edit(row){setEditing(row);setSelectedFiles({});setForm(branchFormFromRow(row));setMessage(null);request.current=null;setOpen(true)}
   async function uploadSelected(branchId){for(const [type,file] of Object.entries(selectedFiles))if(file)await uploadBranchManagerFile(branchId,type,file)}
   async function archiveBranch(){setSaving(true);setMessage(null);try{await rpc('save_branch_record',{p_id:deletion.id,p_request:crypto.randomUUID(),p_expected:deletion.updated_at,p_data:{...deletion,archived:!deletion.archived_at,manager_enabled:deletion.manager?.account_enabled??false}});setDeletion(null);await loadBranches()}catch(e){setMessage({type:'error',text:explain(e,language)})}finally{setSaving(false)}}
+
+  async function toggleLogin(branch) {
+    setSaving(true)
+    setMessage(null)
+    try {
+      const enabled = !branch.manager?.account_enabled
+      await rpc('set_account_enabled', { p_kind: 'branch', p_id: branch.id, p_enabled: enabled })
+      setMessage({type:'success',text:enabled?t('Branch login enabled.','ورود شعبه فعال شد.'):t('Branch login disabled.','ورود شعبه غیرفعال شد.')})
+      await loadBranches()
+    } catch (failure) { setMessage({type:'error',text:explain(failure,language)}) }
+    finally { setSaving(false) }
+  }
 
   async function submit(event) {
     event.preventDefault(); setMessage(null)
@@ -122,29 +143,91 @@ function BranchRegistry({ language }) {
   }
 
   return <div className="registry-page branch-registry">
-    <div className="registry-actions"><button className="registry-primary" onClick={() => { setMessage(null); setEditing(null);setForm(initialForm);setSelectedFiles({});request.current=null;setOpen(true) }}><Plus size={18} />{text.add}</button><button className="registry-secondary" aria-pressed={archived} onClick={()=>setArchived(!archived)}><Archive size={18}/>{language==='fa'?'بایگانی':'Archive'}</button></div>
-    {message && <div className={`registry-notice ${message.type}`}>{message.code?text[message.code]:message.text}</div>}
-    <CompactTable label={language==='fa'?'شعبات':'Branches'} columns={[
-      {label:text.name}, {label:text.manager}, {label:language==='fa'?'عملیات':'Actions',width:'33%'},
-    ]}>
-      {loading ? <tr><td colSpan={3} className="branch-table-empty"><span className="spinner dark" /></td></tr> : branches.filter(b=>!!b.archived_at===archived).length ? branches.filter(b=>!!b.archived_at===archived).map(branch => <tr key={branch.id}>
-        <th scope="row"><div className="compact-record-heading">
-          {files[`${branch.id}:photo`]?.url ? <img className="branch-manager-thumb" src={files[`${branch.id}:photo`].url} alt="" /> : <Building2 size={18} />}
-          <div><strong>{branch.name}</strong><small>{[branch.city,branch.province].filter(Boolean).join(' · ')}</small></div>
-        </div></th>
-        <td><strong>{branch.manager?.full_name || '—'}</strong><small><bdi dir="ltr">{branch.phone || branch.manager?.phone || '—'}</bdi></small>
-          <small>{branch.manager?.username || '—'} · {branch.manager?.account_enabled?(language==='fa'?'فعال':'Enabled'):(language==='fa'?'غیرفعال':'Disabled')}</small>
-        </td>
-        <td><div className="compact-table-actions">
-          <IconButton icon={KeyRound} label={language==='fa'?`معلومات ورود · ${branch.name}`:`Login settings · ${branch.name}`} disabled={saving||!!branch.archived_at||!branch.manager_user_id} onClick={()=>{setMessage(null);setPasswordBranch(branch)}}/>
-          <IconButton icon={Power} label={branch.manager?.account_enabled?(language==='fa'?'غیرفعال کردن حساب':'Disable login'):(language==='fa'?'فعال کردن حساب':'Enable login')} disabled={saving||!!branch.archived_at||!branch.manager_user_id} onClick={async()=>{setSaving(true);try{await rpc('set_account_enabled',{p_kind:'branch',p_id:branch.id,p_enabled:!branch.manager?.account_enabled});await loadBranches()}catch(e){setMessage({type:'error',text:explain(e,language)})}finally{setSaving(false)}}}/>
-          <RecordTools language={language} disabled={saving} archived={branch.archived_at} onView={()=>setDetails(branch)} onEdit={()=>edit(branch)} onArchive={()=>{setMessage(null);setDeletion(branch)}}/>
-        </div></td>
-      </tr>) : <tr><td colSpan={3} className="branch-table-empty"><Building2 size={28} /><strong>{text.none}</strong></td></tr>}
-    </CompactTable>
+    <header className="branches-heading">
+      {onBack && <button type="button" className="module-back branches-back" onClick={onBack}>
+        <Icon name="back" size={16}/>{t('Back','بازگشت')}
+      </button>}
+      <h1><Building2 size={22} aria-hidden="true" />{text.total}</h1>
+    </header>
+    {message && !open && !deletion && <div className={`registry-notice ${message.type}`} role={message.type==='error'?'alert':'status'}>
+      {message.code?text[message.code]:message.text}
+    </div>}
+    <section className="branches-directory" aria-label={text.total}>
+      <div className="branches-controls">
+        <button type="button" className="registry-primary branches-add" disabled={saving} onClick={startCreate}>
+          <Plus size={17} aria-hidden="true" />{text.add}
+        </button>
+        <button type="button" className="registry-secondary branches-archive-toggle" aria-label={t('Archive','بایگانی')}
+          aria-pressed={archived} onClick={()=>setArchived(!archived)}>
+          <Archive size={17} aria-hidden="true" />{archived?t('Archived','بایگانی‌شده'):t('Archive','بایگانی')}
+        </button>
+      </div>
+      <CompactTable label={text.total} columns={[
+        {label:text.name}, {label:text.manager}, {label:t('Actions','عملیات'),width:'29%'},
+      ]}>
+        {loading ? <tr><td colSpan={3} className="branch-table-empty">
+          <span className="spinner dark" role="status" aria-label={t('Loading branches','در حال بارگیری شعبات')} />
+        </td></tr> : visibleBranches.length ? visibleBranches.map(branch => {
+          const loginState = !branch.manager_user_id ? 'unlinked' : branch.manager?.account_enabled ? 'enabled' : 'disabled'
+          const loginLabel = {
+            unlinked:t('No login account','بدون حساب ورود'),
+            enabled:t('Login enabled','ورود فعال'),
+            disabled:t('Login disabled','ورود غیرفعال'),
+          }[loginState]
+          return <tr key={branch.id}>
+            <th scope="row"><div className="compact-record-heading">
+              {files[`${branch.id}:photo`]?.url
+                ? <img className="branch-manager-thumb" src={files[`${branch.id}:photo`].url} alt="" />
+                : <Building2 size={17} aria-hidden="true" />}
+              <div>
+                <strong><bdi>{branch.name}</bdi></strong>
+                <small>{[branch.province,branch.city].filter(Boolean).join(' · ')}</small>
+                {branch.code && <small>{text.code} · <bdi>{branch.code}</bdi></small>}
+              </div>
+            </div></th>
+            <td>
+              <strong>{branch.manager?.full_name || '—'}</strong>
+              <small><bdi dir="ltr">{branch.manager?.phone || branch.phone || '—'}</bdi></small>
+              <span className="branch-login-status" data-state={loginState}>{loginLabel}</span>
+            </td>
+            <td><div className="compact-table-actions branch-row-actions">
+              <IconButton icon={Eye} label={`${t('Details','جزئیات')} · ${branch.name}`} disabled={saving} onClick={()=>setDetails(branch)} />
+              <IconButton icon={Ellipsis} label={`${t('Options','گزینه‌ها')} · ${branch.name}`} disabled={saving} onClick={()=>setOptionsId(branch.id)} />
+            </div></td>
+          </tr>
+        }) : <tr><td colSpan={3} className="branch-table-empty">
+          <Building2 size={24} aria-hidden="true" /><strong>{archived?t('No archived branches.','شعبهٔ بایگانی‌شده‌ای وجود ندارد.'):text.none}</strong>
+        </td></tr>}
+      </CompactTable>
+    </section>
 
-    {open && <div className="registry-modal" role="dialog" aria-modal="true"><div className="registry-form-card branch-form-card">
-      <div className="registry-form-head"><span className="module-card-icon blue"><Building2 size={27} /></span><h2>{editing?(language==='fa'?'ویرایش شعبه':'Edit branch'):text.add}</h2></div>
+    {optionsBranch && <Modal title={`${t('Options','گزینه‌ها')} · ${optionsBranch.name}`} onClose={()=>setOptionsId(null)} className="branch-row-options-modal">
+      <div className="record-modal-body branch-row-options">
+        {optionsBranch.manager?.username && <p>{text.username} · <bdi>{optionsBranch.manager.username}</bdi></p>}
+        <div className="branch-option-buttons">
+          {!optionsBranch.archived_at && <>
+            <button type="button" onClick={()=>{setOptionsId(null); edit(optionsBranch)}}>
+              <Pencil size={17} aria-hidden="true" />{t('Edit branch','ویرایش شعبه')}
+            </button>
+            <button type="button" disabled={!optionsBranch.manager_user_id}
+              onClick={()=>{setOptionsId(null);setMessage(null);setPasswordBranch(optionsBranch)}}>
+              <KeyRound size={17} aria-hidden="true" />{t('Login settings','معلومات ورود')}
+            </button>
+            <button type="button" disabled={!optionsBranch.manager_user_id} className="branch-account-toggle"
+              onClick={()=>{setOptionsId(null);void toggleLogin(optionsBranch)}}>
+              <Power size={17} aria-hidden="true" />
+              {optionsBranch.manager?.account_enabled?t('Disable login','غیرفعال کردن ورود'):t('Enable login','فعال کردن ورود')}
+            </button>
+          </>}
+          <button type="button" className={optionsBranch.archived_at?'':'branch-archive-action'}
+            onClick={()=>{setOptionsId(null);setMessage(null);setDeletion(optionsBranch)}}>
+            {optionsBranch.archived_at?<RotateCcw size={17} aria-hidden="true" />:<Archive size={17} aria-hidden="true" />}
+            {optionsBranch.archived_at?t('Restore branch','بازیابی شعبه'):t('Archive branch','بایگانی شعبه')}
+          </button>
+        </div>
+      </div>
+    </Modal>}
+    {open && <Modal title={editing?t('Edit branch','ویرایش شعبه'):text.add} onClose={()=>setOpen(false)} busy={saving} className="branch-form-card">
       <form className="branch-form" onSubmit={submit}>
         <BranchDetailsFields language={language} form={form} update={update} editing={editing} files={files} selectedFiles={selectedFiles} setSelectedFiles={setSelectedFiles} />
         {!editing&&<FormSection title={text.credentials} icon={<KeyRound size={18} />}>
@@ -152,10 +235,10 @@ function BranchRegistry({ language }) {
           <Field label={text.password} required type="password" value={form.password} onChange={value => update('password', value)} />
           <Field label={text.confirm} required type="password" value={form.confirm} onChange={value => update('confirm', value)} />
         </FormSection>}
-        {message?.type === 'error' && <div className="registry-notice error branch-form-message">{message.text}</div>}
-        <div className="registry-form-actions branch-actions"><button type="button" disabled={saving} onClick={() => setOpen(false)}>{text.cancel}</button><button className="registry-primary" disabled={saving}>{saving ? <span className="spinner" /> : editing?(language==='fa'?'ثبت':'Save'):text.create}</button></div>
+        {message?.type === 'error' && <div className="registry-notice error branch-form-message" role="alert">{message.text}</div>}
+        <div className="registry-form-actions branch-actions"><button type="button" disabled={saving} onClick={() => setOpen(false)}>{text.cancel}</button><button className="registry-primary" disabled={saving}>{saving ? <span className="spinner" /> : editing?t('Save','ثبت'):text.create}</button></div>
       </form>
-    </div></div>}
+    </Modal>}
     {details&&<Modal title={details.name} onClose={()=>setDetails(null)}><BranchInformation language={language} details={details} files={files}/></Modal>}
     {deletion&&<ConfirmArchive language={language} busy={saving} error={message?.text} restore={!!deletion.archived_at} onClose={()=>setDeletion(null)} onConfirm={archiveBranch}/>}
     {passwordBranch&&<BranchPassword key={passwordBranch.id} branch={passwordBranch} language={language} onClose={()=>setPasswordBranch(null)} onUpdated={loadBranches}/>}
