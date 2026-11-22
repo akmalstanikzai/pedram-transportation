@@ -15,6 +15,7 @@ import Icon from '../components/Icon'
 import { getTranslation } from '../lib/i18n'
 import { canAccessModule } from '../lib/roles'
 import { kabulToday } from '../lib/cashbook'
+import { bookingAttention } from '../lib/bookingAttention'
 import { formatSolarHijri } from '../lib/solarHijri'
 import { LanguageSwitch } from './LoginPage'
 import VehiclesPage from './VehiclesPage'
@@ -46,9 +47,11 @@ const registryModules = ['vehicles', 'bookings', 'customs', 'cashbook', 'traders
 const compactModuleClasses = { cashbook: 'cashbook-module', vehicles: 'fleet-module', branches: 'branches-module', bookings: 'bookings-module', customs: 'customs-module', traders: 'traders-module', employees: 'employees-module', availability: 'availability-module' }
 
 function getModuleFromHash() {
-  const raw = window.location.hash.replace('#/', '')
+  const [raw, query] = window.location.hash.replace('#/', '').split('?')
   const id = raw === 'trader-accounts' ? 'traders' : raw
-  return moduleDefinitions.find(module => module.id === id) || null
+  const module = moduleDefinitions.find(module => module.id === id)
+  const attention = new URLSearchParams(query).get('attention')
+  return module?.id === 'bookings' && Object.hasOwn(bookingAttention,attention) ? { ...module, attention } : module || null
 }
 
 export default function DashboardPage({ language, onLanguageChange, session, profile, onSignOut }) {
@@ -79,10 +82,16 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
     }
   }, [])
 
-  function openModule(module) {
+  function openModule(module, attention) {
     if (!canAccessModule(role, module.id)) return
-    window.history.pushState('', document.title, `#/${module.id}`)
-    setActiveModule(module)
+    const query = attention ? `?attention=${attention}` : ''
+    window.history.pushState('', document.title, `#/${module.id}${query}`)
+    setActiveModule(getModuleFromHash())
+  }
+
+  function clearBookingAttention() {
+    window.history.replaceState('', document.title, '#/bookings')
+    setActiveModule(getModuleFromHash())
   }
 
   function closeModule() {
@@ -111,7 +120,7 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
               <div className={`module-icon ${activeModule.color}`}><ActiveModuleIcon size={38} strokeWidth={1.8} /></div>
               <div><span className="section-label">{text.managementModule}</span><h1>{text[activeModule.titleKey]}</h1><p>{text[activeModule.pageKey]}</p></div>
             </div>}
-            {activeModule.id === 'customs' ? <CustomsPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'availability' ? <AvailabilityPage language={language} onBack={closeModule} /> : activeModule.id === 'employees' ? <EmployeesPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'traders' ? <TradersPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'cashbook' ? <CashbookPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'branches' ? <BranchesPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'vehicles' ? <VehiclesPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'bookings' ? <BookingsPage language={language} profile={profile} onBack={closeModule} /> : <div className="empty-state">
+            {activeModule.id === 'customs' ? <CustomsPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'availability' ? <AvailabilityPage language={language} onBack={closeModule} /> : activeModule.id === 'employees' ? <EmployeesPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'traders' ? <TradersPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'cashbook' ? <CashbookPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'branches' ? <BranchesPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'vehicles' ? <VehiclesPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'bookings' ? <BookingsPage language={language} profile={profile} onBack={closeModule} attention={activeModule.attention} onClearAttention={clearBookingAttention} /> : <div className="empty-state">
               <div className="empty-state-mark"><Icon name="layers" size={27} /></div>
               <h2>{text.readyTitle}</h2>
               <p>{text.readyText}</p>
@@ -143,7 +152,8 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
                 )}
               </div>
             </nav>
-            <OperationsSummary language={language} president={role === 'president'} />
+            <OperationsSummary language={language} president={role === 'president'}
+              onBookingAttention={attention=>openModule(moduleDefinitions.find(module=>module.id==='bookings'),attention)} />
             </>
           ) : (
             role === 'driver' ? <DriverBookingsPage language={language} /> : role === 'trader' ? <TraderPortalPage language={language} /> : <h1 className="role-title">{text.roles[role] || text.roles.driver}</h1>
