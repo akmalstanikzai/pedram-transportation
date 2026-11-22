@@ -7,6 +7,7 @@ import { getTranslation } from '../lib/i18n'
 import { supabase } from '../lib/supabase'
 import { loginIdentity } from '../lib/loginIdentity'
 import TransportArtwork from '../components/TransportArtwork'
+import './LoginPage.css'
 
 export function LanguageSwitch({ language, onChange }) {
   return <div className="language-switch" aria-label="Language"><button className={language === 'en' ? 'active' : ''} onClick={() => onChange('en')} type="button">EN</button><button className={language === 'fa' ? 'active' : ''} onClick={() => onChange('fa')} type="button">دری</button></div>
@@ -33,5 +34,27 @@ export default function LoginPage({ language, onLanguageChange, onSignedIn }) {
     finally { setLoading(false) }
   }
 
-  return <main className="auth-layout"><section className="auth-visual"><TransportArtwork /><div className="visual-copy"><h1>{text.pedram}<br /><em>{text.transportation}</em></h1><p className="auth-company-name">{text.fullCompanyName}</p></div></section><section className="auth-panel"><div className="auth-language"><LanguageSwitch language={language} onChange={onLanguageChange} /></div><div className="auth-card"><Brand text={text} /><div className="card-heading"><div className="welcome-badge">{text.welcomeBack}</div><h2>{text.signInTitle}</h2><p>{text.accountSubtitle}</p></div>{message && <div className="notice error"><Icon name="lock" size={17} /><span>{message}</span></div>}<form onSubmit={submit}><Field label={text.email} type="text" value={email} onChange={e => setEmail(e.target.value)} placeholder={text.loginPlaceholder} icon="mail" /><Field label={text.password} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={text.passwordPlaceholder} icon="lock" showLabel={text.showPassword} hideLabel={text.hidePassword} /><button className="primary-button" disabled={loading}>{loading ? <span className="spinner" /> : text.continue}</button></form><AboutSupport language={language} credit /></div></section></main>
+  return <main className="auth-layout freight-login">
+    <section className="auth-visual" aria-labelledby="login-company-name">
+      <TransportArtwork />
+      <div className="visual-copy">
+        <h1 id="login-company-name">{text.pedram}<br /><em>{text.transportation}</em></h1>
+        <p className="auth-company-name">{text.fullCompanyName}</p>
+      </div>
+    </section>
+    <section className="auth-panel" aria-labelledby="login-heading">
+      <div className="auth-language"><LanguageSwitch language={language} onChange={onLanguageChange} /></div>
+      <div className="auth-card">
+        <Brand text={text} />
+        <div className="card-heading"><h2 id="login-heading">{text.signInTitle}</h2><p>{text.accountSubtitle}</p></div>
+        {message && <div className="notice error" role="alert"><Icon name="lock" size={17} /><span>{message}</span></div>}
+        <form onSubmit={submit} aria-busy={loading}>
+          <Field label={text.email} type="text" value={email} onChange={e => setEmail(e.target.value)} placeholder={text.loginPlaceholder} icon="mail" />
+          <Field label={text.password} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={text.passwordPlaceholder} icon="lock" showLabel={text.showPassword} hideLabel={text.hidePassword} />
+          <button className="primary-button" type="submit" disabled={loading} aria-label={text.continue}>{loading ? <span className="spinner" aria-hidden="true" /> : text.continue}</button>
+        </form>
+        <AboutSupport language={language} credit />
+      </div>
+    </section>
+  </main>
 }
