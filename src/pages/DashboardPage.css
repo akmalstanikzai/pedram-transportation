@@ -1,0 +1,104 @@
+.dashboard-home { background: #eef3f8; }
+.dashboard-home .dashboard-header { box-shadow: 0 2px 12px #1836500d; }
+.dashboard-home > .dashboard-content { padding-block: 12px 24px; }
+
+.dashboard-banner {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  min-height: 200px;
+  padding: clamp(14px, 3vw, 28px);
+  overflow: hidden;
+  border-radius: 14px;
+  background: #122e46;
+  color: #fff;
+  box-shadow: 0 6px 16px #1a344e24;
+}
+.dashboard-banner::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, #0c2338 0%, #0c2338eb 23%, #0c23389e 53%, #0c23380a 90%),
+    url('/dashboard-freight.webp') center 44% / cover;
+  content: '';
+}
+[dir='rtl'] .dashboard-banner::before { transform: scaleX(-1); }
+.dashboard-banner-copy { min-width: 0; }
+.dashboard-banner h1 { margin: 0; font-size: clamp(23px, 3.5vw, 38px); font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+.dashboard-banner p { margin: 4px 0 10px; color: #e6eef7; font-size: 14px; overflow-wrap: anywhere; }
+.dashboard-banner time {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 7px;
+  border: 1px solid #9bb5cc70; border-radius: 6px; color: #f1f7ff; background: #122e46c9;
+  font-size: 12px; font-weight: 650;
+}
+
+.dashboard-menu { margin-block: 14px 0; }
+.dashboard-home :is(.dashboard-menu, .operations-overview) > h2 { margin: 0 0 7px; color: #18344b; font-size: 16px; font-weight: 800; }
+.dashboard-menu .module-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
+.dashboard-menu .module-card {
+  --shortcut-color: #dceaf7;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 83px;
+  min-width: 0;
+  padding: 7px 8px;
+  border: 1px solid #d5e0eb;
+  border-radius: 10px;
+  color: #18344b;
+  background: #fff;
+  text-align: start;
+  box-shadow: 0 2px 6px #193a5510;
+}
+.dashboard-menu .module-card:hover { border-color: #8caec9; background: #f9fcff; transform: translateY(-1px); }
+.dashboard-menu .module-card:active { background: var(--shortcut-color); transform: none; }
+.dashboard-menu .module-card:focus-visible { outline: 2px solid #245981; outline-offset: 2px; }
+.dashboard-menu .module-card strong { font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
+.dashboard-menu .module-card[data-module='cashbook'] { --shortcut-color: #e0f3e9; }
+.dashboard-menu .module-card[data-module='vehicles'] { --shortcut-color: #e0f2f2; }
+.dashboard-menu .module-card[data-module='bookings'] { --shortcut-color: #fff0dd; }
+.dashboard-menu .module-card[data-module='customs'] { --shortcut-color: #f0e8f8; }
+.dashboard-menu .module-card[data-module='traders'] { --shortcut-color: #e4edf9; }
+.dashboard-menu .module-card[data-module='employees'] { --shortcut-color: #f9eaed; }
+.dashboard-menu .module-card[data-module='availability'] { --shortcut-color: #e5eef2; }
+.dashboard-icon {
+  display: grid; place-items: center;
+  inline-size: 63px; block-size: 62px;
+  border: 1px solid #18365012; border-radius: 9px; background: var(--shortcut-color);
+}
+.dashboard-icon > span {
+  width: 100%; height: 100%; background-image: url('/dashboard-module-icons.webp');
+  background-size: 400% 200%; background-repeat: no-repeat;
+}
+.dashboard-card-arrow { color: #536f85; }
+[dir='rtl'] .dashboard-card-arrow { transform: scaleX(-1); }
+
+.dashboard-home .operations-summary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr); gap: 7px; border: 0; background: transparent; overflow: visible; }
+.dashboard-home .operations-summary:has(> div:nth-child(3)) { grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(0, 1.45fr); }
+.dashboard-home .operations-summary > div { padding: 8px 9px; border: 1px solid #d5e0eb; border-radius: 8px; background: #fff; }
+.dashboard-home .operations-summary > div:nth-child(2):not(.operations-cash) { background: #fff9f0; border-color: #ebdac2; }
+.dashboard-home .operations-summary dt { display: flex; align-items: center; gap: 5px; }
+.dashboard-home .operations-summary dt svg { flex: none; color: #385f7f; }
+.dashboard-home .operations-summary dd strong { font-size: 19px; font-weight: 800; }
+.dashboard-home .operations-summary dd small { display: block; margin-inline: 0; }
+.dashboard-home .operations-summary li span:first-of-type { color: #185b48; }
+.dashboard-home .operations-summary li span:last-of-type { color: #803043; }
+
+@media (max-width: 760px) {
+  .dashboard-banner { min-height: 149px; border-radius: 11px; }
+  .dashboard-banner::before { background-position: right center; }
+  .dashboard-menu { margin-block-start: 11px; }
+  .dashboard-menu .module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+  .dashboard-menu .module-card { min-height: 67px; gap: 6px; padding: 5px 6px; }
+  .dashboard-menu .module-card strong { font-size: 13px; }
+  .dashboard-icon { inline-size: 49px; block-size: 49px; }
+  .dashboard-home .operations-summary:has(> div:nth-child(3)) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-home .operations-summary:has(> div:nth-child(3)) > .operations-cash { grid-column: 1 / -1; }
+}
+@media (max-width: 370px) {
+  .dashboard-menu .module-card { grid-template-columns: auto minmax(0, 1fr); }
+  .dashboard-card-arrow { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .dashboard-menu .module-card { transition: none; } }

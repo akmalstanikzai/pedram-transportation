@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   Building2,
   CalendarDays,
+  ChevronRight,
   ClipboardList,
   BookOpen,
   Stamp,
@@ -13,6 +14,8 @@ import AboutSupport from '../components/AboutSupport'
 import Icon from '../components/Icon'
 import { getTranslation } from '../lib/i18n'
 import { canAccessModule } from '../lib/roles'
+import { kabulToday } from '../lib/cashbook'
+import { formatSolarHijri } from '../lib/solarHijri'
 import { LanguageSwitch } from './LoginPage'
 import VehiclesPage from './VehiclesPage'
 import BranchesPage from './BranchesPage'
@@ -26,6 +29,7 @@ import EmployeesPage from './EmployeesPage'
 import CustomsPage from './CustomsPage'
 import OperationsSummary from '../components/OperationsSummary'
 import LoanNotifications from '../components/LoanNotifications'
+import './DashboardPage.css'
 
 const moduleDefinitions = [
   { id: 'cashbook', icon: BookOpen, titleKey: 'cashbook', color: 'green' },
@@ -55,6 +59,9 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
   const activeModule = requestedModule && canAccessModule(role, requestedModule.id) ? requestedModule : null
   const compactModuleClass = compactModuleClasses[activeModule?.id]
   const ActiveModuleIcon = activeModule?.icon
+  const managementHome = !activeModule && ['president', 'branch_manager'].includes(role)
+  const dari = language === 'fa'
+  const dashboardDate = managementHome ? kabulToday() : ''
 
   useEffect(() => {
     if (requestedModule && !canAccessModule(role, requestedModule.id)) {
@@ -84,13 +91,13 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
   }
 
   return (
-    <main className="dashboard">
+    <main className={managementHome ? 'dashboard dashboard-home' : 'dashboard'}>
       <header className="dashboard-header">
         <Brand text={text} />
         <div className="header-actions">
           <LanguageSwitch language={language} onChange={onLanguageChange} />
           {role === 'president' && <LoanNotifications language={language} userId={session.user.id} />}
-          <div className="user-chip"><span className="avatar">{displayName.charAt(0).toUpperCase()}</span><span><strong>{displayName}</strong><small>{text.roles[role] || text.roles.driver}</small></span></div>
+          {!managementHome && <div className="user-chip"><span className="avatar">{displayName.charAt(0).toUpperCase()}</span><span><strong>{displayName}</strong><small>{text.roles[role] || text.roles.driver}</small></span></div>}
           <AboutSupport language={language} />
           <button className="logout-button" onClick={onSignOut} title={text.signOut}><Icon name="logout" size={18} /><span>{text.signOut}</span></button>
         </div>
@@ -113,19 +120,29 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
         </section>
       ) : (
         <section className="dashboard-content">
-          {['president', 'branch_manager'].includes(role) ? (
+          {managementHome ? (
             <>
-            <div className="module-grid">
-              {moduleDefinitions.filter(module => canAccessModule(role, module.id)).map(module => {
-                const ModuleIcon = module.icon
-                return (
-                  <button className="module-card" key={module.id} onClick={() => openModule(module)}>
-                    <span className={`module-card-icon ${module.color}`}><ModuleIcon size={34} strokeWidth={1.8} /></span>
-                    <strong>{text[module.titleKey]}</strong>
-                  </button>
-                )
-              })}
+            <div className="dashboard-banner">
+              <div className="dashboard-banner-copy">
+                <h1>{role === 'president' ? text.presidentDashboard : dari ? 'صفحه شعبه' : 'Branch dashboard'}</h1>
+                <p><bdi>{displayName}</bdi></p>
+                <time dateTime={dashboardDate}><CalendarDays size={14} aria-hidden="true" /><bdi dir="ltr">{formatSolarHijri(dashboardDate)}</bdi></time>
+              </div>
             </div>
+            <nav className="dashboard-menu" aria-labelledby="dashboard-menu-title">
+              <h2 id="dashboard-menu-title">{dari ? 'منوی اصلی' : 'Main menu'}</h2>
+              <div className="module-grid">
+                {moduleDefinitions.map((module, index) => canAccessModule(role, module.id) &&
+                  <button type="button" className="module-card" data-module={module.id} key={module.id} onClick={() => openModule(module)}>
+                    <span className="dashboard-icon" aria-hidden="true">
+                      <span style={{ backgroundPosition: `${(index % 4) * 100 / 3}% ${index < 4 ? 0 : 100}%` }} />
+                    </span>
+                    <strong>{text[module.titleKey]}</strong>
+                    <ChevronRight className="dashboard-card-arrow" size={15} aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+            </nav>
             <OperationsSummary language={language} president={role === 'president'} />
             </>
           ) : (
