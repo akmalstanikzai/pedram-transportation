@@ -1,35 +1,47 @@
-.freight-login.auth-layout { min-height: 100dvh; background: #f4f8fa; }
+.freight-login.auth-layout {
+  --login-navy: #143550;
+  --login-teal: #17634f;
+  --login-amber: #dfac67;
+  min-height: 100dvh;
+  background: #f4f8fa;
+}
 .freight-login .auth-visual {
-  --freight-shade: 90deg;
   isolation: isolate;
   min-width: 0;
   padding: clamp(32px, 7vh, 68px) clamp(24px, 5vw, 76px);
   background: #122e46;
 }
-[dir='rtl'] .freight-login .auth-visual { --freight-shade: 270deg; }
 .freight-login .auth-visual::before, .freight-login .auth-visual::after { content: none; }
 .auth-freight-photo { inset: 0; }
 .auth-freight-photo img { object-position: 58% center; }
-[dir='rtl'] .auth-freight-photo img { transform: scaleX(-1); }
 .auth-freight-photo::after {
   content: '';
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg, #071c2dd9 0%, #0a243749 45%, transparent 68%),
-    linear-gradient(var(--freight-shade), #091f32bf, #0c263838 52%, transparent 91%);
+    linear-gradient(90deg, #091f32bf, #0c263838 52%, transparent 91%);
 }
 .freight-login .auth-route-map { color: #d1e8f5; opacity: .20; }
-.auth-freight-inset {
-  inset-inline-start: clamp(24px, 5vw, 76px);
+.auth-freight-gallery {
+  position: absolute;
+  left: clamp(24px, 5vw, 76px);
   inset-block-end: 32px;
-  width: clamp(110px, 14vw, 185px);
+  display: flex;
+  gap: 7px;
+}
+.auth-freight-gallery img {
+  display: block;
+  width: clamp(76px, 9vw, 135px);
   aspect-ratio: 1.65;
+  object-fit: cover;
+  object-position: center 68%;
   border: 2px solid #ecf7ff94;
   border-radius: 10px;
   box-shadow: 0 8px 22px #0617276b;
 }
-.auth-freight-inset img { object-position: center 72%; }
+.auth-freight-gallery img:nth-child(2) { object-position: 84% center; }
 .freight-login .auth-visual .visual-copy { margin: 0; }
+[dir='rtl'] .freight-login .auth-visual .visual-copy { align-self: flex-end; }
 .freight-login .auth-visual .visual-copy h1 {
   margin: 0;
   font-size: clamp(42px, 5.1vw, 74px);
@@ -45,7 +57,7 @@
   min-width: 0;
   min-height: 100dvh;
   padding: 70px clamp(22px, 5vw, 70px) 34px;
-  background: linear-gradient(155deg, #fff 25%, #f0f6f9);
+  background: radial-gradient(ellipse at 100% 0%, #fbefe0 0, transparent 38%), linear-gradient(155deg, #f9fcff 25%, #e9f2f6);
 }
 .freight-login .auth-panel::before {
   content: '';
@@ -59,39 +71,58 @@
 }
 [dir='rtl'] .freight-login .auth-panel::before { background-position: left 8px bottom 14px; }
 .freight-login .auth-language { top: 22px; inset-inline-end: clamp(18px, 4vw, 46px); }
-.freight-login .auth-card { width: min(100%, 396px); }
-.freight-login .auth-card > .brand { margin-bottom: 19px; padding-bottom: 13px; border-block-end: 1px solid #d6e4ec; }
-.freight-login .auth-card > .brand .brand-logo { width: 57px; height: 45px; object-fit: contain; }
-.freight-login .auth-card .card-heading { margin: 0 0 18px; }
-.freight-login .auth-card .card-heading h2 {
-  margin: 0 0 6px; color: #18354d; font-size: clamp(25px, 3vw, 33px); font-weight: 750; line-height: 1.22;
+.freight-login .auth-language .language-switch { border-color: #c7d8e4; background: #fff; }
+.freight-login .auth-language .language-switch button.active { background: var(--login-navy); }
+.freight-login .auth-card {
+  width: min(100%, 422px);
+  padding: clamp(12px, 2vw, 21px);
+  border: 1px solid #cddde8;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 25px #193b5014;
 }
-.freight-login .auth-card .card-heading p { color: #4b6274; }
+.freight-login .auth-card > .brand { margin-bottom: 12px; }
+.freight-login .auth-card > .brand strong { color: var(--login-navy); }
+.freight-login .auth-card > .brand .brand-logo { width: 57px; height: 45px; object-fit: contain; }
+.freight-login .auth-card .card-heading {
+  margin: 0 0 15px;
+  padding: 11px 12px;
+  border-inline-start: 3px solid var(--login-amber);
+  border-radius: 8px;
+  background: linear-gradient(120deg, #15344e, #225575);
+}
+.freight-login .auth-card .card-heading h2 {
+  margin: 0 0 4px; color: #fff; font-size: clamp(23px, 2.65vw, 30px); font-weight: 750; line-height: 1.22;
+}
+.freight-login .auth-card .card-heading p { color: #e0edf7; font-size: 13px; }
 .freight-login .field { margin-bottom: 13px; }
 .freight-login .field-label { color: #29465a; }
-.freight-login .auth-card .input-wrap { min-height: 48px; padding-inline: 10px; border-color: #bdcfdd; background: #fff; }
-.freight-login .auth-card .input-wrap:focus-within { border-color: #206d84; box-shadow: 0 0 0 2px #206d8429; }
+.freight-login .auth-card .input-wrap { min-height: 48px; gap: 7px; padding-inline: 7px; border-color: #bdcfdd; background: #f7fafc; }
+.freight-login .auth-card .input-wrap > svg {
+  flex: none; width: 29px; height: 29px; padding: 6px; border-radius: 6px; color: #285874; background: #e3edf6;
+}
+.freight-login .auth-card .input-wrap:focus-within { border-color: #206d84; background: #fff; box-shadow: 0 0 0 2px #206d8429; }
 .freight-login .input-wrap input::placeholder { color: #637b8c; }
 .freight-login .visibility { width: 40px; height: 40px; flex: none; color: #436479; }
-.freight-login .auth-card .primary-button { min-height: 48px; background: linear-gradient(110deg, #235b7f, #166854); }
-.freight-login .auth-card .primary-button:hover:not(:disabled) { background: #174b67; }
+.freight-login .auth-card .primary-button { min-height: 48px; background: linear-gradient(115deg, var(--login-teal), #117963); }
+.freight-login .auth-card .primary-button:hover:not(:disabled) { background: #135643; }
+.freight-login .developer-credit { margin-block-start: 6px; color: #3c5a70; }
 .freight-login .notice svg { flex: none; }
 
 @media (max-width: 900px) {
-  .freight-login .auth-visual { min-height: 170px; padding: 19px clamp(15px, 5vw, 34px); }
-  .auth-freight-photo img { object-position: center 64%; }
-  .auth-freight-inset { display: none; }
+  .freight-login .auth-visual { min-height: 176px; padding: 15px clamp(15px, 5vw, 34px) 52px; }
+  .auth-freight-photo img { object-position: center 69%; }
+  .auth-freight-gallery { left: clamp(15px, 5vw, 34px); inset-block-end: 8px; gap: 5px; }
+  .auth-freight-gallery img { width: 49px; border-width: 1px; border-radius: 5px; }
   .freight-login .auth-visual .visual-copy h1 { max-width: none; font-size: clamp(29px, 6.6vw, 42px); }
   .freight-login .auth-visual .auth-company-name { margin-block-start: 7px; font-size: 11px; }
-  .freight-login .auth-panel { min-height: calc(100dvh - 170px); align-items: start; padding: 17px 16px 24px; }
-  .freight-login .auth-language { top: 19px; inset-inline-end: 16px; }
-  .freight-login .auth-card > .brand { padding-inline-end: 85px; margin-bottom: 13px; padding-bottom: 9px; }
+  .freight-login .auth-panel { min-height: calc(100dvh - 176px); align-items: start; padding: 10px 12px 20px; }
+  .freight-login .auth-language { z-index: 1; top: 24px; inset-inline-end: max(25px, calc((100% - 422px) / 2 + 13px)); }
+  .freight-login .auth-card > .brand { padding-inline-end: 79px; margin-bottom: 10px; }
   .freight-login .auth-card > .brand .brand-logo { width: 45px; height: 36px; }
   .freight-login .auth-card .card-heading { margin-bottom: 12px; }
   .freight-login .input-wrap input { font-size: 16px; }
 }
 @media (max-width: 380px) {
-  .freight-login .auth-visual { min-height: 152px; }
-  .freight-login .auth-panel { min-height: calc(100dvh - 152px); }
   .freight-login .auth-card > .brand div { min-width: 0; }
 }

@@ -1,6 +1,7 @@
 export default function TransportArtwork() {
+  const assets = import.meta.env.BASE_URL
   return <div className="auth-transport-art" aria-hidden="true">
-    <div className="auth-photo auth-freight-photo"><img src={`${import.meta.env.BASE_URL}login-freight-yard.webp`} alt="" fetchPriority="high" /></div>
+    <div className="auth-photo auth-freight-photo"><img src={`${assets}login-pedram-truck.webp`} alt="" fetchPriority="high" /></div>
     <svg className="auth-route-map" viewBox="0 0 720 900" fill="none" preserveAspectRatio="xMidYMid slice">
       <g stroke="currentColor" strokeWidth="1">
         <path d="m60 165 37-20 23 7 30-11 29 18 29-4 29 24-9 25-27 7-10 25-21 7-15 38-25 5-8-29-29-17-8-28-30-14Zm95 140 36 10 23 32 3 35 19 29-13 41-17 7-9 41-17-17-5-35-18-30 4-37-17-29Z"/>
@@ -12,6 +13,10 @@ export default function TransportArtwork() {
       <g fill="currentColor"><circle cx="217" cy="445" r="5"/><circle cx="507" cy="315" r="5"/><circle cx="445" cy="157" r="5"/><circle cx="105" cy="678" r="5"/></g>
       <g stroke="currentColor"><circle cx="217" cy="445" r="14"/><circle cx="507" cy="315" r="14"/></g>
     </svg>
-    <div className="auth-photo auth-freight-inset"><img src={`${import.meta.env.BASE_URL}login-freight-terminal.jpg`} alt="" loading="lazy" /></div>
+    <div className="auth-freight-gallery">
+      <img src={`${assets}login-freight-terminal.jpg`} alt="" loading="lazy" />
+      <img src={`${assets}dashboard-freight.webp`} alt="" loading="lazy" />
+      <img src={`${assets}login-cargo-plane-sunset.jpg`} alt="" loading="lazy" />
+    </div>
   </div>
 }
