@@ -86,7 +86,8 @@ function BranchRegistry({ language, onBack }) {
   }
   function edit(row){setEditing(row);setSelectedFiles({});setForm(branchFormFromRow(row));setMessage(null);request.current=null;setOpen(true)}
   async function uploadSelected(branchId){for(const [type,file] of Object.entries(selectedFiles))if(file)await uploadBranchManagerFile(branchId,type,file)}
-  async function archiveBranch(){setSaving(true);setMessage(null);try{await rpc('save_branch_record',{p_id:deletion.id,p_request:crypto.randomUUID(),p_expected:deletion.updated_at,p_data:{...deletion,archived:!deletion.archived_at,manager_enabled:deletion.manager?.account_enabled??false}});setDeletion(null);await loadBranches()}catch(e){setMessage({type:'error',text:explain(e,language)})}finally{setSaving(false)}}
+  const writeArchive = (row, archived) => rpc('save_branch_record',{p_id:row.id,p_request:crypto.randomUUID(),p_expected:row.updated_at,p_data:{...row,archived,manager_enabled:row.manager?.account_enabled??false}})
+  async function archiveBranch(){setSaving(true);setMessage(null);try{await writeArchive(deletion,!deletion.archived_at);setDeletion(null);await loadBranches()}catch(e){setMessage({type:'error',text:explain(e,language)})}finally{setSaving(false)}}
 
   async function toggleLogin(branch) {
     setSaving(true)
@@ -163,7 +164,17 @@ function BranchRegistry({ language, onBack }) {
           <Archive size={17} aria-hidden="true" />{archived?t('Archived','بایگانی‌شده'):t('Archive','بایگانی')}
         </button>
       </div>
-      <CompactTable label={text.total} columns={[
+      <CompactTable key={String(archived)} label={text.total} bulk={{
+        language, rows:visibleBranches, disabled:saving || loading, refresh:loadBranches,
+        actions:[{
+          label:archived?t('Restore selected','بازیابی انتخاب‌شده‌ها'):t('Archive selected','بایگانی انتخاب‌شده‌ها'),
+          run:row=>writeArchive(row,!archived),
+        }, ...(!archived ? [{
+          label:t('Disable selected logins','غیرفعال‌کردن ورود انتخاب‌شده‌ها'),
+          eligible:row=>Boolean(row.manager_user_id && row.manager?.account_enabled),
+          run:row=>rpc('set_account_enabled',{p_kind:'branch',p_id:row.id,p_enabled:false}),
+        }] : [])],
+      }} columns={[
         {label:text.name}, {label:text.manager}, {label:t('Actions','عملیات'),width:'29%'},
       ]}>
         {loading ? <tr><td colSpan={3} className="branch-table-empty">

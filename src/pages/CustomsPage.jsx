@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Files, Plus, RefreshCw, Search, Stamp, UserRound, WalletCards } from 'lucide-react'
+import { Archive, Files, Plus, RefreshCw, Search, Stamp, UserRound, WalletCards } from 'lucide-react'
 import CustomsAgentAccount from '../components/CustomsAgentAccount'
 import CompactTable from '../components/CompactTable'
 import CustomsAgentFields from '../components/CustomsAgentFields'
@@ -8,7 +8,7 @@ import { RegistrationSection } from '../components/RegistrationFields'
 import './CustomsPage.css'
 import { IconButton, Modal, RecordTools } from '../components/RecordTools'
 import { getTranslation } from '../lib/i18n'
-import { explain } from '../lib/operations'
+import { explain, rpc } from '../lib/operations'
 import { customsAgentFields, customsAgentFileTypes, customsAgentForm, latestCustomsAgentFiles, persistCustomsAgent } from '../lib/customsAgentForm'
 import { loadCustomsAgents, saveCustomsAgent, uploadCustomsAgentFile, customsAgentFileUrl } from '../lib/customsAgents'
 
@@ -45,6 +45,7 @@ export default function CustomsPage({ language, profile, onBack }) {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
+  const [archived,setArchived] = useState(false)
   const [form, setForm] = useState(() => customsAgentForm())
   const [files, setFiles] = useState({})
   const [editing, setEditing] = useState(null)
@@ -125,7 +126,7 @@ export default function CustomsPage({ language, profile, onBack }) {
   }
 
   const search = query.trim().toLocaleLowerCase()
-  const filtered = rows.filter(row => customsAgentFields.some(([key]) => row[key].toLocaleLowerCase().includes(search)))
+  const filtered = rows.filter(row => Boolean(row.archived_at) === archived && customsAgentFields.some(([key]) => row[key].toLocaleLowerCase().includes(search)))
   let message = error ? explain(error, language) : ''
   if (['42P01', 'PGRST202', 'PGRST205'].includes(error?.code)) {
     message = t('The Customs register has not been set up yet.', 'دفتر گمرک هنوز تنظیم نشده است.')
@@ -147,13 +148,21 @@ export default function CustomsPage({ language, profile, onBack }) {
         <input aria-label={t('Search commission agents', 'جستجوی کمیشن کاران')} placeholder={t('Search name, mobile or location', 'جستجوی نام، موبایل یا محل')}
           value={query} onChange={event => setQuery(event.target.value)} />
       </label>
+      <button type="button" className="registry-secondary" aria-pressed={archived} disabled={loading || busy} onClick={()=>setArchived(!archived)}>
+        <Archive size={16}/>{t('Archive','بایگانی')}
+      </button>
       <button type="button" className="registry-primary" disabled={loading || busy} onClick={() => start()}>
         <Plus size={17} />{t('Add commission agent', 'افزودن کمیشن کار')}
       </button>
     </div>
     {message && !open && !details && <p className="registry-notice error" role="alert">{message}</p>}
     {loading && <div className="empty-state" role="status"><span className="spinner dark" /><p>{t('Loading commission agents…', 'در حال بارگیری کمیشن کاران…')}</p></div>}
-    {!loading && filtered.length > 0 && <CompactTable label={t('Commission agents', 'کمیشن کاران')} columns={[
+    {!loading && filtered.length > 0 && <CompactTable key={String(archived)} label={t('Commission agents', 'کمیشن کاران')} bulk={{
+      language, rows:filtered, disabled:busy, refresh:async()=>setRows(await loadCustomsAgents()),
+      actions:[{label:archived?t('Restore selected','بازیابی انتخاب‌شده‌ها'):t('Archive selected','بایگانی انتخاب‌شده‌ها'),
+        run:row=>rpc('set_customs_agent_archived',{p_agent:row.id,p_archived:!archived,p_expected:row.updated_at}),
+      }],
+    }} columns={[
       { label: t('Name / mobile', 'نام / موبایل') },
       { label: t('Location', 'موقعیت') },
       { label: t('Actions', 'عملیات'), width: '39%' },
@@ -165,14 +174,14 @@ export default function CustomsPage({ language, profile, onBack }) {
         </th>
         <td>{[row.province, row.district, row.village].filter(Boolean).join(' · ') || '—'}</td>
         <td><div className="compact-table-actions">
-          <RecordTools language={language} onView={() => { setError(null); setDetails(row) }} onEdit={() => start(row)} />
+          <RecordTools language={language} onView={() => { setError(null); setDetails(row) }} onEdit={archived ? undefined : () => start(row)} />
           <IconButton icon={WalletCards} label={t('Fees & payments', 'حق‌الزحمه و پرداخت‌ها')} onClick={() => setAccount(row)} />
         </div></td>
       </tr>)}
     </CompactTable>}
     {!loading && !message && !filtered.length && <div className="empty-state customs-empty-state">
       <Stamp size={28} aria-hidden="true" />
-      <h2>{search ? t('No matching commission agents', 'کمیشن کار مطابق یافت نشد') : t('No commission agents yet', 'هنوز کمیشن کار ثبت نشده است')}</h2>
+      <h2>{archived ? t('No matching archived agents','کمیشن کار بایگانی‌شده یافت نشد') : search ? t('No matching commission agents', 'کمیشن کار مطابق یافت نشد') : t('No commission agents yet', 'هنوز کمیشن کار ثبت نشده است')}</h2>
     </div>}
     {open && <Modal title={editing ? t('Edit commission agent', 'ویرایش کمیشن کار') : t('Add commission agent', 'افزودن کمیشن کار')}
       busy={busy} onClose={closeForm} className="registration-form-card">

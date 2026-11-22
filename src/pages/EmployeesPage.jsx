@@ -14,6 +14,14 @@ import { ConfirmArchive, Modal, RecordTools } from '../components/RecordTools'
 
 const emptyForm = Object.fromEntries(fields.map(([key]) => [key, '']))
 
+async function archiveEmployee(row, archived) {
+  const {data,error} = await supabase.from('employees')
+    .update({ archived_at:archived ? new Date().toISOString() : null })
+    .eq('id',row.id).eq('updated_at',row.updated_at).select('id')
+  if (error) throw error
+  if (!data?.length) throw new Error('STALE_RECORD')
+}
+
 export default function EmployeesPage({ language, profile, onBack }) {
   const t = (en, fa) => language === 'fa' ? fa : en
   const transactionsLabel = t('Transactions', 'معاملات')
@@ -96,14 +104,12 @@ export default function EmployeesPage({ language, profile, onBack }) {
   async function toggleArchive() {
     setBusy(true)
     setError('')
-    const { data, error: updateError } = await supabase.from('employees')
-      .update({ archived_at: deletion.archived_at ? null : new Date().toISOString() })
-      .eq('id', deletion.id).eq('updated_at', deletion.updated_at).select('id')
-    setBusy(false)
-    if (updateError) return setError(updateError.message)
-    if (!data?.length) return setError(t('This employee changed. Close and reopen to try again.', 'معلومات این کارمند تغییر کرده است. دوباره باز کنید.'))
-    setDeletion(null)
-    await load()
+    try {
+      await archiveEmployee(deletion,!deletion.archived_at)
+      setDeletion(null)
+      await load()
+    } catch (error) { setError(explain(error,language)) }
+    finally { setBusy(false) }
   }
   const visible = rows.filter(row => Boolean(row.archived_at) === archived && `${row.first_name} ${row.last_name} ${row.occupation || ''} ${row.phone} ${row.province} ${row.district} ${row.village}`.toLocaleLowerCase().includes(query.toLocaleLowerCase()))
   return <div className="registry-page employees-page">
@@ -123,7 +129,10 @@ export default function EmployeesPage({ language, profile, onBack }) {
       <button type="button" className="registry-primary" onClick={()=>start()}><Plus size={16}/>{t('Add employee','افزودن کارمند')}</button>
     </div>
     {error && !open && !deletion && <p className="registry-notice error" role="alert">{error}</p>}
-    {loading ? <div className="empty-state"><span className="spinner dark" /></div> : visible.length ? <CompactTable className="employee-directory" label={t('Employees', 'کارمندان')} columns={[
+    {loading ? <div className="empty-state"><span className="spinner dark" /></div> : visible.length ? <CompactTable key={String(archived)} className="employee-directory" bulk={{
+      language, rows:visible, disabled:busy, refresh:load, name:row=>[row.first_name,row.last_name].filter(Boolean).join(' '),
+      actions:[{label:archived?t('Restore selected','بازیابی انتخاب‌شده‌ها'):t('Archive selected','بایگانی انتخاب‌شده‌ها'),run:row=>archiveEmployee(row,!archived)}],
+    }} label={t('Employees', 'کارمندان')} columns={[
       { label: t('Employee / contact', 'کارمند / تماس') },
       { label: t('Occupation / salary', 'وظیفه / معاش') },
       { label: t('Actions', 'عملیات'), width: '39%' },

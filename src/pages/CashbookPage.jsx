@@ -62,8 +62,8 @@ export default function CashbookPage({ language, profile, onBack }) {
     setCustomsAgent('')
     setCustomsDirectory({loading:true})
     try {
-      const agents=await allRows(supabase,'customs_agents','id,name,phone','id')
-      setCustomsDirectory({agents:agents.sort((a,b)=>a.name.localeCompare(b.name))})
+      const agents=await allRows(supabase,'customs_agents','id,name,phone,archived_at','id')
+      setCustomsDirectory({agents:agents.filter(agent=>!agent.archived_at).sort((a,b)=>a.name.localeCompare(b.name))})
     } catch {
       setCustomsDirectory({error:true})
     }
@@ -134,6 +134,7 @@ export default function CashbookPage({ language, profile, onBack }) {
   const [periodStart,periodEnd]=period==='date'?[customRange.start,customRange.start]:period==='custom'?[customRange.start,customRange.end]:periodBounds(period)
   const validPeriod=periodStart&&periodEnd&&periodStart<=periodEnd
   const selectedLedger=ledgerPeriod(ledger,periodStart,periodEnd)
+  const displayedRecords=selectedLedger.rows.slice(0,shown)
   const accountOptions=<>{president&&<option value="admin">{t('Admin account','حساب مرکزی')}</option>}{data.branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</>
   const activeEmployees = employees.filter(row => !row.archived_at)
   const activeDrivers = drivers.filter(row => !row.archived_at && (!row.branch_id || scope === 'admin' || row.branch_id === scope))
@@ -444,11 +445,19 @@ export default function CashbookPage({ language, profile, onBack }) {
     </form>
     {loading?<p role="status">{t('Loading…','در حال بارگیری…')}</p>:loaded&&!validPeriod?<p role="status">{t('Choose a valid start and end date.','تاریخ آغاز و پایان درست انتخاب کنید.')}</p>:loaded&&<>
       <section className="cashbook-ledger" aria-labelledby="cashbook-ledger-title"><h2 id="cashbook-ledger-title">{t('Saved records','معاملات ثبت‌شده')}</h2>
-        <CompactTable label={t('Cashbook records','معاملات روزنامچه')} columns={[
+        <CompactTable key={JSON.stringify([scope,currency,periodStart,periodEnd])} label={t('Cashbook records','معاملات روزنامچه')} bulk={president ? {
+          language, rows:displayedRecords.filter(row=>row.operation_id && !row.reversed_by && !row.reversal), disabled:busy||uncertain||loading,
+          name:row=>row.receipt_number ? '#'+row.receipt_number : description(row),
+          refresh:async()=>{window.dispatchEvent(new Event('pedram:cashbook-changed')); await load()},
+          actions:[{label:t('Reverse selected','معکوس‌کردن انتخاب‌شده‌ها'), field:t('Reason','دلیل'),
+            operationKey:row=>row.operation_id,
+            run:(row,reason)=>rpc('reverse_cashbook_entry',{p_operation:row.operation_id,p_reason:reason}),
+          }],
+        } : undefined} columns={[
           {label:t('Date','تاریخ'),width:'22%'}, {label:t('Description','شرح معامله')},
           {label:t('Money In / Out','آمد / رفت'),width:'27%'},
         ]}>
-        {selectedLedger.rows.slice(0,shown).map(row=><tr key={row.id}>
+        {displayedRecords.map(row=><tr key={row.id}>
           <th scope="row"><bdi>{formatSolarHijri(row.entry_date)}</bdi>{row.receipt_number > 0 && <small><bdi>#{row.receipt_number}</bdi></small>}</th>
           <td>{description(row)}
             {president && (row.reversed_by || row.reversal) && <small>{row.reversed_by

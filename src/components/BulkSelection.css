@@ -1,0 +1,9 @@
+.bulk-check { width: 34px; padding: 0 !important; vertical-align: middle !important; text-align: center !important; }
+.bulk-check label { display: grid; place-items: center; min-height: 42px; cursor: pointer; }
+.bulk-check input { width: 17px; height: 17px; margin: 0; accent-color: #245981; cursor: pointer; }
+.bulk-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-block: 6px; padding: 6px; border: 1px solid #bcd4e5; border-radius: 8px; background: #edf5fb; color: #24516d; font-size: 12px; }
+.bulk-actions button { min-height: 40px; padding-inline: 8px; }
+.bulk-actions button:disabled { opacity: .55; }
+.bulk-result { padding: 7px 8px; margin-block: 6px; border: 1px solid #d5dfe7; border-radius: 7px; background: #f4f7fa; font-size: 12px; overflow-wrap: anywhere; }
+.bulk-result ul { margin: 4px 0; padding-inline-start: 18px; list-style: disc; }
+@media (max-width: 640px) { .bulk-actions { position: sticky; inset-block-start: 5px; z-index: 2; } }

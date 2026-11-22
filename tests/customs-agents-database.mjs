@@ -25,6 +25,7 @@ try {
     create policy broad_anonymous_read on storage.objects for select to anon using(true);
   `)
   await db.exec(await readFile(new URL('../supabase/migrations/202611190001_customs_agents.sql', import.meta.url), 'utf8'))
+  await db.exec(await readFile(new URL('../supabase/migrations/202611220001_customs_agent_archive.sql', import.meta.url), 'utf8'))
   assert.equal((await db.query("select public from storage.buckets where id='customs-agent-files'")).rows[0].public, false)
 
   const id = crypto.randomUUID()
@@ -58,7 +59,17 @@ try {
   await assert.rejects(reserve(crypto.randomUUID(),'photo','file.pdf','application/pdf'), /INVALID_FILE/)
   await assert.rejects(reserve(crypto.randomUUID(),'other1','file.pdf','application/pdf',5242881), /INVALID_FILE/)
   await assert.rejects(db.query("insert into storage.objects(bucket_id,name) values('customs-agent-files','unreserved')"), /row-level security/)
+  const archive = (archived, expected) => db.query('select public.set_customs_agent_archived($1,$2,$3)', [id,archived,expected])
+  await assert.rejects(archive(true,created.updated_at), /STALE_RECORD/)
+  await archive(true,edited.updated_at)
+  await archive(true,edited.updated_at)
+  const archived = (await db.query('select archived_at, updated_at from public.customs_agents where id=$1',[id])).rows[0]
+  assert.ok(archived.archived_at)
+  assert.equal((await db.query('select id from public.customs_agent_files')).rows.length,4)
+  await archive(false,archived.updated_at)
+  assert.equal((await db.query('select archived_at from public.customs_agents where id=$1',[id])).rows[0].archived_at,null)
   await db.exec("select set_config('test.president','no',false)")
+  await assert.rejects(archive(true,edited.updated_at), /ACCESS_DENIED/)
   for (const relation of ['public.customs_agents','public.customs_agent_files','storage.objects']) {
     assert.equal((await db.query(`select * from ${relation}`)).rows.length, 0)
   }

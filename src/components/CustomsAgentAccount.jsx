@@ -203,9 +203,9 @@ export default function CustomsAgentAccount({ agent, language, initialAccount = 
         <section className="customs-account-section customs-fees-section">
           <header className="customs-section-header">
             <h3>{t('Agreed fees', 'حق‌الزحمه‌ها')}</h3>
-            <button type="button" className="customs-add-fee" disabled={!lookups} onClick={() => begin()}>
+            {!agent.archived_at && <button type="button" className="customs-add-fee" disabled={!lookups} onClick={() => begin()}>
               <Plus size={15} aria-hidden="true" />{t('Record agreed fee', 'ثبت حق‌الزحمه')}
-            </button>
+            </button>}
           </header>
           {view.fees.length ? <CompactTable label={t('Agreed fees', 'حق‌الزحمه‌ها')} columns={[
             { label: t('Fee / date', 'حق‌الزحمه / تاریخ') },

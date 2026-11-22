@@ -2,6 +2,8 @@ import { supabase } from './supabase'
 export const bookingColumns='id,booking_number,trader_id,vehicle_id,driver_id,service_type,origin,destination,goods,quantity,quantity_unit,quantity_amount,departure_date,created_by,created_at,booking_date,trader_first_name,trader_last_name,trader_address,trader_phone,sender_is_trader,sender_name,sender_phone,sender_address,receiver_is_trader,receiver_name,receiver_phone,receiver_address,weight_tons,volume_m3,branch_id,status,arrival_date,updated_at,archived_at,deleted_at,driver_accepted_at,driver_delivered_at'
 export async function rpc(name,args){const {data,error}=await supabase.rpc(name,args);if(error)throw error;return data}
 const messages={
+ LOAN_HAS_REPAYMENTS:['Reverse the repayments or salary deductions before reversing this loan.','پیش از معکوس‌کردن قرض، بازپرداخت‌ها یا کسرهای معاش را معکوس کنید.'],
+ INVALID_REVERSAL:['This record cannot be reversed. Refresh and review its status.','این ریکارد قابل معکوس‌کردن نیست. صفحه را تازه‌سازی و وضعیت آن را بررسی کنید.'],
  INVALID_PAYROLL_DEDUCTION:['Choose an employee loan and enter a deduction within the salary being settled.','یک قرض کارمند انتخاب کنید و مبلغ کسر را در حد معاش وارد کنید.'],
  LOAN_UNAVAILABLE:['This loan is unavailable for the selected employee, currency, or date.','این قرض برای کارمند، واحد پول یا تاریخ انتخاب‌شده در دسترس نیست.'],
  LOAN_REPAYMENT_EXCEEDS_BALANCE:['The amount exceeds the outstanding loan. Refresh before trying again.','مبلغ از قرض باقی‌مانده بیشتر است. پیش از کوشش دوباره صفحه را تازه‌سازی کنید.'],

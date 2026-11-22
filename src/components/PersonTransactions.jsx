@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Printer } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { rpc } from '../lib/operations'
 import { currencies, cents } from '../lib/cashbook'
 import { formatSolarHijri } from '../lib/solarHijri'
 import { personStatement, reportMoney, transactionNotes } from '../lib/financialReports'
@@ -20,21 +21,35 @@ export default function PersonTransactions({ person, kind, language, onClose }) 
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
   const [currency, setCurrency] = useState('')
+  const read = useCallback(() => supabase.rpc(
+    kind === 'employee' ? 'employee_cashbook_transactions' : 'driver_cashbook_transactions',
+    kind === 'employee' ? { p_employee:person.id } : { p_driver:person.id },
+  ), [person.id,kind])
   useEffect(() => {
     let active = true
-    const endpoint = kind === 'employee' ? 'employee_cashbook_transactions' : 'driver_cashbook_transactions'
-    const parameters = kind === 'employee' ? { p_employee: person.id } : { p_driver: person.id }
-    void supabase.rpc(endpoint, parameters).then(({ data, error: loadError }) => {
+    void read().then(({ data, error: loadError }) => {
       if (!active) return
       if (loadError) setError(loadError.message)
       else setTransactions(data || [])
       setLoading(false)
     }).catch(loadError => { if (active) { setError(loadError.message); setLoading(false) } })
     return () => { active = false }
-  }, [person.id, kind])
+  }, [read])
   const valid = !start || !end || start <= end
   const report = personStatement({ language, name, kind, transactions, start, end, currency })
   const visible = transactions.filter(row => (!start || row.date >= start) && (!end || row.date <= end) && (!currency || row.currency === currency))
+  async function reverse(row, reason) {
+    const { data, error } = await supabase.from('cashbook_entries').select('operation_id')
+      .eq('id',row.id).eq('employee_id',person.id).single()
+    if (error) throw error
+    await rpc('reverse_cashbook_entry',{p_operation:data.operation_id,p_reason:reason})
+  }
+  async function refresh() {
+    window.dispatchEvent(new Event('pedram:cashbook-changed'))
+    const { data, error } = await read()
+    if (error) throw error
+    setTransactions(data || [])
+  }
   function print() {
     setPrintError('')
     if (!printRecord(report)) setPrintError(t('Allow pop-ups to print this statement.', 'برای چاپ صورت حساب، پنجرهٔ جدید را اجازه دهید.'))
@@ -57,7 +72,11 @@ export default function PersonTransactions({ person, kind, language, onClose }) 
           ]}>{report.sections[0].rows.map(([unit, incoming, outgoing]) => <tr key={unit}>
             <th scope="row">{unit}</th><td><bdi>{incoming}</bdi></td><td><bdi>{outgoing}</bdi></td>
           </tr>)}</CompactTable>}
-          {visible.length ? <CompactTable label={t('Transactions', 'معاملات')} columns={[
+          {visible.length ? <CompactTable label={t('Transactions', 'معاملات')} bulk={kind === 'employee' ? {
+            language, rows:visible.filter(row=>!row.reversal && !row.reversed_by),
+            name:row=>row.receipt_number ? '#'+row.receipt_number : row.description, refresh,
+            actions:[{label:t('Reverse selected','معکوس‌کردن انتخاب‌شده‌ها'),field:t('Reason','دلیل'),run:reverse}],
+          } : undefined} columns={[
             { label: t('Date / receipt', 'تاریخ / رسید'), width: '24%' },
             { label: t('Account / description', 'حساب / شرح') },
             { label: t('Amount', 'مبلغ'), width: '29%' },

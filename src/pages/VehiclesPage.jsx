@@ -129,7 +129,13 @@ export default function VehiclesPage({language,profile,onBack}){
    onClick={()=>edit(active)}><Plus size={16} aria-hidden="true"/>{addLabel}</button>
  </div>
  {error&&!editor&&!deletion&&!scopeEditor&&<p className="registry-notice error" role="alert">{error}</p>}{loading&&<p role="status">{t('Loading…','در حال بارگیری…')}</p>}
- {rows.length>0&&<CompactTable label={t('Fleet records','ریکاردهای وسایط')} columns={[
+ {rows.length>0&&<CompactTable key={active+String(archived)} label={t('Fleet records','ریکاردهای وسایط')} bulk={{
+   language, rows:rows.filter(canManage), disabled:busy, refresh:load, name:rowName,
+   actions:[{label:archived?t('Restore selected','بازیابی انتخاب‌شده‌ها'):t('Archive selected','بایگانی انتخاب‌شده‌ها'),
+     field:active==='driver'&&!archived?t('Company the selected drivers are joining','شرکتی که رانندگان انتخاب‌شده به آن می‌روند'):undefined,
+     run:(row,destination)=>write(active,row,{...row,archived:!archived,...(active==='driver'&&!archived?{destination_company:destination}:{})}),
+   }],
+ }} columns={[
    {label:active==='vehicle'?t('Plate','پلیت'):t('Name','نام')},
    {label:active==='vehicle'?t('Type / owner','نوعیت / مالک'):t('Mobile','موبایل')},
    {label:t('Actions','عملیات'),width:'38%'},

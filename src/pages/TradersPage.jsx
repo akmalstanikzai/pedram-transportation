@@ -26,6 +26,8 @@ function TraderDirectory({language,profile,onBack}){
  function start(row){setEdit(row);setForm(row?{...row,first_name:row.first_name||row.full_name}:{branch_id:null});setOpen(true);setError('');request.current=null}
  async function write(row,payload){const key=JSON.stringify({id:row?.id,payload});if(request.current?.key!==key)request.current={key,id:crypto.randomUUID()};return rpc('save_trader_record',{p_id:row?.id||null,p_request:request.current.id,p_data:payload,p_expected:row?.updated_at||null})}
  async function save(e){e.preventDefault();setBusy(true);setError('');try{await write(edit,{...form,archived:false});setOpen(false);await load()}catch(e){setError(explain(e,language))}finally{setBusy(false)}}
+ const visible = rows.filter(r=>!!r.archived_at===archived&&`${r.full_name} ${r.phone}`.toLowerCase().includes(query.toLowerCase()))
+ const archiveTrader = (row, archived) => write(row,{...row,first_name:row.first_name||row.full_name,archived})
  return <div className="registry-page traders-directory">
  <header className="traders-title">
    {onBack && <button type="button" className="module-back" onClick={onBack}><Icon name="back" size={16}/>{t('Back','بازگشت')}</button>}
@@ -38,9 +40,12 @@ function TraderDirectory({language,profile,onBack}){
    <button type="button" className="registry-primary" onClick={()=>start(null)}><Plus size={16}/>{t('Add trader','افزودن تاجر')}</button>
  </div>
  {error&&!open&&!deletion&&<p className="registry-notice error" role="alert">{error}</p>}
- <CompactTable label={t('Traders','تاجران')} columns={[
+ <CompactTable key={String(archived)} label={t('Traders','تاجران')} bulk={{
+   language, rows:visible, disabled:busy, refresh:load,
+   actions:[{label:archived?t('Restore selected','بازیابی انتخاب‌شده‌ها'):t('Archive selected','بایگانی انتخاب‌شده‌ها'),run:row=>archiveTrader(row,!archived)}],
+ }} columns={[
    {label:t('Name / mobile','نام / موبایل')}, {label:t('Address','آدرس')}, {label:t('Actions','عملیات'),width:'39%'},
- ]}>{rows.filter(r=>!!r.archived_at===archived&&`${r.full_name} ${r.phone}`.toLowerCase().includes(query.toLowerCase())).map(row=><tr key={row.id}>
+ ]}>{visible.map(row=><tr key={row.id}>
    <th scope="row"><strong>{row.full_name}</strong><small><bdi dir="ltr">{row.phone}</bdi></small></th>
    <td>{row.address || '—'}</td>
    <td><div className="compact-table-actions">
@@ -52,6 +57,6 @@ function TraderDirectory({language,profile,onBack}){
  {open&&<Modal title={edit?t('Edit trader','ویرایش تاجر'):t('Register trader','ثبت تاجر')} className="registration-form-card" busy={busy} onClose={()=>setOpen(false)}><form className="registration-form" onSubmit={save}><fieldset disabled={busy} className="registration-fieldset"><RegistrationSection kind="trader" tone="blue" title={t("Trader information","معلومات تاجر")} icon={UserRound}>{fields.map(([key,en,fa,required])=><label key={key}><span>{t(en,fa)}{required?' *':''}</span><input type={key==='phone'?'tel':'text'} required={required} value={form[key]||''} onChange={e=>setForm({...form,[key]:e.target.value})}/></label>)}</RegistrationSection></fieldset><p className="wide booking-help">{t('Changes update the trader profile. Previous booking details remain as originally recorded.','تغییرات در مشخصات تاجر ثبت می‌شود. معلومات بوکینگ‌های قبلی به شکل اصلی باقی می‌ماند.')}</p>{error&&<p className="wide registry-notice error" role="alert">{error}</p>}<div className="registry-form-actions registration-actions"><button type="button" disabled={busy} onClick={()=>setOpen(false)}>{t('Cancel','انصراف')}</button><button className="registry-primary" disabled={busy}>{t('Save','ثبت')}</button></div></form></Modal>}
  {detail&&<Modal title={detail.full_name} onClose={()=>setDetail(null)}><div className="record-modal-body trader-detail"><RegistrationSection kind="trader" tone="blue" title={t("Trader information","معلومات تاجر")} icon={UserRound}><dl className="record-details trader-detail-fields wide">{fields.map(([key,en,fa])=><div key={key}><dt>{t(en,fa)}</dt><dd>{(key==='first_name' ? detail.first_name || detail.full_name : detail[key])||'—'}</dd></div>)}</dl></RegistrationSection><TraderAccount trader={detail} language={language} profile={profile}/></div></Modal>}
  {loginTrader&&<Modal title={t('Trader login','حساب ورود تاجر')} onClose={()=>setLoginTrader(null)}><TraderLogin trader={loginTrader} language={language} onChanged={async()=>{const updated=await load();setLoginTrader(updated.find(row=>row.id===loginTrader.id)||null)}}/></Modal>}
- {deletion&&<ConfirmArchive language={language} busy={busy} error={error} restore={!!deletion.archived_at} onClose={()=>setDeletion(null)} onConfirm={async()=>{setBusy(true);try{await write(deletion,{...deletion,first_name:deletion.first_name||deletion.full_name,archived:!deletion.archived_at});setDeletion(null);await load()}catch(e){setError(explain(e,language))}finally{setBusy(false)}}}/>}
+ {deletion&&<ConfirmArchive language={language} busy={busy} error={error} restore={!!deletion.archived_at} onClose={()=>setDeletion(null)} onConfirm={async()=>{setBusy(true);try{await archiveTrader(deletion,!deletion.archived_at);setDeletion(null);await load()}catch(e){setError(explain(e,language))}finally{setBusy(false)}}}/>}
  </div>
 }
