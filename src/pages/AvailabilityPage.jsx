@@ -4,8 +4,9 @@ import { kabulToday } from '../lib/cashbook'
 import { rpc, explain } from '../lib/operations'
 import { formatSolarHijri } from '../lib/solarHijri'
 import CompactTable from '../components/CompactTable'
+import Icon from '../components/Icon'
 
-export default function AvailabilityPage({ language }) {
+export default function AvailabilityPage({ language, onBack }) {
   const t = (en, fa) => language === 'fa' ? fa : en
   const [start, setStart] = useState(kabulToday)
   const [days, setDays] = useState(14)
@@ -36,7 +37,10 @@ export default function AvailabilityPage({ language }) {
   }
 
   return <section className="registry-page">
-    <div className="booking-page-header"><h1>{t('Fleet availability', 'دسترسی وسایط و رانندگان')}</h1></div>
+    <header className="booking-page-header availability-heading">
+      {onBack && <button type="button" className="module-back" onClick={onBack}><Icon name="back" size={16}/>{t('Back', 'بازگشت')}</button>}
+      <h1>{t('Fleet availability', 'دسترسی وسایط و رانندگان')}</h1>
+    </header>
     <div className="simple-cashbook-toolbar">
       <label><span>{t('From', 'از تاریخ')}</span>
         <SolarHijriDateInput required language={language} value={start} onChange={setStart} ariaLabel={t('From', 'از تاریخ')}/>

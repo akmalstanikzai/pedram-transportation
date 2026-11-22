@@ -1,7 +1,18 @@
-.bookings-registry { padding: clamp(8px, 2vw, 20px) 0; background: transparent; }
-.bookings-registry > .booking-page-header { margin: 0 0 10px; gap: 8px; }
-.bookings-registry > .booking-page-header h1 { color: #245981; }
-.bookings-registry > :is(.registry-toolbar, .booking-branch-filter) {
+.module-page.bookings-module { padding-top: 6px; }
+.bookings-module .module-shell { margin-top: 0; }
+.bookings-registry.registry-page { padding: 0; background: transparent; }
+.booking-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 7px; }
+.booking-title-row, .booking-top-controls { display: flex; align-items: center; gap: 6px; }
+.booking-title-row h1 { margin: 0; color: #245981; font-size: clamp(21px, 4vw, 28px); }
+.booking-top-controls { flex-wrap: wrap; }
+.booking-top-controls :is(.registry-primary, .registry-secondary) { padding-inline: 8px; gap: 4px; }
+.booking-top-controls .booking-branch-filter { min-width: 0; margin: 0; }
+.booking-top-controls .booking-branch-filter label { display: flex; align-items: center; gap: 5px; width: auto; }
+.booking-top-controls .booking-branch-filter select { width: clamp(112px, 20vw, 185px); padding-inline: 6px; }
+.bookings-registry > .booking-search { width: min(420px, 100%); margin-bottom: 7px; }
+.booking-search input { font-size: 14px; }
+.booking-search:focus-within { border-color: #245981; }
+.bookings-registry > .registry-toolbar {
   margin-bottom: 8px;
   padding: 7px 9px;
   border: 1px solid #bdd5e8;
@@ -31,6 +42,9 @@
 .booking-form [data-section='finance'] > .registration-grid > p { padding: 6px 8px; border-radius: 6px; background: #eadef7; }
 .booking-form [data-section='finance'] label:has(small) { grid-column: 1 / -1; }
 @media (max-width: 640px) {
+  .booking-top { align-items: start; flex-direction: column; }
+  .bookings-registry > .booking-search { width: 100%; min-height: 42px; }
+  .booking-search input { font-size: 16px; }
   .booking-form .solar-date-popover { position: fixed; top: 50%; inset-inline: 12px; width: auto; max-width: 340px; max-height: calc(100dvh - 24px); margin-inline: auto; overflow-y: auto; transform: translateY(-50%); }
   .bookings-registry .booking-record-actions .record-icon-button { width: 33px; height: 36px; }
 }
