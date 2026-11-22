@@ -72,7 +72,7 @@ export default function CashbookPage({ language, profile, onBack }) {
     if (!president) return []
     const [entries, operations, corrections] = await Promise.all([
       allRows(supabase,'cashbook_entries'),
-      allRows(supabase,'cashbook_operations','id,receipt_number,mode,reverses_id'),
+      allRows(supabase,'cashbook_operations','id,receipt_number,mode,reverses_id,payroll_deduction:request_payload->>payroll_loan_deduction'),
       allRows(supabase,'cashbook_amount_corrections','request_id,entry_id,previous_amount,corrected_amount,reason,changed_at', 'request_id'),
     ])
     const byId = new Map(operations.map(row => [row.id,row]))
@@ -92,7 +92,7 @@ export default function CashbookPage({ language, profile, onBack }) {
         reversal: operation?.mode === 'reversal',
         reverses_receipt: byId.get(operation?.reverses_id)?.receipt_number,
         reversed_by: reversals.get(entry.operation_id),
-        can_edit_amount: ['income','expense'].includes(operation?.mode) && !entry.is_transfer,
+        can_edit_amount: ['income','expense'].includes(operation?.mode) && !entry.is_transfer && !operation.payroll_deduction,
         corrections: historyByEntry.get(entry.id) ?? [],
       }
     })
@@ -227,6 +227,9 @@ export default function CashbookPage({ language, profile, onBack }) {
         INVALID_REVERSAL: t('This receipt cannot be reversed.','این رسید قابل اصلاح نیست.'),
         LOAN_HAS_REPAYMENTS: t('Reverse the loan repayments before reversing this loan.','پیش از معکوس‌کردن قرض، بازپرداخت‌های آن را معکوس کنید.'),
         INVALID_CORRECTION: t('This receipt amount cannot be changed.','مبلغ این رسید قابل تغییر نیست.'),
+        PAYROLL_DEDUCTION_REVERSE_REQUIRED: t('Reverse this salary payment before recording a correction.','برای اصلاح، ابتدا این پرداخت معاش را معکوس کنید.'),
+        LOAN_AMOUNT_BELOW_RECOVERED: t('The loan amount cannot be lower than the amount already recovered.','اصل قرض نمی‌تواند کمتر از مبلغ بازپرداخت‌شده باشد.'),
+        LOAN_REPAYMENT_EXCEEDS_BALANCE: t('The corrected payment exceeds the outstanding loan.','مبلغ اصلاح‌شده از قرض باقی‌مانده بیشتر است.'),
         INVALID_AMOUNT: t('Enter a positive amount with up to two decimal places.','یک مبلغ مثبت با حداکثر دو رقم اعشار وارد کنید.'),
         CUSTOMS_EXCEEDS_BALANCE: t('The corrected amount exceeds the remaining fee.','مبلغ اصلاح‌شده از حق‌الزحمه باقی‌مانده بیشتر است.'),
         STALE_RECORD: t('The receipt changed. Close this dialog and refresh.','رسید تغییر کرده است. این پنجره را بسته و صفحه را تازه کنید.'),

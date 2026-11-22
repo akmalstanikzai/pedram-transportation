@@ -23,11 +23,15 @@ export function payrollPayslip(row, year, month, language) {
         [t('Employee','کارمند'),row.name], [t('Contact','موبایل'),row.phone],
         [t('Monthly salary','معاش ماهانه'),payrollMoney(cents(row.salary))],
         [t('Salary advances','پیش‌پرداخت معاش'),payrollMoney(cents(row.advances))],
-        [t('Salary payments','پرداخت معاش'),payrollMoney(cents(row.paid))],
+        [t('Salary settled','معاش تصفیه‌شده'),payrollMoney(cents(row.paid))],
         [t('Remaining salary','معاش باقی‌مانده'),payrollMoney(cents(row.remaining))],
         [t('Status','وضعیت'),payrollStatus(row,language)],
+        ...(cents(row.deducted)>0 ? [
+          [t('Salary paid in cash','معاش پرداخت‌شده نقدی'),payrollMoney(cents(row.cash_paid))],
+          [t('Loan deducted','کسر قرض'),payrollMoney(cents(row.deducted))],
+        ] : []),
       ]},
       {title:t('Payment history','تاریخچه پرداخت'),headers:[t('Date','تاریخ'),t('Type','نوع'),t('Account','حساب'),t('Amount','مبلغ'),t('Status','وضعیت')],numeric:[3],rows:row.payments.length ? row.payments.map(payment => [formatSolarHijri(payment.date),payment.kind === 'advance' ? t('Salary advance','پیش‌پرداخت معاش') : t('Salary payment','پرداخت معاش'),payment.account,payrollMoney(cents(payment.amount)),payment.reversed ? t('Reversed','معکوس‌شده') : t('Recorded','ثبت‌شده')]) : [['',t('No payments yet.','هنوز پرداختی ثبت نشده است.'),'','','']]},
-    ],note:t('Reversed payments are excluded from totals. Personal loans are separate from payroll.','پرداخت‌های معکوس‌شده در مجموع حساب نمی‌شوند. قرض شخصی از معاش جدا است.'),
+    ],note:t('Reversed payments are excluded from totals. Salary settled includes cash and loan deductions.','پرداخت‌های معکوس‌شده در مجموع حساب نمی‌شوند. معاش تصفیه‌شده شامل پرداخت نقدی و کسر قرض است.'),
   }
 }

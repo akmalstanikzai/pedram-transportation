@@ -614,10 +614,6 @@ html[dir='rtl'] .brand strong { font-family: var(--font-dari); letter-spacing: 0
 .driver-row strong { color: var(--ink); font-size: 11px; }
 .driver-row small { margin-top: 3px; }
 
-.branch-manager-photo { display: block; width: 110px; height: 110px; border-radius: 14px; object-fit: cover; margin-bottom: 16px; border: 1px solid var(--line); }
-.branch-manager-documents { display: grid; gap: 8px; margin-top: 10px; }
-.branch-manager-documents > div { display: flex; justify-content: space-between; gap: 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
-.branch-manager-documents a { overflow-wrap: anywhere; }
 .trader-portal { max-width: 1200px; margin: 20px auto; padding: 0 20px 36px; }
 .trader-portal .booking-page-header p { margin: 6px 0 0; color: #60727f; }
 .trader-portal-currency { display: flex; justify-content: flex-end; margin: 18px 0; }
@@ -868,17 +864,6 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
   .simple-cashbook-toolbar :is(input, select, .solar-date-trigger) { min-height: 48px; font-size: 16px; }
 }
 
-.branch-details-view .branch-information-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; margin: 0; }
-.branch-information-grid > div { min-width: 0; }
-.branch-information-grid > .wide { grid-column: 1 / -1; }
-.branch-details-view h3 { margin: 0 0 12px; font-size: 14px; line-height: 1.5; color: var(--navy); }
-.branch-details-view section { padding-bottom: 18px; margin-bottom: 18px; border-bottom: 1px solid var(--line); }
-.branch-details-view .branch-details-code { display: flex; align-items: baseline; gap: 10px; }
-.branch-details-view .branch-details-code dd { margin: 0; }
-.branch-details-view dd { line-height: 1.6; }
-.branch-details-view .branch-manager-documents { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.branch-details-view .branch-manager-documents > div { display: grid; min-width: 0; gap: 6px; padding: 10px; align-content: start; font-size: 13px; }
-.branch-details-view .branch-manager-documents a { display: flex; align-items: center; min-height: 44px; min-width: 0; overflow-wrap: anywhere; }
 .fleet-information-view .fleet-information-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; margin: 0; }
 .fleet-information-view .fleet-address-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 10px; }
 .fleet-information-grid > div { min-width: 0; }
@@ -946,26 +931,11 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 .employee-registration-form small, .employee-existing-file { overflow-wrap: anywhere; }
 .employee-existing-file { padding: 4px 0; border: 0; background: none; color: var(--green); font: inherit; text-align: start; text-decoration: underline; cursor: pointer; }
 @media (max-width: 600px) { .employee-registration-form input:not([type='file']) { min-height: 44px; padding-inline: 8px; font-size: 16px; } }
-.payroll-toolbar { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
-.payroll-toolbar label { display: grid; gap: 5px; flex: 1 1 120px; min-width: 0; }
-.payroll-toolbar select { min-width: 0; width: 100%; min-height: 44px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: white; font: inherit; }
-.payroll-amounts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
-.payroll-amounts > div { min-width: 0; }
-.payroll-amounts dt { font-size: 12px; color: var(--muted); }
-.payroll-amounts dd { margin: 4px 0 0; font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
-.payroll-summary { padding: 14px; border-radius: 10px; background: var(--surface); }
-.payroll-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.payroll-actions button { min-height: 44px; white-space: normal; }
 .payroll-history { margin-top: 12px; font-size: 12px; }
 .payroll-history summary { cursor: pointer; padding: 6px 0; }
 .payroll-history > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; padding: 8px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
-.payroll-payment-form .booking-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 10px; }
-.payroll-payment-form .booking-fields > label { min-width: 0; }
-.payroll-payment-form .solar-date-picker { width: 100%; }
-@media (min-width: 800px) { .payroll-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (max-width: 600px) {
-  .payroll-toolbar select, .payroll-payment-form :is(input,select) { font-size: 16px; }
-  .payroll-payment-form :is(input,select,.solar-date-trigger) { min-height: 44px; }
+  .payroll-payment-form :is(input,select) { font-size: 16px; }
 }
 .branch-account-settings { display: grid; gap: 14px; }
 .branch-account-name { color: var(--navy); font-size: 17px; overflow-wrap: anywhere; }
@@ -997,10 +967,10 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 .booking-form .booking-fields > label { display: flex; flex-direction: column; justify-content: flex-end; min-width: 0; }
 .booking-form .booking-fields > .registry-check { flex-direction: row; justify-content: flex-start; }
 .booking-form .booking-fields :is(input, select), .booking-form .solar-date-trigger { min-width: 0; }
-.fleet-information-view .fleet-information-grid, .branch-details-view .branch-information-grid, .customs-information-grid {
+.fleet-information-view .fleet-information-grid, .customs-information-grid {
   gap: 1px; padding: 1px; background: var(--line); border-radius: 8px; overflow: hidden;
 }
-:is(.fleet-information-grid, .branch-information-grid, .customs-information-grid) > div { padding: 7px 9px; background: #fff; }
+:is(.fleet-information-grid, .customs-information-grid) > div { padding: 7px 9px; background: #fff; }
 .cashbook-row-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
 .cashbook-row-actions:empty { display: none; }
 .cashbook-row-actions .record-icon-button svg { width: 16px; height: 16px; }

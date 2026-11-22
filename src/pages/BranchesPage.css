@@ -48,10 +48,29 @@
 .branch-legacy-file { font-size: 12px; overflow-wrap: anywhere; }
 .branch-legacy-file a { display: block; margin-top: 3px; }
 
+.record-modal-body.branch-details-view { display: grid; gap: 10px; padding: 10px 14px 14px; }
+.branch-details-view .registration-grid > * { grid-column: 1 / -1; }
+.branch-details-view :is(.branch-information-grid, .branch-manager-documents) {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0;
+}
+.branch-details-view :is(.branch-information-grid, .branch-manager-documents) > div {
+  min-width: 0; padding: 6px 8px; border: 1px solid var(--registration-section-line); border-radius: 7px;
+  background: #fff; overflow-wrap: anywhere;
+}
+.branch-information-grid > .wide { grid-column: 1 / -1; }
+.branch-details-view .branch-details-code { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.branch-details-view .branch-information-grid dt, .branch-manager-documents strong { color: var(--registration-section-ink); font-size: 12px; font-weight: 700; }
+.branch-details-view .branch-information-grid dd { margin: 2px 0 0; line-height: 1.5; }
+.branch-details-view .branch-details-code dd { margin: 0; }
+.branch-manager-documents > div { display: grid; align-content: start; gap: 3px; font-size: 13px; }
+.branch-manager-documents a { display: flex; align-items: center; min-height: 44px; color: var(--registration-section-ink); text-decoration: underline; }
+.branch-manager-photo { display: block; width: 88px; max-width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 7px; }
+
 @media (max-width: 640px) {
   .module-page.branches-module { padding-top: 6px; }
   .branch-shell .branch-registry { gap: 8px; }
   .branches-directory .branch-row-actions { gap: 3px; }
   .branches-directory .branch-row-actions .record-icon-button { width: 34px; flex-basis: 34px; }
   .branch-row-options { padding: 12px; }
+  .record-modal-body.branch-details-view { gap: 8px; padding: 8px 10px 10px; }
 }

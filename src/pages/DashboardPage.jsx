@@ -38,7 +38,7 @@ const moduleDefinitions = [
 ]
 
 const registryModules = ['vehicles', 'bookings', 'customs', 'cashbook', 'traders', 'employees', 'availability']
-const compactModuleClasses = { cashbook: 'cashbook-module', vehicles: 'fleet-module', branches: 'branches-module', bookings: 'bookings-module', customs: 'customs-module', traders: 'traders-module' }
+const compactModuleClasses = { cashbook: 'cashbook-module', vehicles: 'fleet-module', branches: 'branches-module', bookings: 'bookings-module', customs: 'customs-module', traders: 'traders-module', employees: 'employees-module' }
 
 function getModuleFromHash() {
   const raw = window.location.hash.replace('#/', '')
@@ -102,7 +102,7 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
               <div className={`module-icon ${activeModule.color}`}><ActiveModuleIcon size={38} strokeWidth={1.8} /></div>
               <div><span className="section-label">{text.managementModule}</span><h1>{text[activeModule.titleKey]}</h1><p>{text[activeModule.pageKey]}</p></div>
             </div>}
-            {activeModule.id === 'customs' ? <CustomsPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'availability' ? <AvailabilityPage language={language} /> : activeModule.id === 'employees' ? <EmployeesPage language={language} profile={profile} /> : activeModule.id === 'traders' ? <TradersPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'cashbook' ? <CashbookPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'branches' ? <BranchesPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'vehicles' ? <VehiclesPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'bookings' ? <BookingsPage language={language} profile={profile} onBack={closeModule} /> : <div className="empty-state">
+            {activeModule.id === 'customs' ? <CustomsPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'availability' ? <AvailabilityPage language={language} /> : activeModule.id === 'employees' ? <EmployeesPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'traders' ? <TradersPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'cashbook' ? <CashbookPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'branches' ? <BranchesPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'vehicles' ? <VehiclesPage language={language} profile={profile} onBack={closeModule} /> : activeModule.id === 'bookings' ? <BookingsPage language={language} profile={profile} onBack={closeModule} /> : <div className="empty-state">
               <div className="empty-state-mark"><Icon name="layers" size={27} /></div>
               <h2>{text.readyTitle}</h2>
               <p>{text.readyText}</p>

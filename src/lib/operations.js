@@ -2,6 +2,9 @@ import { supabase } from './supabase'
 export const bookingColumns='id,booking_number,trader_id,vehicle_id,driver_id,service_type,origin,destination,goods,quantity,quantity_unit,quantity_amount,departure_date,created_by,created_at,booking_date,trader_first_name,trader_last_name,trader_address,trader_phone,sender_is_trader,sender_name,sender_phone,sender_address,receiver_is_trader,receiver_name,receiver_phone,receiver_address,weight_tons,volume_m3,branch_id,status,arrival_date,updated_at,archived_at,deleted_at,driver_accepted_at,driver_delivered_at'
 export async function rpc(name,args){const {data,error}=await supabase.rpc(name,args);if(error)throw error;return data}
 const messages={
+ INVALID_PAYROLL_DEDUCTION:['Choose an employee loan and enter a deduction within the salary being settled.','یک قرض کارمند انتخاب کنید و مبلغ کسر را در حد معاش وارد کنید.'],
+ LOAN_UNAVAILABLE:['This loan is unavailable for the selected employee, currency, or date.','این قرض برای کارمند، واحد پول یا تاریخ انتخاب‌شده در دسترس نیست.'],
+ LOAN_REPAYMENT_EXCEEDS_BALANCE:['The amount exceeds the outstanding loan. Refresh before trying again.','مبلغ از قرض باقی‌مانده بیشتر است. پیش از کوشش دوباره صفحه را تازه‌سازی کنید.'],
  CUSTOMS_AGENT_UNAVAILABLE:['This commission agent is unavailable. Refresh Customs and try again.','کمیشن کار در دسترس نیست. گمرک را تازه‌سازی کنید.'],
  CUSTOMS_FEE_UNAVAILABLE:['This fee is unavailable. Refresh the account and try again.','حق‌الزحمه در دسترس نیست. حساب را تازه‌سازی کنید.'],
  CUSTOMS_CURRENCY_MISMATCH:['Use the same currency as the agreed fee.','از همان واحد پول حق‌الزحمه استفاده کنید.'],

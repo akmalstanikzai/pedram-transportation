@@ -240,7 +240,7 @@ function BranchRegistry({ language, onBack }) {
         <div className="registry-form-actions registration-actions branch-actions"><button type="button" disabled={saving} onClick={() => setOpen(false)}>{text.cancel}</button><button className="registry-primary" disabled={saving}>{saving ? <span className="spinner" /> : editing?t('Save','ثبت'):text.create}</button></div>
       </form>
     </Modal>}
-    {details&&<Modal title={details.name} onClose={()=>setDetails(null)}><BranchInformation language={language} details={details} files={files}/></Modal>}
+    {details&&<Modal title={details.name} onClose={()=>setDetails(null)} className="registration-form-card"><BranchInformation language={language} details={details} files={files}/></Modal>}
     {deletion&&<ConfirmArchive language={language} busy={saving} error={message?.text} restore={!!deletion.archived_at} onClose={()=>setDeletion(null)} onConfirm={archiveBranch}/>}
     {passwordBranch&&<BranchPassword key={passwordBranch.id} branch={passwordBranch} language={language} onClose={()=>setPasswordBranch(null)} onUpdated={loadBranches}/>}
   </div>
@@ -285,20 +285,18 @@ export function BranchDetailsFields({ language, form, update, editing = null, fi
 export function BranchInformation({ language, details, files = {} }) {
   const text = labels[language] || labels.en
   const manager = details.manager || {}
+  const photo = files[`${details.id}:photo`]
   const item = (key,label,value,wide=false) => <div key={key} className={wide?'wide':''}><dt>{label}</dt><dd>{value||'—'}</dd></div>
   return <div className="record-modal-body branch-details-view">
-    {files[`${details.id}:photo`]?.url&&<img className="branch-manager-photo" src={files[`${details.id}:photo`].url} alt={text.managerPhoto}/>}
-    <section aria-label={text.branchInfo}>
-      <h3>{text.branchInfo}</h3>
+    <RegistrationSection kind="branch" tone="blue" title={text.branchInfo} icon={Building2}>
       <dl className="record-details branch-information-grid">
         <div className="wide branch-details-code"><dt>{text.code}</dt><dd>{details.code||'—'}</dd></div>
         {item('province',text.province,details.province)}
         {item('district',text.city,details.city)}
         {item('location',text.address,details.address,true)}
       </dl>
-    </section>
-    <section aria-label={text.managerInfo}>
-      <h3>{text.managerInfo}</h3>
+    </RegistrationSection>
+    <RegistrationSection kind="manager" tone="teal" title={text.managerInfo} icon={UserRound}>
       <dl className="record-details branch-information-grid">
         {item('name',text.managerName,manager.first_name??manager.full_name)}
         {item('surname',text.managerSurname,manager.surname)}
@@ -306,13 +304,15 @@ export function BranchInformation({ language, details, files = {} }) {
         {item('mobile',text.managerPhone,manager.phone)}
         {item('home',text.managerAddress,manager.address,true)}
       </dl>
-    </section>
-    <h3>{text.documents}</h3>
-    <div className="branch-manager-documents">
-      {[...managerSlots,...legacyManagerSlots.filter(([key])=>files[`${details.id}:${key}`])].map(([key,en,fa])=>{
-        const file=files[`${details.id}:${key}`]
-        return <div key={key}><strong>{language==='fa'?fa:en}</strong>{file?.url?<a href={file.url} target="_blank" rel="noreferrer">{file.file_name}</a>:<span>—</span>}</div>
-      })}
-    </div>
+    </RegistrationSection>
+    <RegistrationSection kind="documents" tone="amber" title={text.documents} icon={Files}>
+      <div className="branch-manager-documents">
+        {photo?.url&&<div><strong>{text.managerPhoto}</strong><img className="branch-manager-photo" src={photo.url} alt={text.managerPhoto}/></div>}
+        {[...managerSlots,...legacyManagerSlots.filter(([key])=>files[`${details.id}:${key}`])].map(([key,en,fa])=>{
+          const file=files[`${details.id}:${key}`]
+          return <div key={key}><strong>{language==='fa'?fa:en}</strong>{file?.url?<a href={file.url} target="_blank" rel="noreferrer"><bdi>{file.file_name}</bdi></a>:<span>—</span>}</div>
+        })}
+      </div>
+    </RegistrationSection>
   </div>
 }
