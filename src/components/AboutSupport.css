@@ -1,0 +1,23 @@
+.developer-credit {
+  display: block; margin: 10px auto 0; min-height: 36px; padding: 4px 6px; border: 0;
+  background: transparent; color: #4a5e6b; font-size: 12px; text-decoration: underline; text-underline-offset: 3px;
+}
+.developer-credit:hover { color: var(--navy); }
+.header-actions .about-support-trigger { flex: none; }
+.record-modal.about-support-modal { width: min(440px, 100%); }
+.about-support-modal > .registry-form-head { padding: 10px 14px; background: #edf5fb; color: #244a66; }
+.about-support-modal > .registry-form-head h2 { font-size: 18px; }
+.record-modal-body.about-support-body { display: grid; gap: 8px; padding: 12px 14px 16px; }
+.developer-profile { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid #c5d8e5; border-radius: 8px; background: #f4f8fb; }
+.developer-profile img { flex: none; border-radius: 8px; object-fit: contain; }
+.developer-profile span { display: block; color: #4a5e6b; font-size: 12px; }
+.about-support-link {
+  display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 6px 9px; border: 1px solid #c5d8e5;
+  border-radius: 8px; color: #244a66; background: #edf5fb; font-size: 13px; font-weight: 700; text-decoration: none;
+}
+.about-support-link span { min-width: 0; overflow-wrap: anywhere; }
+.about-support-link bdi { display: block; font-size: 12px; font-weight: 500; }
+.about-support-link svg { flex: none; }
+.about-support-link:hover { border-color: currentColor; }
+.about-support-contact { color: #185342; border-color: #b7d8c9; background: #eaf6f0; }
+.about-support-body p { margin: 2px 0 0; color: #4a5e6b; font-size: 12px; }

@@ -9,6 +9,7 @@ import {
   Users,
 } from 'lucide-react'
 import Brand from '../components/Brand'
+import AboutSupport from '../components/AboutSupport'
 import Icon from '../components/Icon'
 import { getTranslation } from '../lib/i18n'
 import { canAccessModule } from '../lib/roles'
@@ -90,6 +91,7 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
           <LanguageSwitch language={language} onChange={onLanguageChange} />
           {role === 'president' && <LoanNotifications language={language} userId={session.user.id} />}
           <div className="user-chip"><span className="avatar">{displayName.charAt(0).toUpperCase()}</span><span><strong>{displayName}</strong><small>{text.roles[role] || text.roles.driver}</small></span></div>
+          <AboutSupport language={language} />
           <button className="logout-button" onClick={onSignOut} title={text.signOut}><Icon name="logout" size={18} /><span>{text.signOut}</span></button>
         </div>
       </header>

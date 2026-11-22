@@ -1,4 +1,6 @@
-export const PRINT_CREDIT = 'rayan-tech-solution.tech'
+import { developerBrand } from './developerBrand.js'
+
+export const PRINT_CREDIT = developerBrand.domain
 const display = value => value == null || value === '' ? '—' : String(value)
 
 // Shared table geometry for the browser/PDF preview and Android receipt images.
