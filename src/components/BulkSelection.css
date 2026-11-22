@@ -1,6 +1,7 @@
 .bulk-check { width: 34px; padding: 0 !important; vertical-align: middle !important; text-align: center !important; }
-.bulk-check label { display: grid; place-items: center; min-height: 42px; cursor: pointer; }
-.bulk-check input { width: 17px; height: 17px; margin: 0; accent-color: #245981; cursor: pointer; }
+.bulk-toggle { display: grid; place-items: center; width: 34px; min-height: 42px; flex: none; cursor: pointer; }
+:is(.bulk-toggle, .bulk-select-all) input { width: 17px; height: 17px; margin: 0; accent-color: #245981; cursor: pointer; }
+.bulk-select-all { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding-inline: 5px; cursor: pointer; }
 .bulk-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-block: 6px; padding: 6px; border: 1px solid #bcd4e5; border-radius: 8px; background: #edf5fb; color: #24516d; font-size: 12px; }
 .bulk-actions button { min-height: 40px; padding-inline: 8px; }
 .bulk-actions button:disabled { opacity: .55; }

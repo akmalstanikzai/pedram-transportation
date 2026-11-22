@@ -40,27 +40,41 @@ export function useBulkSelection({ bulk, children }) {
       group.push(row)
       byOperation.set(key, group)
     }
-    for (const group of byOperation.values()) {
+    const groups = action.runBatch ? [chosen] : byOperation.values()
+    for (const group of groups) {
       try {
-        await action.run(group[0], value.trim())
+        if (action.runBatch) await action.runBatch(group)
+        else await action.run(group[0], value.trim())
         group.forEach(row => completed.add(String(row.id)))
       } catch (error) {
-        failures.push({ id:group[0].id, label:bulk.name?.(group[0]) || group[0].name || group[0].full_name, message:explain(error,bulk.language) })
+        failures.push({ id:group[0].id, label:action.runBatch ? '' : bulk.name?.(group[0]) || group[0].name || group[0].full_name, message:explain(error,bulk.language) })
       }
     }
     setChecked(selected.filter(id => !completed.has(id)))
     let refreshFailed = false
     try { await bulk.refresh?.() } catch { refreshFailed = true }
-    setResult({ count:completed.size, failures, refreshFailed })
+    setResult({ count:completed.size, failed:chosen.length-completed.size, failures, refreshFailed })
     setAction(null)
     setRunning(false)
     lock.current = false
   }
 
+  const selectAllLabel = t('Select all visible records','انتخاب همه موارد نمایان')
+  const selectAll = <input type="checkbox" aria-label={selectAllLabel} checked={allChecked} disabled={disabled}
+    onChange={() => { setChecked(allChecked ? [] : [...eligible.keys()]); setResult(null) }}/>
+  function checkbox(record) {
+    if (!eligible.has(String(record.id))) return null
+    const id = String(record.id)
+    return <label className="bulk-toggle">
+      <input type="checkbox" checked={selected.includes(id)} disabled={disabled}
+        aria-label={[t('Select record','انتخاب ریکارد'), bulk.name?.(record) || record.full_name || record.name].filter(Boolean).join(' · ')}
+        onChange={() => toggle(id)}/>
+    </label>
+  }
+
   return {
-    visible,
-    heading: <label><input type="checkbox" aria-label={t('Select all visible records','انتخاب همه موارد نمایان')}
-      checked={allChecked} disabled={disabled} onChange={() => { setChecked(allChecked ? [] : [...eligible.keys()]); setResult(null) }}/></label>,
+    visible, checkbox,
+    heading: <label className="bulk-toggle">{selectAll}</label>,
     rows: visible ? Children.map(children, row => {
       if (row?.type !== 'tr') return row
       const id = String(row.key)
@@ -69,22 +83,21 @@ export function useBulkSelection({ bulk, children }) {
         if (cells.length === 1 && cells[0]?.props.colSpan) return cloneElement(row, {}, cloneElement(cells[0], { colSpan:cells[0].props.colSpan + 1 }))
       }
       const record = eligible.get(id)
-      return cloneElement(row, {}, <td className="bulk-check">{record && <label>
-        <input type="checkbox" checked={selected.includes(id)} disabled={disabled}
-          aria-label={[t('Select record','انتخاب ریکارد'), bulk.name?.(record) || record.full_name || record.name].filter(Boolean).join(' · ')}
-          onChange={() => toggle(id)}/>
-      </label>}</td>, row.props.children)
+      return cloneElement(row, {}, <td className="bulk-check">{record && checkbox(record)}</td>, row.props.children)
     }) : children,
     controls: <>
-      {selected.length > 0 && <div className="bulk-actions">
+      {(selected.length > 0 || (visible && bulk.cardList)) && <div className="bulk-actions">
+        {bulk.cardList && <label className="bulk-select-all">{selectAll}<span>{t('Select all','انتخاب همه')}</span></label>}
+        {selected.length > 0 && <>
         <strong aria-live="polite">{selected.length} {t('selected','انتخاب‌شده')}</strong>
         {bulk.actions.map(next => <button key={next.label} type="button" className="registry-secondary"
           disabled={disabled || (next.eligible && !selected.some(id => next.eligible(eligible.get(id))))}
           onClick={() => { setValue(''); setAction(next) }}>{next.label}</button>)}
         <button type="button" className="registry-secondary" disabled={disabled} onClick={() => setChecked([])}>{t('Clear','پاک کردن')}</button>
+        </>}
       </div>}
       {result && <div className="bulk-result" role="status">
-        {result.count} {t('updated','به‌روز شد')} · {result.failures.length} {t('failed','ناموفق')}
+        {result.count} {t('updated','به‌روز شد')} · {result.failed} {t('failed','ناموفق')}
         {!!result.failures.length && <ul>{result.failures.map(item => <li key={item.id}>{item.label && <strong>{item.label} · </strong>}{item.message}</li>)}</ul>}
         {result.refreshFailed && <p>{t('Refresh to see the latest records.','برای دیدن تازه‌ترین ریکاردها صفحه را تازه کنید.')}</p>}
       </div>}
@@ -92,6 +105,7 @@ export function useBulkSelection({ bulk, children }) {
     dialog: action && createPortal(<div onKeyDown={event => event.stopPropagation()}><Modal title={action.label} onClose={() => setAction(null)} busy={running}>
       <form className="registry-form" onSubmit={apply}>
         <p className="wide">{t('Apply this action to the selected records?','این عمل بالای موارد انتخاب‌شده اجرا شود؟')} <strong>({chosen.length})</strong></p>
+        {action.note && <p className="wide booking-help">{action.note}</p>}
         {action.field && <label className="wide"><span>{action.field} *</span>
           <input required maxLength={action.maxLength || 500} value={value} disabled={running} onChange={event => setValue(event.target.value)}/>
         </label>}
