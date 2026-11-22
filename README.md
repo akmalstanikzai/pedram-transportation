@@ -8,7 +8,7 @@ Dari uses a right-to-left layout and the bundled Vazirmatn font. Both languages 
 
 ## Roles and access
 
-| Role | Access |
+| Role | Access |..
 | --- | --- |
 | President | Operations dashboard, Bookings, Fleet, Fleet Availability, Cashbook, Branches, and Traders. Manages trader records, payments, and staff and trader logins. Can reverse Cashbook receipts. |
 | Branch Manager | Branch dashboard, Bookings, Fleet, Fleet Availability, and the assigned branch's Cashbook. Can use traders in bookings, including registering a new trader while saving a booking. Can manage branch fleet records and select eligible shared records. |
