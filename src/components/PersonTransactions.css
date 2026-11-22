@@ -1,0 +1,24 @@
+.person-statement-modal > .registry-form-head { gap: 8px; padding: 10px 14px; color: #fff; background: #523b73; }
+.person-statement-modal > .registry-form-head h2 { min-width: 0; font-size: 18px; overflow-wrap: anywhere; }
+.person-statement-modal > .registry-form-head button { flex: none; }
+.record-modal-body.person-statement { display: grid; gap: 10px; padding: clamp(10px, 3vw, 16px); background: #f7f9fc; }
+.person-statement .financial-statement-controls {
+  margin: 0; padding: 8px; gap: 8px; border: 1px solid #d8cbe8; border-radius: 8px; background: #f4eff9;
+}
+.person-statement .financial-statement-controls label { gap: 4px; color: #4c366b; font-size: 12px; font-weight: 700; }
+.person-statement .financial-statement-controls > button { min-height: 44px; padding-inline: 6px; background: #523b73; color: #fff; }
+.person-statement .financial-statement-controls > button:disabled { opacity: .55; }
+.person-statement .compact-table-frame { min-width: 0; margin: 0; border-color: #c5d8e8; }
+.person-statement .compact-table thead th { background: #245981; color: #fff; }
+.person-statement .compact-table-frame:not(.financial-statement-totals) tbody tr:nth-child(even) { background: #edf5fb; }
+.person-statement .financial-statement-totals thead th:first-child { background: #435771; }
+.person-statement .financial-statement-totals thead th:nth-child(2) { background: #1a6453; }
+.person-statement .financial-statement-totals thead th:nth-child(3) { background: #90364b; }
+.person-statement .financial-statement-totals tbody td:nth-child(2) { background: #eaf6f0; color: #245346; }
+.person-statement .financial-statement-totals tbody td:nth-child(3) { background: #fceef0; color: #803043; }
+.person-statement > p { margin: 0; }
+@media (max-width: 640px) {
+  .person-statement .financial-statement-controls label .solar-date-popover {
+    position: fixed; inset-inline: 10px; top: 50%; width: auto; max-width: 340px; margin-inline: auto; transform: translateY(-50%);
+  }
+}

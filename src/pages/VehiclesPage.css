@@ -101,3 +101,14 @@
 @media (max-width: 360px) {
   .fleet-archive-toggle span { display: none; }
 }
+
+.record-modal-body.fleet-information-view { display: grid; gap: 8px; padding: clamp(10px, 3vw, 16px); }
+.fleet-information-view .fleet-information-section.registration-section { margin: 0; padding: 0; border-bottom: 1px solid var(--registration-section-line); }
+.fleet-information-view .registration-section h3 { margin: 0; color: #fff; }
+.fleet-information-view .registration-section .fleet-information-grid { margin: 0; padding: 7px; gap: 6px; background: transparent; }
+.fleet-information-view .registration-section .fleet-information-grid > div {
+  padding: 6px 8px; border: 1px solid var(--registration-section-line); border-radius: 7px;
+}
+.fleet-information-view .registration-section dt { color: var(--registration-section-ink); font-weight: 700; }
+.fleet-information-view .registration-section dd { margin-block-start: 2px; }
+.fleet-information-view .fleet-information-photo { margin: 0; }

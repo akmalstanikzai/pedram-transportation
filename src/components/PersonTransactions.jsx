@@ -6,6 +6,7 @@ import { formatSolarHijri } from '../lib/solarHijri'
 import { personStatement, reportMoney, transactionNotes } from '../lib/financialReports'
 import { printRecord } from '../lib/recordExports'
 import { Modal } from './RecordTools'
+import './PersonTransactions.css'
 import CompactTable from './CompactTable'
 import SolarHijriDateInput from './SolarHijriDateInput'
 
@@ -38,8 +39,8 @@ export default function PersonTransactions({ person, kind, language, onClose }) 
     setPrintError('')
     if (!printRecord(report)) setPrintError(t('Allow pop-ups to print this statement.', 'برای چاپ صورت حساب، پنجرهٔ جدید را اجازه دهید.'))
   }
-  return <Modal title={`${name} · ${t('Transactions', 'معاملات')}`} onClose={onClose} className={kind === 'employee' ? 'employee-statement-modal' : ''}>
-    <div className={kind==='employee'?'record-modal-body employee-statement':'record-modal-body'}>
+  return <Modal title={`${name} · ${t('Transactions', 'معاملات')}`} onClose={onClose} className="person-statement-modal">
+    <div className="record-modal-body person-statement">
       {loading ? <p role="status">{t('Loading…', 'در حال بارگیری…')}</p> : error ? <p className="registry-notice error" role="alert">{error}</p> : <>
         <div className="financial-statement-controls">
           <label><span>{t('From date', 'از تاریخ')}</span><SolarHijriDateInput language={language} value={start} max={end || undefined} onChange={setStart} ariaLabel={t('From date', 'از تاریخ')} /></label>

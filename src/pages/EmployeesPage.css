@@ -112,30 +112,6 @@
 .payroll-net output { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .payroll-payment-form .registry-form-actions { padding-block-start: 7px; border-block-start: 1px solid #e0e7ed; }
 .payroll-payment-form .registry-form-actions button { min-height: 44px; }
-.employee-statement-modal > .registry-form-head { gap: 8px; padding: 10px 14px; color: #fff; background: #523b73; }
-.employee-statement-modal > .registry-form-head h2 { min-width: 0; font-size: 18px; overflow-wrap: anywhere; }
-.employee-statement-modal > .registry-form-head button { flex: none; }
-.record-modal-body.employee-statement { display: grid; gap: 10px; padding: clamp(10px, 3vw, 16px); background: #f7f9fc; }
-.employee-statement .financial-statement-controls {
-  margin: 0; padding: 8px; gap: 8px; border: 1px solid #d8cbe8; border-radius: 8px; background: #f4eff9;
-}
-.employee-statement .financial-statement-controls label { gap: 4px; color: #4c366b; font-size: 12px; font-weight: 700; }
-.employee-statement .financial-statement-controls > button { min-height: 44px; padding-inline: 6px; background: #523b73; color: #fff; }
-.employee-statement .financial-statement-controls > button:disabled { opacity: .55; }
-.employee-statement .compact-table-frame { min-width: 0; margin: 0; border-color: #c5d8e8; }
-.employee-statement .compact-table thead th { background: #245981; color: #fff; }
-.employee-statement .compact-table-frame:not(.financial-statement-totals) tbody tr:nth-child(even) { background: #edf5fb; }
-.employee-statement .financial-statement-totals thead th:first-child { background: #435771; }
-.employee-statement .financial-statement-totals thead th:nth-child(2) { background: #1a6453; }
-.employee-statement .financial-statement-totals thead th:nth-child(3) { background: #90364b; }
-.employee-statement .financial-statement-totals tbody td:nth-child(2) { background: #eaf6f0; color: #245346; }
-.employee-statement .financial-statement-totals tbody td:nth-child(3) { background: #fceef0; color: #803043; }
-.employee-statement > p { margin: 0; }
-@media (max-width: 640px) {
-  .employee-statement .financial-statement-controls label .solar-date-popover {
-    position: fixed; inset-inline: 10px; top: 50%; width: auto; max-width: 340px; margin-inline: auto; transform: translateY(-50%);
-  }
-}
 @media (min-width: 769px) {
   .employee-directory .compact-table .employee-transactions-button { flex-basis: auto; width: auto; padding-inline: 9px; }
   .employee-transactions-label { display: inline; font-size: 12px; font-weight: 750; white-space: nowrap; }
