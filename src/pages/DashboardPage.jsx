@@ -5,6 +5,7 @@ import {
   ChevronRight,
   ClipboardList,
   BookOpen,
+  ShieldAlert,
   Stamp,
   Truck,
   Users,
@@ -31,6 +32,7 @@ import CustomsPage from './CustomsPage'
 import OperationsSummary from '../components/OperationsSummary'
 import LoanNotifications from '../components/LoanNotifications'
 import './DashboardPage.css'
+import './RolePortals.css'
 
 const moduleDefinitions = [
   { id: 'cashbook', icon: BookOpen, titleKey: 'cashbook', color: 'green' },
@@ -100,7 +102,7 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
   }
 
   return (
-    <main className={managementHome ? 'dashboard dashboard-home' : 'dashboard'}>
+    <main className={`dashboard${managementHome ? ' dashboard-home' : ''}${managementHome && role === 'branch_manager' ? ' branch-dashboard-home' : ''}${!activeModule && ['driver','trader'].includes(role) ? ' role-portal-home' : ''}`}>
       <header className="dashboard-header">
         <Brand text={text} />
         <div className="header-actions">
@@ -132,12 +134,14 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
           {managementHome ? (
             <>
             <div className="dashboard-banner">
+              {role === 'branch_manager' && <div className="branch-dashboard-mark"><Building2 size={25} aria-hidden="true" /></div>}
               <div className="dashboard-banner-copy">
                 <h1>{role === 'president' ? text.presidentDashboard : dari ? 'صفحه شعبه' : 'Branch dashboard'}</h1>
                 <p><bdi>{displayName}</bdi></p>
                 <time dateTime={dashboardDate}><CalendarDays size={14} aria-hidden="true" /><bdi dir="ltr">{formatSolarHijri(dashboardDate)}</bdi></time>
               </div>
             </div>
+            {role === 'branch_manager' && !profile.branch_id && <p className="registry-notice error branch-dashboard-notice" role="alert">{dari ? 'برای تعیین شعبهٔ حساب خود با دفتر مرکزی تماس بگیرید.' : 'Contact head office to assign a branch to your account.'}</p>}
             <nav className="dashboard-menu" aria-labelledby="dashboard-menu-title">
               <h2 id="dashboard-menu-title">{dari ? 'منوی اصلی' : 'Main menu'}</h2>
               <div className="module-grid">
@@ -156,7 +160,15 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
               onBookingAttention={attention=>openModule(moduleDefinitions.find(module=>module.id==='bookings'),attention)} />
             </>
           ) : (
-            role === 'driver' ? <DriverBookingsPage language={language} /> : role === 'trader' ? <TraderPortalPage language={language} /> : <h1 className="role-title">{text.roles[role] || text.roles.driver}</h1>
+            role === 'driver' ? <DriverBookingsPage language={language} /> : role === 'trader' ? <TraderPortalPage language={language} /> : <div className="role-workspace role-access-state">
+              <header className="role-workspace-header">
+                <div className="role-workspace-identity">
+                  <span className="role-workspace-icon"><ShieldAlert size={23} aria-hidden="true" /></span>
+                  <div><h1>{text.roles[role] || text.roles.driver}</h1><p><bdi>{displayName}</bdi></p></div>
+                </div>
+              </header>
+              <p>{dari ? 'برای تعیین دسترسی این حساب با دفتر مرکزی تماس بگیرید.' : 'Contact head office to set up access for this account.'}</p>
+            </div>
           )}
         </section>
       )}

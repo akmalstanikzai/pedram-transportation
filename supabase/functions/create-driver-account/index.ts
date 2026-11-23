@@ -23,9 +23,48 @@ async function loginIdentity(value) {
   return {login, email:`${hash}@usernames.pedram.local`, username:login}
 }
 
-const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,x-client-info,apikey,content-type','Content-Type':'application/json'}
+const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,x-client-info,apikey,content-type','Content-Type':'application/json','Cache-Control':'no-store'}
+
+async function driverVaultKey() {
+ const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+ const url = Deno.env.get('SUPABASE_URL')
+ if (!service || !url) throw new Error('VAULT_KEY_MISSING')
+ const material = new TextEncoder().encode(`pedram-driver-password-v1\0${url}\0${service}`)
+ const digest = await crypto.subtle.digest('SHA-256', material)
+ return crypto.subtle.importKey('raw', digest, {name:'AES-GCM'}, false, ['encrypt','decrypt'])
+}
+
+async function sealDriverPassword(password: string, driver: string) {
+ const iv = crypto.getRandomValues(new Uint8Array(12))
+ const encrypted = await crypto.subtle.encrypt(
+  {name:'AES-GCM',iv,additionalData:new TextEncoder().encode(driver)},
+  await driverVaultKey(), new TextEncoder().encode(password)
+ )
+ return {ciphertext:btoa(String.fromCharCode(...new Uint8Array(encrypted))),iv:btoa(String.fromCharCode(...iv))}
+}
+
+async function openDriverPassword(sealed: {ciphertext:string, iv:string}, driver: string) {
+ const bytes = (value: string) => Uint8Array.from(atob(value), char => char.charCodeAt(0))
+ const decrypted = await crypto.subtle.decrypt(
+  {name:'AES-GCM',iv:bytes(sealed.iv),additionalData:new TextEncoder().encode(driver)},
+  await driverVaultKey(), bytes(sealed.ciphertext)
+ )
+ return new TextDecoder().decode(decrypted)
+}
+
+async function storeDriverPassword(admin: ReturnType<typeof createClient>, actor: string, driver: string,
+ account: {id:string, updated_at?:string}, sealed: {ciphertext:string,iv:string}) {
+ if (!account.updated_at) return false
+ const {error} = await admin.rpc('store_driver_login_password', {
+  p_actor:actor, p_driver:driver, p_user:account.id, p_auth_updated_at:account.updated_at,
+  p_ciphertext:sealed.ciphertext, p_iv:sealed.iv,
+ })
+ return !error
+}
+
 async function provision(kind:'branch'|'driver',request:Request){
  if(request.method==='OPTIONS')return new Response('ok',{headers})
+ if(request.method!=='POST')return new Response(JSON.stringify({error:'METHOD_NOT_ALLOWED'}),{status:405,headers})
  let stage='authenticate'
  try{
   const url=Deno.env.get('SUPABASE_URL')!,key=Deno.env.get('SUPABASE_ANON_KEY')!,service=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -38,7 +77,8 @@ async function provision(kind:'branch'|'driver',request:Request){
   const body=await request.json(),id=body.request_id
   // Manage only the Auth account already linked to the selected Fleet driver.
   if(kind==='driver'&&body.action!==undefined){
-   if(!['details','password'].includes(body.action)||typeof body.driver_id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.driver_id))throw new Error('REQUIRED_FIELDS')
+   if(!['details','password','vault'].includes(body.action)||typeof body.driver_id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.driver_id))throw new Error('REQUIRED_FIELDS')
+   stage='driver_login'
    const {data:driver,error:driverError}=await admin.from('drivers').select('id,user_id,branch_id,archived_at').eq('id',body.driver_id).single()
    if(driverError||!driver||driver.archived_at)throw new Error('DRIVER_UNAVAILABLE')
    if(!driver.user_id)throw new Error('ACCOUNT_MISSING')
@@ -49,10 +89,24 @@ async function provision(kind:'branch'|'driver',request:Request){
     if(error||!data.user)throw new Error('ACCOUNT_MISSING')
     return new Response(JSON.stringify({login:profile.username||data.user.email||''}),{headers})
    }
+   if(body.action==='vault'){
+    const {data:sealed,error}=await admin.rpc('read_driver_login_password',{p_actor:user.id,p_driver:driver.id,p_user:profile.id})
+    if(error||!sealed){
+     const code=['PASSWORD_NOT_VAULTED','ACCESS_DENIED'].includes(error?.message) ? error.message : 'DRIVER_VAULT_UNAVAILABLE'
+     throw new Error(code)
+    }
+    let savedPassword
+    try{savedPassword=await openDriverPassword(sealed,driver.id)}
+    catch{throw new Error('VAULT_LEGACY_UNREADABLE')}
+    return new Response(JSON.stringify({password:savedPassword}),{headers})
+   }
    if(typeof body.password!=='string'||body.password.length<8)throw new Error('PASSWORD_TOO_SHORT')
-   const {error}=await admin.auth.admin.updateUserById(profile.id,{password:body.password})
-   if(error&&error.code!=='same_password')throw new Error('PASSWORD_REJECTED')
-   return new Response(JSON.stringify({success:true}),{headers})
+   const sealed=await sealDriverPassword(body.password,driver.id)
+   const {data,error}=await admin.auth.admin.updateUserById(profile.id,{password:body.password})
+   if(error?.code==='same_password')throw new Error('DRIVER_PASSWORD_UNCHANGED')
+   if(error)throw new Error('PASSWORD_REJECTED')
+   if(!data.user||!await storeDriverPassword(admin,user.id,driver.id,data.user,sealed))throw new Error('DRIVER_VAULT_WRITE_FAILED')
+   return new Response(JSON.stringify({success:true,vault_saved:true}),{headers})
   }
   if(typeof id!=='string'||!/^[0-9a-f-]{36}$/i.test(id))throw new Error('REQUEST_CONFLICT')
   const credentials=kind==='branch'?body.credentials:body
@@ -72,21 +126,28 @@ async function provision(kind:'branch'|'driver',request:Request){
   stage='find_account'
   const found=await admin.rpc(lookupName,lookup);if(found.error)throw found.error
   let account=found.data
+  let newDriverAuth: {id:string,updated_at?:string} | null = null
+  const sealed=kind==='driver'&&!account ? await sealDriverPassword(password,body.driver_id) : null
   if(!account){
    stage='create_account'
    const created=await admin.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{full_name:fullName},app_metadata:metadata})
-   if(created.error){const recovered=await admin.rpc(lookupName,lookup);if(recovered.error||!recovered.data)throw created.error;account=recovered.data}else account=created.data.user.id
+   if(created.error){const recovered=await admin.rpc(lookupName,lookup);if(recovered.error||!recovered.data)throw created.error;account=recovered.data}
+   else {
+    account=created.data.user.id
+    if(kind==='driver')newDriverAuth=created.data.user
+   }
   }
   if(kind==='driver'){
    const {data,error}=await admin.rpc('link_driver_account',{p_actor:user.id,p_driver:body.driver_id,p_user:account,p_request:id,p_username:username});if(error)throw error
-   return new Response(JSON.stringify({user_id:data,username,email}),{headers})
+   const vault_saved = newDriverAuth && sealed ? await storeDriverPassword(admin,user.id,body.driver_id,newDriverAuth,sealed) : null
+   return new Response(JSON.stringify({user_id:data,username,email,vault_saved}),{headers})
   }
   const manager=body.manager,branch=body.branch
   stage='save_branch'
   const {data,error}=await admin.rpc('provision_branch',{p_actor:user.id,p_request:id,p_manager:account,p_username:username,p_data:{name:branch.name,code:branch.code,province:branch.province,city:branch.city,address:branch.address,phone:branch.phone,manager_name:manager.full_name,manager_first_name:manager.first_name,manager_surname:manager.surname,home_province:manager.home_province,home_district:manager.home_district,home_village:manager.home_village,manager_phone:manager.phone,father_name:manager.father_name,national_id:manager.national_id,manager_address:manager.address}})
   if(error)throw error
   return new Response(JSON.stringify({branch_id:data,username,email}),{headers})
- }catch(error){const message=error instanceof Error?error.message:(error as {message?:string})?.message||'Unable to create account';console.error('branch provisioning failed',{stage,code:(error as {code?:string})?.code||'',message});return new Response(JSON.stringify({error:message,stage}),{status:400,headers})}
+ }catch(error){const message=error instanceof Error?error.message:(error as {message?:string})?.message||'Unable to create account';console.error('Account action failed',{kind,stage,code:(error as {code?:string})?.code||''});return new Response(JSON.stringify({error:message,stage}),{status:400,headers})}
 }
 
 Deno.serve(request=>provision('driver',request))

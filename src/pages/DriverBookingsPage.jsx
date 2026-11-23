@@ -5,9 +5,9 @@ import { licenceWarning, mapHref, telephoneHref } from '../lib/driverPortal'
 import { IconButton, Modal } from '../components/RecordTools'
 import { formatSolarHijri } from '../lib/solarHijri'
 
-function Contact({ icon: Icon, title, name, phone, address, location, t }) {
+function Contact({ icon: Icon, kind, title, name, phone, address, location, t }) {
   const telephone = telephoneHref(phone)
-  return <section className="driver-contact">
+  return <section className="driver-contact" data-contact={kind}>
     <h3><Icon size={20} />{title}</h3>
     <strong>{name || '—'}</strong>
     {phone && <bdi dir="ltr">{phone}</bdi>}
@@ -23,7 +23,7 @@ function Job({ job, t, busy, blocked, onAction }) {
   const status = { confirmed: t('Ready', 'آماده'), in_transit: t('On road', 'در راه'), completed: t('Completed', 'تکمیل‌شده'), cancelled: t('Cancelled', 'لغوشده') }
   const branchPhone = telephoneHref(job.branch?.phone)
   const branchName = job.branch?.name === 'Head office' ? t('Head office', 'دفتر مرکزی') : job.branch?.name
-  return <article className="driver-job">
+  return <article className="driver-job" data-status={job.status}>
     <header className="driver-job-heading"><strong><Truck size={22} /><bdi dir="ltr">#{job.booking_number}</bdi></strong><span className={`status-pill ${job.status}`}>{status[job.status]}</span></header>
     <div className="driver-route"><div><small><MapPin size={16} />{t('From', 'مبدأ')}</small><h2>{job.origin}</h2></div><ArrowRight className="driver-route-arrow" size={25} aria-hidden="true" /><div><small><Navigation size={16} />{t('To', 'مقصد')}</small><h2>{job.destination}</h2></div></div>
     <div className="driver-job-facts">
@@ -33,8 +33,8 @@ function Job({ job, t, busy, blocked, onAction }) {
       <div><Building2 size={22} /><span><strong>{branchName || '—'}</strong>{branchPhone && <a className="driver-dispatch-call" href={branchPhone}><Phone size={17} />{t('Call office', 'تماس با دفتر')}</a>}</span></div>
     </div>
     <div className="driver-contacts">
-      <Contact icon={Package} title={t('Sender', 'فرستنده')} name={job.sender_name} phone={job.sender_phone} address={job.sender_address} location={job.origin} t={t} />
-      <Contact icon={UserRound} title={t('Receiver', 'گیرنده')} name={job.receiver_name} phone={job.receiver_phone} address={job.receiver_address} location={job.destination} t={t} />
+      <Contact icon={Package} kind="sender" title={t('Sender', 'فرستنده')} name={job.sender_name} phone={job.sender_phone} address={job.sender_address} location={job.origin} t={t} />
+      <Contact icon={UserRound} kind="receiver" title={t('Receiver', 'گیرنده')} name={job.receiver_name} phone={job.receiver_phone} address={job.receiver_address} location={job.destination} t={t} />
     </div>
     {['confirmed', 'in_transit'].includes(job.status) && <footer className="driver-job-footer">
       {job.status === 'confirmed' && (job.driver_accepted_at ? <span className="driver-report"><BadgeCheck size={22} />{t('Accepted', 'پذیرفته شد')}</span> : <button className="registry-primary" disabled={busy || blocked} onClick={() => onAction(job, 'accept')}><Check size={23} />{t('Accept job', 'پذیرفتن برنامه')}</button>)}
@@ -93,19 +93,35 @@ export default function DriverBookingsPage({ language }) {
   const driver = data?.driver
   const warning = driver && licenceWarning(driver.license_expiry)
   const warningText = { missing: t('Licence expiry missing — contact the office.', 'تاریخ ختم لایسنس ثبت نشده است؛ با دفتر تماس بگیرید.'), expired: t('Licence expired — contact the office.', 'لایسنس منقضی شده است؛ با دفتر تماس بگیرید.'), soon: t('Licence expires within 30 days.', 'لایسنس در 30 روز آینده منقضی می‌شود.') }
-  const jobs = (data?.bookings || []).filter(job => history ? ['completed', 'cancelled'].includes(job.status) : ['confirmed', 'in_transit'].includes(job.status))
-  if (history) jobs.sort((a, b) => (b.departure_date || '').localeCompare(a.departure_date || ''))
+  const activeJobs = (data?.bookings || []).filter(job => ['confirmed', 'in_transit'].includes(job.status))
+  const pastJobs = (data?.bookings || []).filter(job => ['completed', 'cancelled'].includes(job.status))
+    .sort((a, b) => (b.departure_date || '').localeCompare(a.departure_date || ''))
+  const jobs = history ? pastJobs : activeJobs
 
-  return <div className="driver-portal" aria-busy={loading}>
-    <div className="driver-page-heading"><h1><Truck size={28} />{t('My jobs', 'برنامه‌های من')}</h1><div className="record-tools">{driver && <button className="driver-profile-button" onClick={() => setProfileOpen(true)}><IdCard size={24} />{t('My licence', 'لایسنس من')}</button>}<IconButton icon={RefreshCw} label={t('Refresh', 'تازه‌سازی')} onClick={refresh} disabled={refreshing || busy} /></div></div>
+  return <div className="driver-portal role-workspace" aria-busy={loading}>
+    <header className="role-workspace-header">
+      <div className="role-workspace-identity">
+        <span className="role-workspace-icon"><Truck size={23} aria-hidden="true" /></span>
+        <div><h1>{t('My jobs', 'سفرهای من')}</h1>{driver && <p><bdi>{driver.full_name}</bdi></p>}</div>
+      </div>
+      <div className="record-tools">{driver && <button type="button" className="driver-profile-button" onClick={() => setProfileOpen(true)}><IdCard size={17} />{t('My licence', 'لایسنس من')}</button>}<IconButton icon={RefreshCw} label={t('Refresh', 'تازه‌سازی')} onClick={refresh} disabled={refreshing || busy} /></div>
+    </header>
     {error && <p role="alert" className="registry-notice error">{explain(error, language)}</p>}
     {loading ? <div className="driver-empty" role="status"><span className="spinner" /><span>{t('Loading…', 'در حال بارگیری…')}</span></div> : driver ? <>
       {warning && <p className="driver-licence-warning"><AlertTriangle size={21} /><span>{warningText[warning]}</span><bdi dir="ltr">{formatSolarHijri(driver.license_expiry, '')}</bdi></p>}
-      <nav className="driver-tabs" aria-label={t('Jobs', 'برنامه‌ها')}><button aria-pressed={!history} onClick={() => setHistory(false)}><Truck size={22} />{t('Jobs', 'برنامه‌ها')}</button><button aria-pressed={history} onClick={() => setHistory(true)}><History size={22} />{t('History', 'سابقه')}</button></nav>
+      <nav className="role-view-switch" aria-label={t('Jobs', 'سفرها')}>
+        <button type="button" aria-pressed={!history} onClick={() => setHistory(false)}><Truck size={17} aria-hidden="true" />{t('Active jobs', 'سفرهای جاری')} <bdi>{activeJobs.length}</bdi></button>
+        <button type="button" aria-pressed={history} onClick={() => setHistory(true)}><History size={17} aria-hidden="true" />{t('History', 'سابقه')} <bdi>{pastJobs.length}</bdi></button>
+      </nav>
       {history && <p className="driver-history-note">{t('Last 20 completed or cancelled jobs.', '20 برنامه اخیر تکمیل‌شده یا لغوشده.')}</p>}
       {jobs.length ? <div className="driver-job-list">{jobs.map(job => <Job key={job.id} job={job} t={t} busy={busy} blocked={!!error || refreshing} onAction={act} />)}</div> : <div className="driver-empty"><CheckCircle2 size={40} /><strong>{history ? t('No previous jobs.', 'برنامه قبلی وجود ندارد.') : t('No jobs assigned yet.', 'هنوز برنامه‌ای تعیین نشده است.')}</strong></div>}
     </> : !error && <div className="driver-empty"><IdCard size={40} /><strong>{t('Contact the office to link your driver record.', 'برای وصل کردن مشخصات راننده به حساب تان، با دفتر تماس بگیرید.')}</strong></div>}
-    {profileOpen && driver && <Modal title={t('My licence', 'لایسنس من')} onClose={() => setProfileOpen(false)}><dl className="driver-licence-details"><dt><UserRound size={21} />{t('Driver', 'راننده')}</dt><dd>{driver.full_name}</dd><dt><Phone size={21} />{t('Phone', 'موبایل')}</dt><dd><bdi dir="ltr">{driver.phone || '—'}</bdi></dd><dt><IdCard size={21} />{t('Licence number', 'نمبر لایسنس')}</dt><dd><bdi>{driver.license_number || '—'}</bdi></dd><dt><CalendarDays size={21} />{t('Expiry', 'تاریخ ختم')}</dt><dd><bdi dir="ltr">{formatSolarHijri(driver.license_expiry)}</bdi></dd></dl></Modal>}
+    {profileOpen && driver && <Modal title={t('My licence', 'لایسنس من')} onClose={() => setProfileOpen(false)} className="driver-portal-modal"><dl className="driver-licence-details">
+      <div><dt><UserRound size={17} />{t('Driver', 'راننده')}</dt><dd><bdi>{driver.full_name}</bdi></dd></div>
+      <div><dt><Phone size={17} />{t('Phone', 'موبایل')}</dt><dd><bdi dir="ltr">{driver.phone || '—'}</bdi></dd></div>
+      <div><dt><IdCard size={17} />{t('Licence number', 'نمبر لایسنس')}</dt><dd><bdi>{driver.license_number || '—'}</bdi></dd></div>
+      <div><dt><CalendarDays size={17} />{t('Expiry', 'تاریخ ختم')}</dt><dd><bdi dir="ltr">{formatSolarHijri(driver.license_expiry)}</bdi></dd></div>
+    </dl></Modal>}
     {delivery && <Modal title={t('Confirm delivery', 'تأیید تحویل بار')} onClose={() => { setDelivery(null); setError(null) }} busy={busy}><div className="record-modal-body"><p>{t('Has the receiver received the goods?', 'آیا گیرنده بار را تحویل گرفته است؟')}</p><strong><bdi dir="ltr">#{delivery.booking_number}</bdi> · {delivery.destination}</strong>{error && <p role="alert" className="registry-notice error">{explain(error, language)}</p>}<div className="registry-form-actions"><button disabled={busy} onClick={() => { setDelivery(null); setError(null) }}>{t('Back', 'برگشت')}</button><button className="registry-primary" disabled={busy} onClick={() => act(delivery, 'delivered')}><CheckCheck size={22} />{t('Yes, delivered', 'بله، تحویل شد')}</button></div></div></Modal>}
   </div>
 }

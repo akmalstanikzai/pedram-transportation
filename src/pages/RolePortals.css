@@ -1,0 +1,188 @@
+.role-portal-home { background: #eef3f8; }
+.role-portal-home > .dashboard-content { padding-block: 10px 28px; }
+.role-workspace {
+  --portal-accent: #1a6453;
+  --portal-tint: #e7f4ed;
+  --portal-line: #c6ded3;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 0;
+}
+.role-workspace svg { flex-shrink: 0; }
+.role-workspace :is(button, a, select):focus-visible { outline: 2px solid #2578a9; outline-offset: 2px; }
+.role-workspace > .registry-notice { margin: 0; }
+.role-workspace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid #233f58;
+  border-radius: 11px;
+  background: #163a56;
+  color: #fff;
+}
+.role-workspace-identity { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.role-workspace-icon { display: grid; place-items: center; flex: none; width: 38px; height: 38px; border-radius: 8px; background: #fff2; }
+.role-workspace-identity h1 { margin: 0; font-size: clamp(19px, 4.8vw, 26px); font-weight: 800; overflow-wrap: anywhere; }
+.role-workspace-identity p { margin: 0; color: #e0edfa; font-size: 13px; overflow-wrap: anywhere; }
+.role-workspace-header .record-icon-button { flex: none; width: 44px; height: 44px; color: #173d58; }
+.role-workspace-header .driver-profile-button { gap: 4px; padding-inline: 6px; border-radius: 8px; font-size: 12px; white-space: nowrap; }
+.role-view-switch {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--portal-line);
+  border-radius: 9px;
+  background: var(--portal-tint);
+}
+.role-view-switch button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 44px;
+  min-width: 0;
+  padding: 4px;
+  border-radius: 7px;
+  color: var(--portal-accent);
+  font-size: 13px;
+  font-weight: 750;
+}
+.role-view-switch button[aria-pressed='true'] { color: #fff; background: var(--portal-accent); }
+.role-view-switch bdi { padding: 1px 5px; border-radius: 5px; background: #fff; color: var(--portal-accent); font-size: 11px; }
+
+.role-workspace.driver-portal .driver-licence-warning { margin: 0; gap: 5px; padding: 6px 8px; font-size: 12px; }
+.role-workspace.driver-portal .driver-history-note { margin: 0; }
+.role-workspace.driver-portal .driver-empty { min-height: 130px; border: 1px dashed var(--portal-line); border-radius: 9px; background: #fff; }
+.role-workspace .driver-job-list { gap: 9px; }
+.role-workspace .driver-job { border-radius: 10px; border-color: var(--portal-line); min-width: 0; }
+.driver-job[data-status='in_transit'] { --portal-accent: #245981; --portal-tint: #eaf4fb; --portal-line: #c5ddec; }
+.driver-job[data-status='cancelled'] { --portal-accent: #843d4a; --portal-tint: #faf0f2; --portal-line: #ecd0d6; }
+.role-workspace .driver-job-heading { gap: 6px; padding: 6px 9px; background: var(--portal-tint); border-color: var(--portal-line); }
+.role-workspace .driver-job-heading strong { gap: 5px; color: var(--portal-accent); font-size: 15px; }
+.role-workspace .driver-job-heading .status-pill { padding: 3px 7px; border-radius: 6px; color: var(--portal-accent); background: #fff; font-size: 11px; }
+.role-workspace .driver-route { gap: 7px; padding: 8px 9px; }
+.role-workspace .driver-route small { gap: 4px; color: #526979; }
+.role-workspace .driver-route h2 { margin: 2px 0; font-size: clamp(17px, 4.8vw, 22px); }
+.role-workspace .driver-route-arrow { color: var(--portal-accent); }
+.role-workspace :is(.driver-job-facts,.driver-contacts) {
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 5px;
+  padding: 0 8px 7px;
+  border: 0;
+}
+.role-workspace .driver-job-facts > div { align-items: start; min-width: 0; padding: 6px; gap: 4px; border: 1px solid #dae7ee; border-radius: 7px; background: #f5f9fc; }
+.role-workspace .driver-job-facts > div > svg { width: 16px; height: 16px; margin: 0; color: var(--portal-accent); }
+.role-workspace .driver-job-facts span { gap: 2px; font-size: 13px; }
+.role-workspace .driver-job-facts small { color: #4e6578; }
+.role-workspace .driver-dispatch-call { min-height: 39px; width: fit-content; font-size: 12px; }
+.role-workspace .driver-contact {
+  --contact-bg: #eef7f2;
+  --contact-ink: #215846;
+  --contact-line: #c8dfd3;
+  padding: 6px;
+  gap: 3px;
+  border: 1px solid var(--contact-line);
+  border-radius: 7px;
+  background: var(--contact-bg);
+}
+.role-workspace .driver-contact[data-contact='receiver'] { --contact-bg: #edf4fa; --contact-ink: #244e72; --contact-line: #cadfed; }
+.role-workspace .driver-contact h3 { margin: 0; gap: 4px; color: var(--contact-ink); font-weight: 800; }
+.role-workspace .driver-contact h3 svg, .role-workspace .driver-contact-actions svg { width: 15px; height: 15px; }
+.role-workspace .driver-contact strong { font-size: 14px; }
+.role-workspace .driver-contact :is(p, bdi) { margin: 0; font-size: 12px; color: #456071; }
+.role-workspace .driver-contact-actions { width: 100%; gap: 4px; padding-block-start: 3px; }
+.role-workspace .driver-contact-actions a { gap: 3px; padding: 3px 5px; min-height: 44px; border: 1px solid var(--contact-line); border-radius: 6px; background: #fff; color: var(--contact-ink); font-size: 12px; }
+.role-workspace .driver-job-footer { padding: 6px 8px; gap: 5px; background: var(--portal-tint); border-color: var(--portal-line); }
+.role-workspace .driver-job-footer .registry-primary { min-height: 44px; font-size: 14px; }
+.role-workspace .driver-job-footer .driver-report { gap: 5px; color: var(--portal-accent); font-size: 13px; }
+.driver-portal-modal .registry-form-head { padding: 8px 12px; background: #edf4fa; color: var(--navy); }
+.driver-portal-modal .driver-licence-details { grid-template-columns: repeat(2,minmax(0,1fr)); padding: 8px; gap: 5px; }
+.driver-licence-details > div { min-width: 0; padding: 6px; border: 1px solid #ccdeeb; border-radius: 7px; background: #f2f7fb; }
+.driver-portal-modal .driver-licence-details dt { gap: 4px; font-size: 12px; font-weight: 700; }
+.driver-portal-modal .driver-licence-details dd { margin-top: 3px; font-size: 14px; }
+
+.role-workspace.trader-portal { --portal-accent: #245981; --portal-tint: #edf5fc; --portal-line: #c7dcea; max-width: 900px; }
+.role-workspace .trader-portal-currency {
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 0;
+  padding: 6px;
+  border: 1px solid var(--portal-line);
+  border-radius: 8px;
+  background: var(--portal-tint);
+}
+.role-workspace .trader-portal-currency label { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; color: var(--portal-accent); }
+.role-workspace .trader-portal-currency select { min-width: 62px; min-height: 44px; padding-inline: 4px; color: var(--navy); font-size: 16px; }
+.role-workspace .trader-portal-currency button { min-height: 44px; padding-inline: 6px; gap: 4px; }
+.trader-portal-balances { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 5px; margin: 0; }
+.trader-portal-balances > div {
+  --balance-ink: #245981;
+  --balance-line: #c4d9ec;
+  --balance-fill: #e8f2fb;
+  min-width: 0;
+  padding: 6px 7px;
+  border: 1px solid var(--balance-line);
+  border-radius: 8px;
+  color: var(--balance-ink);
+  background: var(--balance-fill);
+}
+.trader-portal-balances [data-balance='paid'] { --balance-ink: #206043; --balance-line: #bfdccc; --balance-fill: #e7f4eb; }
+.trader-portal-balances [data-balance='owed'] { --balance-ink: #764616; --balance-line: #e7d0ac; --balance-fill: #fff2df; }
+.trader-portal-balances [data-balance='credit'] { --balance-ink: #604078; --balance-line: #dccde8; --balance-fill: #f3edf8; }
+.trader-portal-balances dt { font-size: 12px; font-weight: 700; }
+.trader-portal-balances dd { margin: 1px 0 0; font-size: clamp(13px,3.8vw,17px); font-weight: 800; overflow-wrap: anywhere; }
+.role-workspace .trader-portal-section { min-width: 0; margin: 0; padding: 0; border: 0; background: transparent; }
+.trader-portal-section .compact-table :is(th, td) { overflow-wrap: anywhere; }
+.trader-portal-section .compact-table thead th { color: #244e72; background: #e8f2fb; }
+.trader-portal-section[data-bookings] .compact-table thead th { color: #245846; background: #e7f4eb; }
+.trader-portal-section .compact-table tbody th { background: #f6f9fc; }
+.trader-portal-section .compact-table small { color: #4c6577; }
+.trader-portal-section [data-transaction='payment'] strong { color: #1e654a; }
+.trader-portal-section [data-transaction='refund'] strong { color: #86364b; }
+.trader-portal-route { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 3px; color: var(--navy); }
+[dir='rtl'] .trader-portal-route svg { transform: scaleX(-1); }
+.trader-portal-profile {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 7px;
+  padding: 6px 8px;
+  border: 1px solid var(--portal-line);
+  border-radius: 8px;
+  color: #405c71;
+  background: #f7fbfd;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.trader-portal-profile > span { font-weight: 750; }
+.role-access-state > p { padding: 8px; color: #405c71; }
+
+.branch-dashboard-home .dashboard-banner { min-height: 98px; padding: 10px 12px; gap: 9px; background: #123e43; }
+.branch-dashboard-home .dashboard-banner::before { opacity: .58; }
+.branch-dashboard-mark { display: grid; flex: none; place-items: center; width: 40px; height: 40px; border-radius: 9px; background: #ffffff25; }
+.branch-dashboard-home .dashboard-banner h1 { font-size: clamp(20px,4vw,28px); }
+.branch-dashboard-home .dashboard-banner p { margin: 3px 0; }
+.branch-dashboard-home .dashboard-banner time { padding-block: 2px; }
+.branch-dashboard-notice { margin: 8px 0 0; }
+.driver-account .driver-password-settings { display: grid; gap: 7px; margin-block: 7px; }
+.driver-password-settings .branch-account-section { padding: 7px; gap: 5px; border: 1px solid #c5d8e8; border-radius: 8px; background: #f0f6fb; }
+.driver-password-settings .driver-password-form { gap: 7px; padding: 0; }
+.driver-password-settings .registry-notice { margin: 0; }
+
+@media(max-width:600px) {
+  .role-portal-home > .dashboard-content { padding-block-start: 7px; }
+  .role-workspace.trader-portal { margin: 0; padding: 0; }
+  .trader-portal-balances { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .branch-dashboard-home .dashboard-menu { margin-block-start: 8px; }
+}
+@media(max-width:365px) {
+  .role-workspace-header .role-workspace-icon { width: 30px; height: 34px; }
+}

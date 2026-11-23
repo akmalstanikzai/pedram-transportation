@@ -95,13 +95,15 @@ Booking dropdowns require available records and check any recorded permit or lic
 
 Fleet records support optional profile photos. Drivers can upload a passport scan, and vehicles have dedicated slots for a permit scan, card, booklet, and another document. The **Documents** panel manages private files, downloads, and document expiry dates. Uploads support files up to 5 MB. Record archiving is recoverable. Confirmed document deletion removes the file permanently.
 
-1. As President, use **Fleet → Drivers** and the key icon to create or link an eligible Driver login. Use the same icon to update its password.
+1. As President, use **Fleet → Drivers** and the key icon to create or link an eligible Driver login. Choose **Show saved password** to reveal a password saved through Fleet and **Change password** to replace it. Older and linked logins need one password change if there is no vault entry. The saved password hides on window blur or after 30 seconds.
 2. Staff select that driver and a vehicle in **Bookings**. The linked driver sees the assignment in **Jobs**.
 3. The driver reviews the route and contacts and selects **Accept job**. Changes to the assignment can require fresh acceptance.
 4. Staff start the journey. The driver can report delivery while the booking is on the road, then staff verify it and complete the booking.
 5. Drivers can open recent completed or cancelled jobs in **History** and check their licence details in **My licence**.
 
 If the driver portal asks the driver to contact the office, check that the active Fleet driver record is linked to the correct enabled Driver login. Job information refreshes on focus, periodically while visible, and via the refresh button.
+
+To enable driver password reveal, apply `supabase/migrations/202611230001_driver_password_vault.sql` and redeploy `create-driver-account` before publishing the updated frontend. The driver vault encrypts saved credentials using the Edge Function's existing service credential. Password saves and reveals are audited. If that credential is rotated, set a new saved password for each driver whose previous one needs to be viewed.
 
 ## Local development
 
