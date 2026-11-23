@@ -5,10 +5,14 @@ const solarPattern = /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/
 
 function pad(value) { return String(value).padStart(2, '0') }
 
-export function todayISO() {
-  const parts = new Intl.DateTimeFormat('en', { timeZone: 'Asia/Kabul', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date())
+export function kabulISODate(date) {
+  const parts = new Intl.DateTimeFormat('en', { timeZone: 'Asia/Kabul', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date)
   const part = type => parts.find(item => item.type === type)?.value
   return `${part('year')}-${part('month')}-${part('day')}`
+}
+
+export function todayISO() {
+  return kabulISODate(new Date())
 }
 
 export function formatSolarHijri(value, fallback = '—') {

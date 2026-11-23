@@ -17,7 +17,7 @@ Dari uses a right-to-left layout and the bundled Vazirmatn font. Both languages 
 
 The Traders directory, trader statements, and trader payment controls are President only for staff. A branch manager's Cashbook groups trader activity by account, date, and direction so it can reconcile without exposing individual trader payments. Branch managers can record ordinary branch cash transactions. Shared fleet bookings from other branches show as busy time in Fleet Availability.
 
-The database also defines Vice-president and Departmental Manager roles. The app has no dedicated portal for these roles. New Auth users default to Driver. The app checks account status on focus and every 30 seconds. Restoring an archived branch, driver, or trader record does not automatically re-enable its login.
+New Auth users default to Driver. The app checks account status on focus and every 30 seconds. The role retirement migration disables former Vice-president and Departmental Manager accounts while retaining their Auth identity and linked history. They need an appropriate active role and account enablement before they can use the system again.
 
 ## Operations dashboard and fleet availability
 
@@ -27,7 +27,7 @@ Open **Fleet Availability** from the dashboard before creating a booking. Select
 
 ## Bookings
 
-1. Open **Bookings → New booking**. Choose the date and booking type.
+1. Open **Bookings → New booking**. Choose the booking date, departure date, arrival date and booking type. Leave departure and arrival on the same date for a single-day trip.
 2. Select a trader or enter their details to register a new trader when saving. The booking keeps a snapshot of the trader details. Editing the snapshot leaves the existing trader profile intact.
 3. Enter the route and goods. Choose a goods unit (tons, pieces, or cubic metres) and enter the quantity.
 4. Select a registered vehicle and driver separately. The save checks resource availability, scheduling conflicts, capacity, and applicable permit or licence expiry.
@@ -40,7 +40,11 @@ Open **Fleet Availability** from the dashboard before creating a booking. Select
 
 The booking charge records the amount owed. When money is collected at booking time, the President can enter the amount in **Received now**. The President can record a later or partial payment using **Receive payment** in Bookings or Traders, or by selecting the trader and booking in Cashbook. Each recorded receipt appears in **Cashbook Money In** and reduces the trader's balance. Booking amounts share one currency.
 
-Bookings follow **Confirmed → On road → Completed** and can be cancelled. Confirmed bookings can be edited. The single Date field reserves the vehicle and driver for that calendar day. Open a booking and choose **Print confirmation** for a branded document with the route, cargo, contacts, fleet details, and charges. The President's copy also shows the payment balance. Choose a printer or **Save as PDF** in the browser.
+Bookings follow **Confirmed → On road → Completed** and can be cancelled. Confirmed bookings can be edited. The departure and arrival dates reserve the assigned vehicle and driver across that period, including both dates.
+
+For a shipment that changes trucks, enable **Transfer the cargo to a second truck** in **Route**. Enter the transfer location and planned date, then select different trucks and drivers in **First leg** and **Second leg**. The first assignment is reserved through the transfer date and the second from transfer through arrival. Both are shown separately in Fleet Availability. Each driver sees only their assigned leg. When the cargo reaches the transfer point, the first driver can report arrival. The office selects **Confirm handoff** once the cargo has moved to the second truck. This records the transfer, completes the first leg, releases its resources, and starts the second leg. The office completes the booking after final delivery. Both legs share one booking number and one trader balance.
+
+Open a booking and choose **Print confirmation** for the route, trip dates, handoff details when applicable, cargo, contacts, fleet details, and charges. The President's copy also shows the payment balance. Apply the role retirement and trip legs migrations before deploying the updated frontend.
 
 The President can filter bookings across all branches, head office, or one branch. Select multiple completed bookings to use **Clear selection**, **Archive selected**, or **Delete selected** above the list. Archive is recoverable. Bulk delete hides completed bookings from the booking list and retains their financial history. Cancelling a booking leaves its recorded charges and receipts in the account for review.
 

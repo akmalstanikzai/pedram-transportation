@@ -10,7 +10,7 @@ async function loadAttention() {
   const counts = { deliveries:0, departures:0 }
   for (let offset = 0; ; offset += 500) {
     const {data,error} = await supabase.from('bookings')
-      .select('id,status,departure_date,booking_date,driver_delivered_at')
+      .select('id,status,departure_date,booking_date,driver_delivered_at,handoff_confirmed_at,onward_driver_delivered_at')
       .is('archived_at',null).is('deleted_at',null).in('status',['confirmed','in_transit'])
       .order('id').range(offset,offset+499)
     if (error) throw error

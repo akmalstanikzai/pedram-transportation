@@ -63,8 +63,6 @@ export const translations = {
     transportsPage: 'Transport schedules, vehicles and shipment records will be added here.',
     roles: {
       president: 'President',
-      vice_president: 'Vice-president',
-      departmental_manager: 'Departmental manager',
       branch_manager: 'Branch manager',
       driver: 'Driver',
       trader: 'Trader',
@@ -134,8 +132,6 @@ export const translations = {
     transportsPage: 'تقسیم اوقات، وسایط و معلومات انتقالات در این بخش اضافه خواهد شد.',
     roles: {
       president: 'رئیس',
-      vice_president: 'معاون',
-      departmental_manager: 'مدیر بخش',
       branch_manager: 'مدیر شعبه',
       driver: 'راننده',
       trader: 'تاجر',

@@ -23,8 +23,14 @@ function Job({ job, t, busy, blocked, onAction }) {
   const status = { confirmed: t('Ready', 'آماده'), in_transit: t('On road', 'در راه'), completed: t('Completed', 'تکمیل‌شده'), cancelled: t('Cancelled', 'لغوشده') }
   const branchPhone = telephoneHref(job.branch?.phone)
   const branchName = job.branch?.name === 'Head office' ? t('Head office', 'دفتر مرکزی') : job.branch?.name
+  const endsAtHandoff = job.has_handoff && job.leg === 1
+  const startsAtHandoff = job.has_handoff && job.leg === 2
+  const deliveredLabel = endsAtHandoff ? t('Reached transfer point', 'به محل انتقال رسیدم') : t('Delivered', 'بار تحویل شد')
   return <article className="driver-job" data-status={job.status}>
-    <header className="driver-job-heading"><strong><Truck size={22} /><bdi dir="ltr">#{job.booking_number}</bdi></strong><span className={`status-pill ${job.status}`}>{status[job.status]}</span></header>
+    <header className="driver-job-heading">
+      <strong><Truck size={22} /><bdi dir="ltr">#{job.booking_number}</bdi>{job.has_handoff && <small>{endsAtHandoff ? t('First leg','مرحلهٔ اول') : t('Second leg','مرحلهٔ دوم')}</small>}</strong>
+      <span className={`status-pill ${job.status}`}>{job.awaiting_handoff ? t('Awaiting handoff','منتظر انتقال') : status[job.status]}</span>
+    </header>
     <div className="driver-route"><div><small><MapPin size={16} />{t('From', 'مبدأ')}</small><h2>{job.origin}</h2></div><ArrowRight className="driver-route-arrow" size={25} aria-hidden="true" /><div><small><Navigation size={16} />{t('To', 'مقصد')}</small><h2>{job.destination}</h2></div></div>
     <div className="driver-job-facts">
       <div><CalendarDays size={22} /><span><small>{t('Departure / arrival', 'حرکت / رسیدن')}</small><bdi dir="ltr">{formatSolarHijri(job.departure_date)} → {formatSolarHijri(job.arrival_date)}</bdi></span></div>
@@ -33,12 +39,12 @@ function Job({ job, t, busy, blocked, onAction }) {
       <div><Building2 size={22} /><span><strong>{branchName || '—'}</strong>{branchPhone && <a className="driver-dispatch-call" href={branchPhone}><Phone size={17} />{t('Call office', 'تماس با دفتر')}</a>}</span></div>
     </div>
     <div className="driver-contacts">
-      <Contact icon={Package} kind="sender" title={t('Sender', 'فرستنده')} name={job.sender_name} phone={job.sender_phone} address={job.sender_address} location={job.origin} t={t} />
-      <Contact icon={UserRound} kind="receiver" title={t('Receiver', 'گیرنده')} name={job.receiver_name} phone={job.receiver_phone} address={job.receiver_address} location={job.destination} t={t} />
+      <Contact icon={Package} kind="sender" title={startsAtHandoff ? t('Transfer pickup','دریافت بار در محل انتقال') : t('Sender', 'فرستنده')} name={job.sender_name} phone={job.sender_phone} address={job.sender_address} location={job.origin} t={t} />
+      <Contact icon={UserRound} kind="receiver" title={endsAtHandoff ? t('Transfer point','محل انتقال') : t('Receiver', 'گیرنده')} name={job.receiver_name} phone={job.receiver_phone} address={job.receiver_address} location={job.destination} t={t} />
     </div>
     {['confirmed', 'in_transit'].includes(job.status) && <footer className="driver-job-footer">
       {job.status === 'confirmed' && (job.driver_accepted_at ? <span className="driver-report"><BadgeCheck size={22} />{t('Accepted', 'پذیرفته شد')}</span> : <button className="registry-primary" disabled={busy || blocked} onClick={() => onAction(job, 'accept')}><Check size={23} />{t('Accept job', 'پذیرفتن برنامه')}</button>)}
-      {job.status === 'in_transit' && (job.driver_delivered_at ? <span className="driver-report"><Clock3 size={22} />{t('Delivered · waiting for office confirmation', 'بار تحویل شد · منتظر تأیید دفتر')}</span> : <button className="registry-primary" disabled={busy || blocked} onClick={() => onAction(job, 'delivered')}><CheckCheck size={23} />{t('Delivered', 'بار تحویل شد')}</button>)}
+      {job.status === 'in_transit' && (job.driver_delivered_at ? <span className="driver-report"><Clock3 size={22} />{endsAtHandoff ? t('Arrival reported · waiting for handoff confirmation', 'رسیدن گزارش شد · منتظر تأیید انتقال') : t('Delivered · waiting for office confirmation', 'بار تحویل شد · منتظر تأیید دفتر')}</span> : <button className="registry-primary" disabled={busy || blocked} onClick={() => onAction(job, 'delivered')}><CheckCheck size={23} />{deliveredLabel}</button>)}
     </footer>}
   </article>
 }
@@ -83,7 +89,7 @@ export default function DriverBookingsPage({ language }) {
     invalidateReads()
     setRefreshing(false)
     try {
-      await rpc('driver_booking_action', { p_id: job.id, p_action: action, p_expected: job.updated_at })
+      await rpc('driver_booking_action', { p_id: job.id, p_action: action, p_expected: job.updated_at, ...(job.leg ? {p_leg:job.leg} : {}) })
       setDelivery(null)
       await refresh()
     } catch (e) { setError(e) }
@@ -122,6 +128,15 @@ export default function DriverBookingsPage({ language }) {
       <div><dt><IdCard size={17} />{t('Licence number', 'نمبر لایسنس')}</dt><dd><bdi>{driver.license_number || '—'}</bdi></dd></div>
       <div><dt><CalendarDays size={17} />{t('Expiry', 'تاریخ ختم')}</dt><dd><bdi dir="ltr">{formatSolarHijri(driver.license_expiry)}</bdi></dd></div>
     </dl></Modal>}
-    {delivery && <Modal title={t('Confirm delivery', 'تأیید تحویل بار')} onClose={() => { setDelivery(null); setError(null) }} busy={busy}><div className="record-modal-body"><p>{t('Has the receiver received the goods?', 'آیا گیرنده بار را تحویل گرفته است؟')}</p><strong><bdi dir="ltr">#{delivery.booking_number}</bdi> · {delivery.destination}</strong>{error && <p role="alert" className="registry-notice error">{explain(error, language)}</p>}<div className="registry-form-actions"><button disabled={busy} onClick={() => { setDelivery(null); setError(null) }}>{t('Back', 'برگشت')}</button><button className="registry-primary" disabled={busy} onClick={() => act(delivery, 'delivered')}><CheckCheck size={22} />{t('Yes, delivered', 'بله، تحویل شد')}</button></div></div></Modal>}
+    {delivery && <Modal title={delivery.has_handoff && delivery.leg===1 ? t('Confirm arrival','تأیید رسیدن') : t('Confirm delivery', 'تأیید تحویل بار')} onClose={() => { setDelivery(null); setError(null) }} busy={busy}>
+      <div className="record-modal-body"><p>{delivery.has_handoff && delivery.leg===1 ? t('Have you arrived with the cargo at the transfer point?', 'آیا با بار به محل انتقال رسیده‌اید؟') : t('Has the receiver received the goods?', 'آیا گیرنده بار را تحویل گرفته است؟')}</p>
+        <strong><bdi dir="ltr">#{delivery.booking_number}</bdi> · {delivery.destination}</strong>
+        {error && <p role="alert" className="registry-notice error">{explain(error, language)}</p>}
+        <div className="registry-form-actions">
+          <button disabled={busy} onClick={() => { setDelivery(null); setError(null) }}>{t('Back', 'برگشت')}</button>
+          <button className="registry-primary" disabled={busy} onClick={() => act(delivery, 'delivered')}><CheckCheck size={22} />{delivery.has_handoff && delivery.leg===1 ? t('Yes, arrived','بله، رسیدم') : t('Yes, delivered', 'بله، تحویل شد')}</button>
+        </div>
+      </div>
+    </Modal>}
   </div>
 }

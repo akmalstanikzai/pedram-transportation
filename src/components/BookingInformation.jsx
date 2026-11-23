@@ -1,6 +1,6 @@
-import { ClipboardList, MapPin, PackageCheck, Printer, ReceiptText, Send, UserRound, Wallet } from 'lucide-react'
+import { ArrowLeftRight, ClipboardList, MapPin, PackageCheck, Printer, ReceiptText, Send, UserRound, Wallet } from 'lucide-react'
 import { InformationGroup } from './FleetInformation'
-import { formatSolarHijri } from '../lib/solarHijri'
+import { formatSolarHijri, kabulISODate } from '../lib/solarHijri'
 import { bookingDue } from '../lib/bookingFinance'
 
 const hasValue = value => value !== null && value !== undefined && String(value).trim() !== ''
@@ -24,8 +24,10 @@ export default function BookingInformation({ row, language, president = false, v
     {message && <p className="registry-notice error" role="alert">{message}</p>}
     <div className="booking-information-overview">
       <InformationGroup tone="blue" icon={ClipboardList} title={t('Booking information','معلومات بار نامه')} fields={[
-        field('date','Date','تاریخ',formatSolarHijri(row.booking_date),numeric),
+        field('date','Booking date','تاریخ ثبت',formatSolarHijri(row.booking_date),numeric),
         field('status','Status','وضعیت',status && <span className={`status-pill ${row.status}`}>{status}</span>),
+        field('departure','Departure date','تاریخ حرکت',formatSolarHijri(row.departure_date || row.booking_date),numeric),
+        field('arrival','Arrival date','تاریخ رسیدن',formatSolarHijri(row.arrival_date || row.departure_date || row.booking_date),numeric),
         field('service','Service','خدمات',managed ? t('Company-managed transport','انتقال توسط شرکت') : t('Vehicle arrangement','معرفی واسطه')),
         field('branch','Office','دفتر',branch?.name || (!row.branch_id ? t('Head office','دفتر مرکزی') : '—')),
       ]}/>
@@ -34,10 +36,18 @@ export default function BookingInformation({ row, language, president = false, v
         field('destination','Destination','مقصد',row.destination),
         field('goods','Goods','بار',row.goods),
         field('quantity','Goods amount','مقدار بار',quantity),
-        field('vehicle','Vehicle','واسطه',vehicle?.plate_number || row.vehicles?.plate_number),
-        field('driver','Driver','راننده',driver?.full_name || row.drivers?.full_name),
+        field('vehicle',row.handoff_date ? 'First vehicle' : 'Vehicle',row.handoff_date ? 'واسطهٔ اول' : 'واسطه',vehicle?.plate_number || row.vehicles?.plate_number),
+        field('driver',row.handoff_date ? 'First driver' : 'Driver',row.handoff_date ? 'رانندهٔ اول' : 'راننده',driver?.full_name || row.drivers?.full_name),
       ]}/>
     </div>
+    {row.handoff_date && <InformationGroup tone="purple" icon={ArrowLeftRight} title={t('Truck handoff','انتقال بار به واسطهٔ دوم')} fields={[
+      field('location','Transfer location','محل انتقال',row.handoff_location),
+      field('planned','Transfer date','تاریخ انتقال',formatSolarHijri(row.handoff_date),numeric),
+      field('vehicle','Second vehicle','واسطهٔ دوم',row.onward_vehicle?.plate_number),
+      field('driver','Second driver','رانندهٔ دوم',row.onward_driver?.full_name),
+      field('state','Transfer status','وضعیت انتقال',row.handoff_confirmed_at ? t('Confirmed','تأیید شد') : t('Planned','برنامه‌ریزی‌شده')),
+      field('confirmed','Confirmed on','تاریخ تأیید',row.handoff_confirmed_at ? formatSolarHijri(kabulISODate(new Date(row.handoff_confirmed_at))) : null,{ ...numeric,...optional }),
+    ]}/>}
     <div className="booking-information-contacts">
       <InformationGroup tone="purple" icon={UserRound} title={t('Trader','تاجر')} fields={[
         field('name','Name','نام',traderName),

@@ -66,6 +66,7 @@
 .driver-job[data-status='cancelled'] { --portal-accent: #843d4a; --portal-tint: #faf0f2; --portal-line: #ecd0d6; }
 .role-workspace .driver-job-heading { gap: 6px; padding: 6px 9px; background: var(--portal-tint); border-color: var(--portal-line); }
 .role-workspace .driver-job-heading strong { gap: 5px; color: var(--portal-accent); font-size: 15px; }
+.role-workspace .driver-job-heading strong small { font-size: 11px; }
 .role-workspace .driver-job-heading .status-pill { padding: 3px 7px; border-radius: 6px; color: var(--portal-accent); background: #fff; font-size: 11px; }
 .role-workspace .driver-route { gap: 7px; padding: 8px 9px; }
 .role-workspace .driver-route small { gap: 4px; color: #526979; }
