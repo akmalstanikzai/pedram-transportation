@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Archive, BadgeCheck, Building2, CalendarDays, CheckCheck, CheckCircle2, ClipboardList, MapPin, Package, Play, Plus, RefreshCw, Search, Send, Truck, UserRound, Users, XCircle } from 'lucide-react'
+import { Archive, ArrowRight, BadgeCheck, Building2, CalendarDays, CheckCheck, CheckCircle2, ClipboardList, Eye, MapPin, Package, Play, Plus, RefreshCw, Search, Send, Truck, UserRound, Users, XCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { allRows, kabulToday } from '../lib/cashbook'
 import { attentionForBooking, bookingAttention } from '../lib/bookingAttention'
@@ -9,7 +9,6 @@ import { bookingColumns, rpc, explain } from '../lib/operations'
 import { ConfirmArchive, IconButton, Modal, RecordTools } from '../components/RecordTools'
 import SolarHijriDateInput from '../components/SolarHijriDateInput'
 import BookingInformation from '../components/BookingInformation'
-import CompactTable from '../components/CompactTable'
 import { useBulkSelection } from '../components/BulkSelection'
 import Icon from '../components/Icon'
 import { RegistrationSection } from '../components/RegistrationFields'
@@ -178,41 +177,83 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
   return <div className="registry-page bookings-registry">
     <header className="booking-top">
       <div className="booking-title-row">{onBack && <button type="button" className="module-back booking-back" onClick={onBack}><Icon name="back" size={16}/>{t('Back','بازگشت')}</button>}<h1>{t('Bookings','بار نامه')}</h1></div>
-      <div className="booking-top-controls">
-      <button className="registry-secondary" aria-pressed={archived} onClick={()=>{if(attention)onClearAttention?.();setArchived(!archived)}}><Archive size={18}/>{t('Archive','بایگانی')}</button>
-        <IconButton icon={RefreshCw} label={t('Refresh','تازه‌سازی')} disabled={busy} onClick={refreshForm}/><button className="registry-primary" disabled={!ready||!canBookForBranch} onClick={() => { setEditing(null);request.current=null;setForm({ ...blank, branch_id:branchManager?profile.branch_id:'',booking_date: today() }); setMessage(''); setOpen(true) }}><Plus size={18} />{t('New booking','بوکینگ جدید')}</button>
-        {president&&<div className="booking-branch-filter"><label><span><Building2 size={17}/>{t('Branch','شعبه')}</span><select value={scope} onChange={e=>setScope(e.target.value)}><option value="all">{t('All branches','تمام شعبات')}</option><option value="head-office">{t('Head office','دفتر مرکزی')}</option>{[...branches].sort((a,b)=>a.name.localeCompare(b.name)).map(branch=><option key={branch.id} value={branch.id}>{branch.name}{branch.archived_at?` · ${t('Archived','بایگانی‌شده')}`:''}</option>)}</select></label></div>}
-      </div>
+      <button type="button" className="registry-primary booking-add" disabled={!ready||!canBookForBranch} onClick={() => { setEditing(null);request.current=null;setForm({ ...blank, branch_id:branchManager?profile.branch_id:'',booking_date: today() }); setMessage(''); setOpen(true) }}><Plus size={18} aria-hidden="true" />{t('New booking','بار نامه جدید')}</button>
     </header>
-    <label className="registry-search booking-search"><Search size={17} /><input aria-label={t('Search bookings','جستجوی بوکینگ‌ها')} placeholder={t('Search booking, trader or route','جستجوی بوکینگ، تاجر یا مسیر')} value={query} onChange={e => setQuery(e.target.value)} /></label>
+    <div className="booking-filters">
+      <div className="booking-top-controls">
+        <button type="button" className="registry-secondary booking-archive" aria-pressed={archived} onClick={()=>{if(attention)onClearAttention?.();setArchived(!archived)}}><Archive size={17} aria-hidden="true" />{t('Archive','بایگانی')}</button>
+        {president && <label className="booking-branch-control">
+          <Building2 size={17} aria-hidden="true" />
+          <select aria-label={t('Branch','شعبه')} value={scope} onChange={e=>setScope(e.target.value)}>
+            <option value="all">{t('All branches','تمام شعبات')}</option>
+            <option value="head-office">{t('Head office','دفتر مرکزی')}</option>
+            {[...branches].sort((a,b)=>a.name.localeCompare(b.name)).map(branch=><option key={branch.id} value={branch.id}>{branch.name}{branch.archived_at?` · ${t('Archived','بایگانی‌شده')}`:''}</option>)}
+          </select>
+        </label>}
+        <IconButton icon={RefreshCw} label={t('Refresh','تازه‌سازی')} disabled={busy} onClick={refreshForm}/>
+      </div>
+      <label className="registry-search booking-search"><Search size={17} aria-hidden="true" /><input type="search" aria-label={t('Search bookings','جستجوی بار نامه')} placeholder={t('Search booking, trader or route','جستجوی بار نامه، تاجر یا مسیر')} value={query} onChange={e => setQuery(e.target.value)} /></label>
+    </div>
     {attention && <div className="booking-attention-filter">
       <strong>{t(...bookingAttention[attention])}{ready && <> · <bdi>{visibleRows.length}</bdi></>}</strong>
       <button type="button" className="registry-secondary" onClick={onClearAttention}>{t('Clear attention filter','پاک‌کردن فیلتر بررسی')}</button>
     </div>}
     {branchManager&&(!profile.branch_id||(ready&&!canBookForBranch))&&<p role="alert" className="registry-notice error">{t('Your account needs an active branch assignment before you can book. Ask the President to check the branch manager account.','برای ثبت بوکینگ حساب شما باید به شعبه فعال وصل باشد. از رئیس بخواهید حساب مدیر شعبه را بررسی کند.')}</p>}
-    {message && !open && <div role="alert" className="registry-notice error">{message}</div>}
+    {message && !open && !detail && <div role="alert" className="registry-notice error">{message}</div>}
     {bookingSelection.controls}
-    <div className="booking-list">{visibleRows.map(r => <article className="booking-record" key={r.id}>
-      <h3>{bookingSelection.checkbox(r)}<ClipboardList size={20} />#{r.booking_number} · {r.trader_first_name ? `${r.trader_first_name} ${r.trader_last_name || ''}` : r.traders?.full_name}</h3>
-      <div className="booking-record-actions"><span className={`status-pill ${r.status}`}>{statuses[r.status]}</span><RecordTools language={language} disabled={busy} archived={r.archived_at} onView={()=>{setMessage('');setDetail(r)}} onEdit={r.status==='confirmed'?()=>edit(r):undefined} onArchive={()=>{setMessage('');setDeletion(r)}}/>{!r.archived_at&&<div className="record-tools">{president&&r.trader_id&&bookingDue(r.charged,r.paid)>0&&<button type="button" className="registry-secondary" disabled={busy} onClick={()=>openPayment(r)}>{t('Receive payment','دریافت پول')}</button>}{r.status==='confirmed'&&<IconButton icon={Play} disabled={busy} label={t('Start journey','شروع سفر')} onClick={()=>changeStatus(r,'in_transit')}/>} {r.status==='in_transit'&&<IconButton icon={CheckCircle2} disabled={busy} label={t('Complete journey','تکمیل سفر')} onClick={()=>changeStatus(r,'completed')}/>} {['confirmed','in_transit'].includes(r.status)&&<IconButton icon={XCircle} disabled={busy} label={t('Cancel booking','لغو بوکینگ')} onClick={()=>{setMessage('');setCancelRow(r)}}/>}</div>}</div>
+    {!ready && !message && <p className="booking-list-loading" role="status">{t('Loading bookings…','در حال بارگیری بار نامه‌ها…')}</p>}
+    <div className="booking-list">{visibleRows.map(r => <article className="booking-record" data-status={r.status} key={r.id}>
+      <header className="booking-card-header">
+        {bookingSelection.checkbox(r)}
+        <span className="booking-card-reference"><ClipboardList size={16} aria-hidden="true" /><bdi>#{r.booking_number}</bdi></span>
+        <h3><bdi>{r.trader_first_name ? `${r.trader_first_name} ${r.trader_last_name || ''}` : r.traders?.full_name || '—'}</bdi></h3>
+        <span className={`status-pill ${r.status}`}>{statuses[r.status]}</span>
+      </header>
+      <div className="booking-card-body">
       {!r.archived_at&&['confirmed','in_transit'].includes(r.status)&&(r.driver_delivered_at?<p className="driver-booking-report"><CheckCheck size={20}/>{t('Driver reported delivery · confirm completion','راننده تحویل بار را گزارش داد · تکمیل سفر را تأیید کنید')}</p>:r.driver_accepted_at?<p className="driver-booking-report"><BadgeCheck size={20}/>{t('Driver accepted','راننده برنامه را پذیرفت')}</p>:null)}
       {attention==='departures' && <p className="booking-departure-due"><CalendarDays size={15} aria-hidden="true"/>{t('Planned departure','تاریخ برنامه‌ریزی‌شدهٔ حرکت')} <bdi dir="ltr">{formatSolarHijri(r.departure_date || r.booking_date)}</bdi></p>}
-      <CompactTable className="booking-summary-table" label={t('Booking summary','خلاصه بار نامه')} columns={[
-        {label:t('Route / cargo','مسیر / بار')}, {label:t('Date / service','تاریخ / خدمات')},
-      ]}>
-        <tr>
-          <td><strong>{r.origin} → {r.destination}</strong><small>{r.goods} · {quantityText(r)}</small></td>
-          <td><bdi>{formatSolarHijri(r.booking_date)}</bdi>
-            <small>{r.service_type === 'managed' ? t('Company-managed transport','انتقال توسط شرکت') : t('Vehicle arrangement','معرفی واسطه')}</small>
-            {president&&<small>{t('Trader owes','بدهی تاجر')} · <bdi>{money(bookingDue(r.charged,r.paid)/100,r.commission_currency)}</bdi></small>}
-          </td>
-        </tr>
-        <tr>
-          <td><small>{t('Sender','فرستنده')} · {r.sender_name || '—'}</small><small>{t('Receiver','گیرنده')} · {r.receiver_name || '—'}</small></td>
-          <td><bdi>{r.vehicles?.plate_number || '—'}</bdi><small>{r.drivers?.full_name || '—'}</small></td>
-        </tr>
-      </CompactTable>
-      <details className="booking-contact-details"><summary>{t('Contact details','مشخصات تماس')}</summary><dl className="booking-preview"><dt>{t('Trader contact / address','تماس / آدرس تاجر')}</dt><dd>{r.trader_phone || r.traders?.phone || '—'} · {r.trader_address || '—'}</dd><dt>{t('Sender contact / address','تماس / آدرس فرستنده')}</dt><dd>{r.sender_phone || '—'} · {r.sender_address || '—'}</dd><dt>{t('Receiver contact / address','تماس / آدرس گیرنده')}</dt><dd>{r.receiver_phone || '—'} · {r.receiver_address || '—'}</dd></dl></details>
+        <dl className="booking-card-facts">
+          <div className="booking-card-route">
+            <dt><MapPin size={14} aria-hidden="true" />{t('Route / cargo','مسیر / بار')}</dt>
+            <dd className="booking-route-pair"><bdi>{r.origin || '—'}</bdi><ArrowRight size={14} aria-hidden="true" /><bdi>{r.destination || '—'}</bdi></dd>
+            <dd>{r.goods} · <bdi>{quantityText(r)}</bdi></dd>
+          </div>
+          <div>
+            <dt><CalendarDays size={14} aria-hidden="true" />{t('Date / service','تاریخ / خدمات')}</dt>
+            <dd><time dateTime={r.booking_date}><bdi dir="ltr">{formatSolarHijri(r.booking_date)}</bdi></time></dd>
+            <dd>{r.service_type === 'managed' ? t('Company-managed transport','انتقال توسط شرکت') : t('Vehicle arrangement','معرفی واسطه')}</dd>
+            {president && <dd className="booking-card-balance">{t('Trader owes','بدهی تاجر')} · <bdi dir="ltr">{money(bookingDue(r.charged,r.paid)/100,r.commission_currency)}</bdi></dd>}
+          </div>
+          <div>
+            <dt><Users size={14} aria-hidden="true" />{t('Sender / receiver','فرستنده / گیرنده')}</dt>
+            <dd><bdi>{r.sender_name || '—'}</bdi></dd><dd><bdi>{r.receiver_name || '—'}</bdi></dd>
+          </div>
+          <div>
+            <dt><Truck size={14} aria-hidden="true" />{t('Vehicle / driver','واسطه / راننده')}</dt>
+            <dd><bdi>{r.vehicles?.plate_number || '—'}</bdi></dd><dd><bdi>{r.drivers?.full_name || '—'}</bdi></dd>
+          </div>
+        </dl>
+        <details className="booking-contact-details">
+          <summary>{t('Contact details','مشخصات تماس')}</summary>
+          <dl className="booking-card-contacts">
+            {[
+              [t('Trader contact / address','تماس / آدرس تاجر'),r.trader_phone || r.traders?.phone,r.trader_address],
+              [t('Sender contact / address','تماس / آدرس فرستنده'),r.sender_phone,r.sender_address],
+              [t('Receiver contact / address','تماس / آدرس گیرنده'),r.receiver_phone,r.receiver_address],
+            ].map(([label,phone,address])=><div key={label}><dt>{label}</dt><dd><bdi dir="ltr">{phone || '—'}</bdi> · <bdi>{address || '—'}</bdi></dd></div>)}
+          </dl>
+        </details>
+      </div>
+      <div className="booking-record-actions">
+        <button type="button" className="registry-secondary booking-view" disabled={busy} onClick={()=>{setMessage('');setDetail(r)}}><Eye size={17} aria-hidden="true" />{t('Details','جزئیات')}</button>
+        <RecordTools language={language} disabled={busy} archived={r.archived_at} onEdit={r.status==='confirmed'?()=>edit(r):undefined} onArchive={()=>{setMessage('');setDeletion(r)}}/>
+        {!r.archived_at && <>
+          {r.status==='confirmed' && <IconButton icon={Play} className="booking-journey" disabled={busy} label={t('Start journey','شروع سفر')} onClick={()=>changeStatus(r,'in_transit')}/>}
+          {r.status==='in_transit' && <IconButton icon={CheckCircle2} className="booking-journey" disabled={busy} label={t('Complete journey','تکمیل سفر')} onClick={()=>changeStatus(r,'completed')}/>}
+          {['confirmed','in_transit'].includes(r.status) && <IconButton icon={XCircle} className="booking-cancel" disabled={busy} label={t('Cancel booking','لغو بوکینگ')} onClick={()=>{setMessage('');setCancelRow(r)}}/>}
+          {president && r.trader_id && bookingDue(r.charged,r.paid)>0 && <button type="button" className="registry-secondary booking-payment" disabled={busy} onClick={()=>openPayment(r)}>{t('Receive payment','دریافت پول')}</button>}
+        </>}
+      </div>
     </article>)}</div>
     {ready && !visibleRows.length && <div className="registry-empty"><ClipboardList size={32} />{rows.length?t('No bookings match these filters.','هیچ بوکینگی با این فیلترها مطابقت ندارد.'):t('No bookings registered yet.','هنوز بوکینگ ثبت نشده است.')}</div>}
     {open && <Modal title={editing?t('Edit booking','ویرایش بوکینگ'):t('New booking','بوکینگ جدید')}
@@ -264,6 +305,12 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
     {bookingSelection.dialog}
     {paymentRow&&<Modal title={`${t('Receive payment for booking','دریافت پول بوکینگ')} #${paymentRow.booking_number}`} busy={busy} onClose={()=>setPaymentRow(null)}><form className="registry-form" onSubmit={savePayment}><p className="wide booking-help">{t('Remaining owed','باقی‌مانده قابل پرداخت')}: <strong>{money(bookingDue(paymentRow.charged,paymentRow.paid)/100,paymentRow.commission_currency)}</strong></p><fieldset disabled={busy} className="booking-fields wide"><label><span>{t('Amount received','مبلغ دریافت‌شده')} ({paymentRow.commission_currency}) *</span><input required type="number" min="0.01" max={bookingDue(paymentRow.charged,paymentRow.paid)/100} step="0.01" value={paymentForm.amount} onChange={e=>setPaymentForm(current=>({...current,amount:e.target.value}))}/></label><label><span>{t('Payment date','تاریخ دریافت')} *</span><SolarHijriDateInput required max={kabulToday()} language={language} value={paymentForm.date} onChange={date=>setPaymentForm(current=>({...current,date}))} ariaLabel={t('Payment date','تاریخ دریافت')}/></label></fieldset><p className="wide booking-help">{t('This payment is added once to Cashbook Money In and the trader account.','این پرداخت یک‌بار در پول آمد روزنامچه و حساب تاجر ثبت می‌شود.')}</p>{paymentError&&<p className="wide registry-notice error" role="alert">{paymentError}</p>}<div className="registry-form-actions"><button type="button" disabled={busy} onClick={()=>setPaymentRow(null)}>{t('Cancel','انصراف')}</button><button className="registry-primary" disabled={busy}>{t('Save payment','ثبت پرداخت')}</button></div></form></Modal>}
     {cancelRow&&<Modal title={t('Cancel booking','لغو بوکینگ')} onClose={()=>setCancelRow(null)} busy={busy}><div className="record-modal-body"><p>{t('Cancel this booking and release its vehicle and driver?','این بوکینگ لغو و واسطه و راننده آزاد شوند؟')}</p>{message&&<p role="alert" className="registry-notice error">{message}</p>}<button className="registry-primary" disabled={busy} onClick={()=>changeStatus(cancelRow,'cancelled')}>{t('Cancel booking','لغو بوکینگ')}</button></div></Modal>}
-    {detail&&<Modal title={`#${detail.booking_number}`} onClose={()=>setDetail(null)}><BookingInformation row={detail} language={language} president={president} vehicle={vehicles.find(row=>row.id===detail.vehicle_id)} driver={drivers.find(row=>row.id===detail.driver_id)} branch={branches.find(row=>row.id===detail.branch_id)} onPrint={()=>printBooking(detail)} message={message}/></Modal>}
+    {detail && <Modal className="booking-detail-card" title={`${t('Booking details','جزئیات بار نامه')} · \u2066#${detail.booking_number}\u2069`} onClose={()=>setDetail(null)}>
+      <BookingInformation row={detail} language={language} president={president}
+        vehicle={vehicles.find(row=>row.id===detail.vehicle_id)}
+        driver={drivers.find(row=>row.id===detail.driver_id)}
+        branch={branches.find(row=>row.id===detail.branch_id)}
+        onPrint={()=>printBooking(detail)} message={message}/>
+    </Modal>}
   </div>
 }

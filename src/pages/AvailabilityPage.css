@@ -1,0 +1,236 @@
+.module-page.availability-module { padding-top: 6px; }
+.availability-module .module-shell { margin-top: 0; }
+
+.availability-page {
+  --schedule-green: #17634f;
+  --schedule-blue: #245981;
+  --schedule-ink: #425b70;
+  --schedule-line: #d1e1eb;
+  --schedule-accent: var(--schedule-green);
+  --schedule-tint: #e7f3ed;
+  --schedule-accent-line: #c4ded1;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.availability-page[data-kind='driver'] {
+  --schedule-accent: var(--schedule-blue);
+  --schedule-tint: #eaf2fa;
+  --schedule-accent-line: #c8dcec;
+}
+
+.availability-heading, .availability-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 8px;
+}
+
+.availability-heading { justify-content: space-between; flex-wrap: wrap; }
+.availability-title h1 { margin: 0; color: var(--navy); }
+.availability-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  flex: 0 1 270px;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--schedule-line);
+  border-radius: 11px;
+  background: #eaf0f5;
+}
+.availability-switch button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 4px 9px;
+  border-radius: 8px;
+  color: var(--schedule-ink);
+  font-size: 14px;
+  font-weight: 750;
+}
+.availability-switch button:hover { background: #fff; }
+.availability-switch button[aria-pressed='true'] { background: var(--schedule-accent); color: #fff; }
+
+.availability-filters {
+  display: grid;
+  grid-template-columns: minmax(132px, 176px) minmax(140px, 200px) minmax(0, 1fr);
+  align-items: end;
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid var(--schedule-line);
+  border-radius: 10px;
+  background: #eef5fb;
+}
+.availability-filter { display: grid; gap: 3px; min-width: 0; }
+.availability-filter > span:first-child { color: var(--schedule-blue); font-size: 12px; font-weight: 750; }
+.availability-filter .solar-date-picker { width: 100%; min-width: 0; }
+.availability-filter .solar-date-trigger {
+  min-height: 44px;
+  gap: 5px;
+  padding-inline: 8px;
+  border-color: #c5d8e7;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 650;
+}
+.availability-filter .solar-date-trigger svg { color: var(--schedule-blue); }
+.availability-period {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  min-height: 44px;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid #c5d8e7;
+  border-radius: 8px;
+  background: #fff;
+}
+.availability-period button {
+  border-radius: 5px;
+  color: var(--schedule-blue);
+  font-size: 13px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+.availability-period button:hover { background: #eaf2fa; }
+.availability-period button[aria-pressed='true'] { color: #fff; background: var(--schedule-blue); }
+.availability-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 0;
+  padding-inline: 9px;
+  border: 1px solid #c5d8e7;
+  border-radius: 8px;
+  color: var(--schedule-blue);
+  background: #fff;
+}
+.availability-search input {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  border: 0;
+  color: var(--ink);
+  font-size: 16px;
+  outline: 0;
+}
+.availability-search input::placeholder { color: #516777; }
+.availability-page svg { flex-shrink: 0; }
+.availability-page button:focus-visible, .availability-search:focus-within { outline: 2px solid var(--schedule-blue); outline-offset: 2px; }
+
+.availability-schedule {
+  min-width: 0;
+  border: 1px solid var(--schedule-accent-line);
+  border-radius: 11px;
+  background: #fff;
+}
+.availability-schedule-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 8px 11px;
+  border-block-end: 1px solid var(--schedule-accent-line);
+  border-radius: 10px 10px 0 0;
+  color: var(--schedule-accent);
+  background: var(--schedule-tint);
+}
+.availability-schedule-heading h2 { margin: 0; font-size: 15px; font-weight: 800; }
+.availability-schedule-heading > span { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 650; }
+.availability-list, .availability-jobs { margin: 0; padding: 0; list-style: none; }
+.availability-record {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+  align-items: start;
+  gap: 8px 14px;
+  padding: 9px 11px;
+}
+.availability-record + .availability-record { border-block-start: 1px solid var(--schedule-line); }
+.availability-identity {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 7px;
+  min-width: 0;
+}
+.availability-resource-icon {
+  display: grid;
+  place-items: center;
+  height: 32px;
+  border-radius: 8px;
+  color: var(--schedule-accent);
+  background: var(--schedule-tint);
+}
+.availability-identity h3 { margin: 0; color: var(--navy); font-size: 14px; font-weight: 800; overflow-wrap: anywhere; }
+.availability-expiry { grid-column: 2 / -1; margin: 0; color: var(--schedule-ink); font-size: 12px; }
+.availability-status {
+  padding: 2px 7px;
+  border-radius: 6px;
+  color: #4f5662;
+  background: #edf1f4;
+  font-size: 11px;
+  font-weight: 750;
+}
+.availability-status[data-status='available'] { color: #19563f; background: #e3f3e9; }
+.availability-status:is([data-status='assigned'], [data-status='on_trip']) { color: #214e79; background: #e5eff9; }
+.availability-status[data-status='under_repair'] { color: #724810; background: #fff0d5; }
+.availability-jobs, .availability-no-jobs {
+  border: 1px solid #e0e9ee;
+  border-radius: 8px;
+  color: var(--schedule-ink);
+  background: #f6f9fb;
+}
+.availability-jobs li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  padding: 6px 8px;
+}
+.availability-jobs li + li { border-block-start: 1px solid #e0e9ee; }
+.availability-jobs strong { min-width: 0; color: var(--navy); font-size: 13px; font-weight: 700; overflow-wrap: anywhere; }
+.availability-route-arrow { display: inline-block; }
+[dir='rtl'] .availability-route-arrow { transform: scaleX(-1); }
+.availability-jobs small { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: 12px; }
+.availability-no-jobs { display: flex; align-items: center; gap: 6px; padding: 6px 8px; margin: 0; font-size: 12px; }
+.availability-message { padding: 20px 10px; margin: 0; color: var(--schedule-ink); text-align: center; font-size: 14px; }
+.availability-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin: 8px;
+  padding: 7px 9px;
+  border: 1px solid #edc9ce;
+  border-radius: 8px;
+  color: #8d2c3f;
+  background: #fff3f5;
+  font-size: 13px;
+}
+.availability-error p { margin: 0; }
+.availability-error button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  padding-inline: 8px;
+  border: 1px solid #edc9ce;
+  border-radius: 7px;
+  background: #fff;
+  font-weight: 750;
+}
+
+@media (max-width: 680px) {
+  .availability-page, .availability-heading { gap: 7px; }
+  .availability-switch { flex-basis: 100%; }
+  .availability-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 7px; }
+  .availability-search { grid-column: 1 / -1; }
+  .availability-schedule-heading { padding: 7px 8px; }
+  .availability-record { grid-template-columns: minmax(0, 1fr); gap: 5px; padding: 7px 8px; }
+}

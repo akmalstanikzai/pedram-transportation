@@ -575,8 +575,6 @@ html[dir='rtl'] .brand strong { font-family: var(--font-dari); letter-spacing: 0
 .booking-preview dt:first-child { margin-top: 0; }
 .booking-preview dd { margin: 4px 0 0; font-size: 13px; font-weight: 650; overflow-wrap: anywhere; }
 .booking-contact-details summary { cursor: pointer; font-size: 13px; font-weight: 700; padding: 8px 0; color: #277658; }
-.simple-cashbook-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-bottom: 12px; }
-.simple-cashbook-toolbar { padding: 15px; border: 1px solid var(--line); border-radius: 12px; background: white; }
 .cashbook-summary { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; margin: 20px 0; }
 .cashbook-summary > div { display: grid; gap: 7px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: white; }
 .cashbook-summary span { color: #60727f; font-size: 12px; font-weight: 700; }
@@ -584,9 +582,6 @@ html[dir='rtl'] .brand strong { font-family: var(--font-dari); letter-spacing: 0
 .cashbook-summary-balance { background: #eaf2f7 !important; border-color: #bfd1dd !important; }
 @media(max-width:800px) { .cashbook-summary { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media(max-width:480px) { .cashbook-summary { gap: 8px; } .cashbook-summary > div { padding: 12px; } .cashbook-summary strong { font-size: 15px; white-space: normal; overflow-wrap: anywhere; } }
-.simple-cashbook-toolbar label { display: grid; gap: 7px; font-size: 12px; font-weight: 700; }
-.simple-cashbook-toolbar :is(input, select) { min-width: 0; width: 100%; min-height: 43px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: white; }
-.simple-cashbook-toolbar > label { min-width: 130px; }
 .booking-branch-filter { margin-bottom: 22px; }
 .booking-branch-filter label { display: grid; gap: 7px; width: min(240px, 100%); font-size: 12px; font-weight: 700; }
 .booking-branch-filter label > span { display: flex; align-items: center; gap: 7px; }
@@ -826,8 +821,6 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
   .registry-form-actions button { min-height: 44px; }
   .branch-login-editor { flex-wrap: wrap; }
   .branch-login-editor label, .branch-login-editor .registry-secondary { flex-basis: 100%; }
-  .simple-cashbook-toolbar { gap: 12px; }
-  .simple-cashbook-toolbar > label { flex: 1 1 140px; min-width: 0; }
   .driver-route { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; }
   .driver-route h2 { font-size: clamp(17px, 5vw, 24px); }
   .driver-licence-details { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 10px; padding: 12px; }
@@ -852,17 +845,6 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 .cashbook-correction-history { margin-block-start: 6px; font-size: 0.85rem; }
 .cashbook-correction-history ul { padding-inline-start: 16px; }
 .cashbook-correction-history li span { display: block; }
-.availability-jobs { margin: 0; padding: 0; list-style: none; }
-.availability-jobs li + li { margin-top: 0.55rem; padding-top: 0.55rem; border-top: 1px solid #d7e2ee; }
-
-/* Keep availability filters in two columns on phones. */
-.simple-cashbook-toolbar > * { min-width: 0; }
-.simple-cashbook-toolbar :is(.solar-date-picker, .solar-date-trigger) { width: 100%; min-width: 0; }
-@media (max-width: 640px) {
-  .simple-cashbook-toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; padding: 10px; }
-  .simple-cashbook-toolbar > label { width: 100%; min-width: 0; font-size: 14px; line-height: 1.5; }
-  .simple-cashbook-toolbar :is(input, select, .solar-date-trigger) { min-height: 48px; font-size: 16px; }
-}
 
 .fleet-information-view .fleet-information-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; margin: 0; }
 .fleet-information-view .fleet-address-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 10px; }
@@ -873,14 +855,6 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 .fleet-information-section:last-child { padding-bottom: 0; margin-bottom: 0; border-bottom: 0; }
 .fleet-information-view dd { line-height: 1.6; white-space: pre-line; overflow-wrap: anywhere; }
 .fleet-information-photo { display: block; width: 80px; height: 96px; object-fit: cover; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 18px; }
-.booking-information-actions { margin-bottom: 18px; }
-.booking-information-actions button { min-height: 44px; white-space: normal; }
-.booking-information-expenses { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.booking-information-expenses li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; min-width: 0; }
-.booking-information-expenses li > * { min-width: 0; overflow-wrap: anywhere; }
-@media (max-width: 520px) {
-  .booking-information-actions button { width: 100%; justify-content: center; }
-}
 .employee-salary { white-space: nowrap; font-size: .9rem; }
 .employee-transactions { display: grid; gap: .75rem; }
 .employee-transactions article { display: grid; gap: .35rem; padding: .9rem 1rem; border: 1px solid var(--line, #dce3e8); border-radius: 12px; }
@@ -975,7 +949,6 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 .cashbook-row-actions:empty { display: none; }
 .cashbook-row-actions .record-icon-button svg { width: 16px; height: 16px; }
 .compact-table .cashbook-correction-history { margin-block-start: 4px; font-size: 11px; }
-.booking-summary-table { margin-bottom: 8px; }
 .booking-record-actions > .record-tools { display: contents; }
 .payroll-history-row td { padding-block: 4px; }
 .payroll-history-row .payroll-history { margin: 0; }
@@ -1035,7 +1008,3 @@ html[dir='rtl'] .driver-route-arrow { transform: scaleX(-1); }
 }
 .module-page .module-shell button.module-back:hover { background: #dcecf7; }
 .module-page .module-shell button.module-back svg { flex: none; width: 16px; height: 16px; }
-.module-page.availability-module { padding-top: 6px; }
-.availability-module .module-shell { margin-top: 0; }
-.availability-module .availability-heading { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin: 0 0 8px; }
-.availability-heading h1 { margin: 0; color: var(--navy); }
