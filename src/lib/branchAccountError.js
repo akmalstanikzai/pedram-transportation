@@ -1,5 +1,5 @@
 export async function branchAccountError(data, error, kind = 'branch') {
-  const prefix = kind === 'driver' ? 'DRIVER' : 'BRANCH'
+  const prefix = {driver:'DRIVER',trader:'TRADER'}[kind] || 'BRANCH'
   let message = data?.error || error?.message || 'ACCOUNT_UPDATE_FAILED'
   const status = error?.context?.status
   try {

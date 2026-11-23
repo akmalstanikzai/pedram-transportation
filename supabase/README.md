@@ -26,7 +26,9 @@ Apply `202611020005_driver_portal.sql` next for the driver's icon-led Jobs scree
 
 For the new branch Password key button, also deploy **`manage-branch-account`**. It reads the registered manager's sign-in name and lets only an enabled President assign a new password through Supabase Auth. This feature needs no new SQL migration. It does not enable disabled accounts or change the manager/branch assignment.
 
-Driver password changes reuse **create-driver-account**. Redeploy its latest complete standalone `index.ts` to enable the new `details` and `password` actions for already linked driver records. The handler verifies the active President, the selected driver record's `user_id`, Driver role and matching branch before looking up or updating the Auth account. It never uses a client-supplied target user ID and does not change email, role or enabled state. No additional SQL migration or function name is needed. The shared source and both creation entrypoints remain synchronized; the branch creation behavior is unchanged.
+Driver password management uses **create-driver-account**. Apply `202611230001_driver_password_vault.sql` if pending, then deploy the full `functions/create-driver-account/index.ts`. An older deployment can change the Auth password without saving a copy. Set a different new password after deploying to enable reveal in **Fleet → Drivers → key icon**.
+
+Trader password management uses **manage-trader-account**. Apply `202611230004_verify_trader_password_vault.sql` after `202611090006_trader_password_vault.sql`, then deploy `functions/manage-trader-account/index.ts` and the frontend. Open **Traders → key icon** to show, hide or change a password. Passwords from the earlier trader vault need one reset when you want to reveal them. Existing logins continue to work until changed.
 
 If the browser reports a failed CORS preflight, check whether this exact function exists in the project used by the frontend. A `404 NOT_FOUND / Requested function was not found` response to OPTIONS means the function is absent at that endpoint. In Dashboard → Edge Functions, create **manage-branch-account**, paste its complete standalone `index.ts`, and deploy. Running a test invocation or deploying a differently named function does not create this endpoint. Refresh the app and reopen the key dialog afterwards.
 
@@ -39,17 +41,20 @@ The driver portal SQL is separate: apply `202611020005_driver_portal.sql` after 
    `supabase functions deploy create-driver-account --project-ref YOUR_PROJECT_REF --use-api`
    and the branch password function:
    `supabase functions deploy manage-branch-account --project-ref YOUR_PROJECT_REF --use-api`
+   and the trader account function:
+   `supabase functions deploy manage-trader-account --project-ref YOUR_PROJECT_REF --use-api`
 3. Create the initial President in Supabase Authentication. A profile is created automatically for every new user.
 4. New profiles default to the least-privileged `driver` role. Assign the initial President role from a trusted admin SQL session. Branch Manager accounts are created by the deployed Edge Function.
 5. Keep `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in the app's `.env` file.
 
 ## Deploy through the Dashboard editor
 
-All three account function `index.ts` files are self-contained for single-file Dashboard deployment. For each function, replace the editor's entire `index.ts` with the corresponding local file, then deploy:
+The four account function `index.ts` files are self-contained for single-file Dashboard deployment. For each function, replace the editor's entire `index.ts` with the corresponding local file, then select **Deploy updates**:
 
 - `functions/create-branch-with-manager/index.ts`
 - `functions/create-driver-account/index.ts`
 - `functions/manage-branch-account/index.ts`
+- `functions/manage-trader-account/index.ts`
 
 Do not paste the old two-line wrapper that imports `../_shared/provision.ts`. That wrapper needs the shared file in its deployment bundle and fails if pasted alone into the Dashboard. The current entrypoints contain their provisioning logic directly; `_shared/provision.ts` remains a reference for keeping the two copies consistent, not a runtime dependency of either entrypoint.
 

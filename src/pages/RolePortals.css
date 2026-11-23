@@ -173,10 +173,6 @@
 .branch-dashboard-home .dashboard-banner p { margin: 3px 0; }
 .branch-dashboard-home .dashboard-banner time { padding-block: 2px; }
 .branch-dashboard-notice { margin: 8px 0 0; }
-.driver-account .driver-password-settings { display: grid; gap: 7px; margin-block: 7px; }
-.driver-password-settings .branch-account-section { padding: 7px; gap: 5px; border: 1px solid #c5d8e8; border-radius: 8px; background: #f0f6fb; }
-.driver-password-settings .driver-password-form { gap: 7px; padding: 0; }
-.driver-password-settings .registry-notice { margin: 0; }
 
 @media(max-width:600px) {
   .role-portal-home > .dashboard-content { padding-block-start: 7px; }

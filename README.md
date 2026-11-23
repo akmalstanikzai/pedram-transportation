@@ -79,7 +79,7 @@ Older versions posted commission automatically when a booking was created. Those
 
 As President, open **Traders** and select the wallet icon beside a trader. The currency selector controls the statement totals. Each booking shows its charge, net payments, and remaining balance. The account also shows total charges, payments, debt or credit, and transaction history. Select **Print statement** to print the selected currency or save it as a PDF.
 
-Use the trader's key icon to create a login, change its password, or enable or disable access. **View saved password** shows passwords previously stored by the protected trader account function. If a password predates the vault, set a new one to make it available there. Traders sign in on the same login page and see their own information and balances.
+Use the trader's key icon to create a login, change its password, or enable or disable access. **Show saved password** reveals the verified copy for 30 seconds and hides it when the window loses focus. A password from an older vault needs one reset before it can be shown. Apply `202611230004_verify_trader_password_vault.sql` and deploy `manage-trader-account` before publishing the updated frontend. Traders sign in on the same login page and see their own information and balances.
 
 ## Branches and account management
 
