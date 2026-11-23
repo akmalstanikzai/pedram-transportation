@@ -63,10 +63,20 @@ try {
   await db.exec('reset role')
   await db.query("update public.profiles set role='branch_manager',branch_id=$1 where id=$2",[branch,manager])
   await signIn(president)
-  const firstVehicle = await call('save_fleet_record',['vehicle',null,uid(),{plate_number:'IR-500',vehicle_type:'Truck',capacity_tons:30},null])
+  const owner = await call('save_owner_record',[null,uid(),{full_name:'Shared Owner',phone:'0700000000',national_id:'owner-id'},null])
+  const firstVehicle = await call('save_fleet_record',['vehicle',null,uid(),{plate_number:'IR-500',vehicle_type:'Truck',capacity_tons:30,owner_id:owner},null])
   const secondVehicle = await call('save_fleet_record',['vehicle',null,uid(),{plate_number:'AF-900',vehicle_type:'Truck',capacity_tons:10},null])
-  const firstDriver = await call('save_fleet_record',['driver',null,uid(),{full_name:'First Driver',phone:'0700000001',user_id:firstUser},null])
+  const firstDriver = await call('save_fleet_record',['driver',null,uid(),{full_name:'First Driver',phone:'0700000001',user_id:firstUser,national_id:'driver-id',license_number:'first-licence'},null])
   const secondDriver = await call('save_fleet_record',['driver',null,uid(),{full_name:'Second Driver',phone:'0700000002',user_id:secondUser},null])
+  const ownDriverData = {full_name:'Branch Driver',phone:'0700000009',branch_id:branch,national_id:'branch-driver-id',license_number:'branch-licence'}
+  const ownDriver = await call('save_driver_employment',[null,uid(),ownDriverData,null])
+  const ownOwnerData = {full_name:'Branch Owner',phone:'0700000010',branch_id:branch,national_id:'branch-owner-id'}
+  const ownOwner = await call('save_owner_record',[null,uid(),ownOwnerData,null])
+  const identifiers = async (kind, id) => (await db.query(
+    'select national_id,license_number from public.get_fleet_identifiers($1,$2::uuid[])', [kind,[id]],
+  )).rows[0]
+  assert.deepEqual(await identifiers('driver',firstDriver),{national_id:'driver-id',license_number:'first-licence'})
+  assert.deepEqual(await identifiers('owner',owner),{national_id:'owner-id',license_number:null})
   const trader = await call('save_trader_record',[null,uid(),{first_name:'Trader',last_name:'One',phone:'0700000003',address:'Private trader address'},null])
   const base = {
     booking_date:day, departure_date:day, arrival_date:arrival, vehicle_id:firstVehicle, driver_id:firstDriver, trader_id:trader,
@@ -102,12 +112,34 @@ try {
   await assert.rejects(call('set_fleet_branch_scope',['driver',secondDriver,branch,await version('drivers',secondDriver)]),/RECORD_IN_USE/)
 
   await signIn(manager)
+  assert.equal((await db.query('select id,full_name from public.drivers where id=$1',[firstDriver])).rows[0].full_name,'First Driver')
+  assert.equal((await db.query('select id,full_name from public.vehicle_owners where id=$1',[owner])).rows[0].full_name,'Shared Owner')
+  await assert.rejects(db.query('select national_id from public.drivers where id=$1',[firstDriver]),{code:'42501'})
+  await assert.rejects(db.query('select license_number from public.drivers where id=$1',[ownDriver]),{code:'42501'})
+  await assert.rejects(db.query('select national_id from public.vehicle_owners where id=$1',[owner]),{code:'42501'})
+  await assert.rejects(db.query('select * from public.drivers'),{code:'42501'})
+  await assert.rejects(identifiers('driver',firstDriver),/ACCESS_DENIED/)
+  await assert.rejects(identifiers('owner',ownOwner),/ACCESS_DENIED/)
+  await call('save_driver_employment',[ownDriver,uid(),{...ownDriverData,phone:'0700000011',national_id:'attempted-id',license_number:'attempted-licence'},await version('drivers',ownDriver)])
+  const {national_id: _id, ...ownerUpdate} = ownOwnerData
+  await call('save_owner_record',[ownOwner,uid(),{...ownerUpdate,phone:'0700000012'},await version('vehicle_owners',ownOwner)])
+  const futureDate = await dateAt(10)
+  const branchBooking = await save({...base,booking_date:futureDate,departure_date:futureDate,arrival_date:futureDate,received_now:''})
+  const assigned = (await db.query('select branch_id,vehicle_id,driver_id from public.bookings where id=$1',[branchBooking])).rows[0]
+  assert.deepEqual(assigned,{branch_id:branch,vehicle_id:firstVehicle,driver_id:firstDriver})
   const branchSchedule = (await call('fleet_schedule',[day,7])).jobs.find(job=>job.resource_id===secondVehicle)
   assert.equal(branchSchedule.number,null)
   assert.equal(branchSchedule.origin,null)
   assert.equal((await db.query('select id from public.bookings where id=$1',[id])).rowCount,0)
 
+  await signIn(president)
+  assert.deepEqual(await identifiers('driver',ownDriver),{national_id:'branch-driver-id',license_number:'branch-licence'})
+  assert.deepEqual(await identifiers('owner',ownOwner),{national_id:'branch-owner-id',license_number:null})
   await signIn(firstUser)
+  const self = (await call('get_driver_portal')).driver
+  assert.equal(self.license_number,'first-licence')
+  assert.equal(self.national_id,undefined)
+  await assert.rejects(identifiers('driver',firstDriver),/ACCESS_DENIED/)
   let firstJob = (await jobs()).find(job=>job.id===id)
   assert.equal(firstJob.leg,1)
   assert.equal(firstJob.destination,'Islam Qala')
@@ -163,7 +195,7 @@ try {
   await signIn(secondUser)
   assert.equal((await jobs()).some(job=>job.id===id),false)
   await assert.rejects(call('driver_booking_action',[id,'delivered',secondJob.updated_at,2]),/ACCESS_DENIED/)
-  console.log('Role retirement, driver privacy, trip dates, leg reservations, handoff and one receivable passed.')
+  console.log('Role retirement, Fleet identifier privacy, shared branch bookings, trip dates, leg reservations, handoff and one receivable passed.')
 } finally {
   await db.close()
 }

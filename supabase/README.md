@@ -1,6 +1,21 @@
 # Pedram Transportation Supabase setup
 
-For the updated vehicle weights and owner picker, apply `202611120001_vehicle_weights.sql` after the preceding migrations and before deploying the frontend. `save_vehicle_record` stores gross permitted weight and empty vehicle weight in kilograms, derives cargo capacity in tons for the existing booking checks, and preserves legacy capacities if no weights are entered. The vehicle owner picker reuses `save_owner_record` and the same Fleet owner form, including its uploads. No Edge Function redeployment is needed. Run `tests/vehicle-weights-database.mjs` with `PEDRAM_PGLITE_PATH` for disposable database verification.
+## Resolve the duplicate migration version on an existing project
+
+Employees keeps version `202611120001`. Vehicle weights moves to `202611120006`. The vehicle migration can run again without changing existing weights.
+
+1. Run [check_fleet_migration_status.sql](check_fleet_migration_status.sql) in the target project's SQL Editor. It reports installed schema and migration history without reading staff or customer records.
+2. Compare the result with the current schema and take backups of the database and Storage before deployment. If employees already exists, do not run its original CREATE TABLE migration again. If history is missing or disagrees with the installed schema, reconcile it with the schema before using CLI deployment. In particular, an old `202611120001` entry alone cannot establish that both updates ran.
+3. If `relevant_migration_history` is null, the CLI history table is absent. For this SQL Editor workflow, apply only the migration files the schema check shows are pending. If the employee and weight checks are all true,  both earlier updates are already installed. Before switching to `supabase db push`, reconcile the full migration history with the installed schema.
+4. For a linked project with verified history, preview the plan with `supabase db push --dry-run` before applying pending migrations. If vehicle weights is already installed under the old version and `202611120006` appears as pending, the renamed SQL can run safely and records the unique version.
+
+## Deploy Fleet identifier privacy
+
+Prepare the matching frontend build before applying `202611230005_fleet_identifier_privacy.sql`. Apply the migration and publish the build during the same release window. Then reload open Fleet and Booking tabs, as older builds requested whole rows and PostgreSQL now restricts those requests. No Edge Function redeployment is required.
+
+Run [check_fleet_migration_status.sql](check_fleet_migration_status.sql) again after applying the privacy migration. Both `fleet_identifier_rpc_present` and `fleet_identifiers_protected` should be true. Test with designated accounts after publishing the web app. Branch managers can select shared drivers and owners in Fleet and Bookings, the President can view Fleet Tazkira and driver licence numbers, and drivers can still see their own licence number in their portal.
+
+For the updated vehicle weights and owner picker, apply `202611120006_vehicle_weights.sql` after the preceding migrations and before deploying the frontend. `save_vehicle_record` stores gross permitted weight and empty vehicle weight in kilograms, derives cargo capacity in tons for the existing booking checks, and preserves legacy capacities if no weights are entered. The vehicle owner picker reuses `save_owner_record` and the same Fleet owner form, including its uploads. No Edge Function redeployment is needed. Run `tests/vehicle-weights-database.mjs` with `PEDRAM_PGLITE_PATH` for disposable database verification.
 
 For the revised branch form, apply `202611110001_branch_form_details.sql` after all preceding migrations, then redeploy `create-branch-with-manager` using its current standalone `index.ts`. This saves branch codes, separate manager names, and province/district/village home addresses. It adds named manager uploads (photo, Tazkira, CV, educational documents, contract, extra documents). Existing branch phone numbers, national ID values, free-text addresses, and generic document uploads are preserved. Deploy the frontend after the database and function update.
 

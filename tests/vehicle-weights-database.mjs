@@ -17,7 +17,10 @@ await db.exec(`create schema auth;create schema storage;create role anon;create 
  create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text,metadata jsonb default '{}',unique(bucket_id,name));
  alter table storage.objects enable row level security;grant select,insert,delete on storage.objects to authenticated;grant select on storage.buckets to authenticated;`)
 try {
-  for (const name of (await readdir(new URL('../supabase/migrations/', import.meta.url))).filter(name => name.endsWith('.sql') && name < '202611120001').sort()) {
+  const migrationFiles = (await readdir(new URL('../supabase/migrations/', import.meta.url))).filter(name => name.endsWith('.sql')).sort()
+  const versions = migrationFiles.map(name => name.split('_')[0])
+  assert.equal(new Set(versions).size, versions.length, 'Supabase requires unique migration versions')
+  for (const name of migrationFiles.filter(name => name < '202611120006')) {
     try { await db.exec(await readFile(new URL(`../supabase/migrations/${name}`, import.meta.url), 'utf8')) }
     catch (error) { throw new Error(`${name}: ${error.message}`, { cause: error }) }
   }
@@ -28,7 +31,7 @@ try {
   const base = { plate_number: 'OLD 100', vehicle_type: 'Truck', status: 'available', branch_id: null, capacity_tons: '12.5', notes: 'Original notes', vin_number: 'Original VIN', model_year: '1400', permit_number: 'Original permit' }
   const legacy = await call('save_fleet_record', ['vehicle',null,uid(),base,null])
   await db.exec('reset role')
-  const migration = await readFile(new URL('../supabase/migrations/202611120001_vehicle_weights.sql', import.meta.url), 'utf8')
+  const migration = await readFile(new URL('../supabase/migrations/202611120006_vehicle_weights.sql', import.meta.url), 'utf8')
   await db.exec(migration.replace(/\r?\n/g,'\r\n'))
   await db.exec(migration.replace(/\r?\n/g,'\n'))
   const getVehicle = async id => (await db.query('select * from public.vehicles where id=$1',[id])).rows[0]
@@ -50,6 +53,10 @@ try {
   assert.equal(Number(saved.gross_weight_kg),53000.125)
   assert.equal(Number(saved.empty_weight_kg),15000.025)
   assert.equal(Number(saved.capacity_tons),38.0001,'server must derive cargo capacity instead of trusting a supplied capacity')
+  await db.exec('reset role')
+  await db.exec(migration)
+  await db.exec('set role authenticated')
+  assert.deepEqual(await getVehicle(vehicle),saved,'reapplying the renamed migration preserves existing weights')
   const requestEdit = uid()
   const edit = {...saved,gross_weight_kg:'50000',empty_weight_kg:'15000',capacity_tons:'999'}
   await call('save_vehicle_record',[vehicle,requestEdit,edit,saved.updated_at])

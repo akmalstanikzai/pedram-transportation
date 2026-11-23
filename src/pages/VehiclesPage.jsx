@@ -19,9 +19,9 @@ import DriverRegistrationFields from '../components/DriverRegistrationFields'
 import { driverFormFromRow, driverFormPayload } from '../lib/driverForm'
 import OwnerRegistrationFields from '../components/OwnerRegistrationFields'
 import { ownerFormFromRow, ownerFormPayload } from '../lib/ownerForm'
+import { fleetDirectoryRows } from '../lib/fleetDirectory'
 import './VehiclesPage.css'
 
-const tables={vehicle:'vehicles',owner:'vehicle_owners',driver:'drivers'}
 const vehicleTypes=[['لنډی','Landi'],['تیلر','Trailer']]
 const vehicleConditions=[['یخچالی','Refrigerated'],['تخته فرش','Flatbed'],['ترپال کش','Tarpaulin'],['کانتینری','Container'],['تانکر','Tanker']]
 const vehicleRegistrationFields = [
@@ -50,12 +50,14 @@ export default function VehiclesPage({language,profile,onBack}){
  const archiveLabel=archived?t('Archived','بایگانی‌شده'):t('Archive','بایگانی')
  const request=useRef(null)
  const load=useCallback(async()=>{
-  const [vehicle,owner,driver]=await Promise.all(Object.values(tables).map(table=>allRows(supabase,table)))
+  const [vehicle,owner,driver]=await Promise.all([
+    allRows(supabase,'vehicles'), fleetDirectoryRows('owner',president), fleetDirectoryRows('driver',president),
+  ])
   const records={vehicle,owner,driver}
   setData(records)
   void loadFleetPhotos().then(setPhotos).catch(()=>setPhotos({}))
   return records
- },[])
+ },[president])
  const refresh=useCallback(async()=>{
   setLoading(true)
   setLoadFailure(null)

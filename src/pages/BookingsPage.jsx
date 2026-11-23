@@ -6,6 +6,7 @@ import { attentionForBooking, bookingAttention, driverReportForCurrentLeg } from
 import { printRecord } from '../lib/recordExports'
 import { bookingDue, bookingTotal } from '../lib/bookingFinance'
 import { bookingColumns, rpc, explain } from '../lib/operations'
+import { fleetDirectoryRows } from '../lib/fleetDirectory'
 import { ConfirmArchive, IconButton, Modal, RecordTools } from '../components/RecordTools'
 import SolarHijriDateInput from '../components/SolarHijriDateInput'
 import BookingInformation from '../components/BookingInformation'
@@ -40,7 +41,7 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
   const [branches,setBranches]=useState([]),[editing,setEditing]=useState(null),[archived,setArchived]=useState(false),[deletion,setDeletion]=useState(null),[detail,setDetail]=useState(null),[cancelRow,setCancelRow]=useState(null),[paymentRow,setPaymentRow]=useState(null),[paymentForm,setPaymentForm]=useState({amount:'',date:kabulToday()}),[paymentError,setPaymentError]=useState('')
   const request=useRef(null)
   const paymentRequest=useRef(null)
-  const load=useCallback(async()=>{const [bookings,traders,vehicles,drivers,branches,finance]=await Promise.all([allRows(supabase,'bookings',selection),allRows(supabase,'traders'),allRows(supabase,'vehicles','*, vehicle_owners(full_name,phone,archived_at)'),allRows(supabase,'drivers'),allRows(supabase,'branches'),rpc('booking_finance_rows',{})]);const money=new Map(finance.map(r=>[r.id,r]));setRows(bookings.filter(r=>!r.deleted_at).map(r=>({...r,...money.get(r.id)})).sort((a,b)=>b.created_at.localeCompare(a.created_at)));setTraders(traders);setVehicles(vehicles);setDrivers(drivers);setBranches(branches);setReady(true)},[])
+  const load=useCallback(async()=>{const [bookings,traders,vehicles,drivers,branches,finance]=await Promise.all([allRows(supabase,'bookings',selection),allRows(supabase,'traders'),allRows(supabase,'vehicles','*, vehicle_owners(full_name,phone,archived_at)'),fleetDirectoryRows('driver',president),allRows(supabase,'branches'),rpc('booking_finance_rows',{})]);const money=new Map(finance.map(r=>[r.id,r]));setRows(bookings.filter(r=>!r.deleted_at).map(r=>({...r,...money.get(r.id)})).sort((a,b)=>b.created_at.localeCompare(a.created_at)));setTraders(traders);setVehicles(vehicles);setDrivers(drivers);setBranches(branches);setReady(true)},[president])
   const refreshForm = useCallback(async () => {
     setMessage('')
     try { await load() }
@@ -354,7 +355,7 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
         {fleetSelect('vehicle_id',availableVehicles,'Registered vehicle','واسطه ثبت‌شده',v=>`${v.plate_number} · ${v.vehicle_type}`)}
         {fleetSelect('driver_id',availableDrivers,'Registered driver','راننده ثبت‌شده',d=>`${d.full_name} · ${d.phone}`)}
         {vehicle && <dl className="booking-preview"><dt>{t('Plate / foreign plate','پلیت / پلیت خارجی')}</dt><dd>{vehicle.plate_number} / {vehicle.foreign_plate_number || '—'}</dd><dt>{t('Type / color','نوع / رنگ')}</dt><dd>{vehicle.vehicle_type} / {vehicle.color || '—'}</dd><dt>{t('VIN','نمبر شاسی')}</dt><dd>{vehicle.vin_number || '—'}</dd><dt>{t('Owner','مالک')}</dt><dd>{vehicle.vehicle_owners?.full_name || '—'} · {vehicle.vehicle_owners?.phone || '—'}</dd><dt>{t('Permit expiry','تاریخ ختم جواز')}</dt><dd>{formatSolarHijri(vehicle.permit_expiry)}</dd></dl>}
-        {driver && <dl className="booking-preview"><dt>{t('Driver','راننده')}</dt><dd>{driver.full_name}</dd><dt>{t('Father name','نام پدر')}</dt><dd>{driver.father_name || '—'}</dd><dt>{t('Contact','تماس')}</dt><dd>{driver.phone}</dd><dt>{t('Address','آدرس')}</dt><dd>{driver.address || '—'}</dd><dt>{t('Licence number','نمبر لایسنس')}</dt><dd>{driver.license_number || '—'}</dd></dl>}
+        {driver && <dl className="booking-preview"><dt>{t('Driver','راننده')}</dt><dd>{driver.full_name}</dd><dt>{t('Father name','نام پدر')}</dt><dd>{driver.father_name || '—'}</dd><dt>{t('Contact','تماس')}</dt><dd>{driver.phone}</dd><dt>{t('Address','آدرس')}</dt><dd>{driver.address || '—'}</dd>{president && driver.license_number && <><dt>{t('Licence number','نمبر لایسنس')}</dt><dd>{driver.license_number}</dd></>}</dl>}
         {(driver&&!driver.user_id || withHandoff && onwardDrivers.some(d=>d.id===form.onward_driver_id&&!d.user_id))&&<p className="wide booking-help">{t('Link each driver’s login using the key icon in Fleet → Drivers to show the assignment in their portal.','برای نمایش برنامه در درگاه راننده، حساب هر راننده را با آیکن کلید در بخش وسایط ← رانندگان وصل کنید.')}</p>}
         <p className="wide booking-help">{t('Register missing vehicles and drivers in Fleet first. Trader details are saved with this booking; existing trader profiles are not overwritten.','وسایط و رانندگان جدید را ابتدا در بخش وسایط ثبت کنید. مشخصات تاجر با این بوکینگ ذخیره می‌شود؛ مشخصات قبلی تاجر تغییر نمی‌کند.')}</p>
         </RegistrationSection>

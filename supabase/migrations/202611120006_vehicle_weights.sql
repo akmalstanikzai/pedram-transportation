@@ -1,5 +1,6 @@
 begin;
 
+-- The former 202611120001 version collided with the employees migration.
 alter table public.vehicles add column if not exists gross_weight_kg numeric(12,3),
  add column if not exists empty_weight_kg numeric(12,3);
 alter table public.vehicles drop constraint if exists vehicles_gross_empty_weights_check;
