@@ -27,6 +27,8 @@ function periodBounds(period){
 
 export default function CashbookPage({ language, profile, onBack }) {
   const t=(en,fa)=>language==='fa'?fa:en
+  const openingBalanceLabel=t('Opening balance','موجودی قبلی')
+  const closingBalanceLabel=t('Closing balance','بیلانس')
   const president=profile?.role==='president'
   const [data,setData]=useState({branches:[],accounts:[],entries:[]})
   const [traders,setTraders]=useState([])
@@ -180,10 +182,10 @@ export default function CashbookPage({ language, profile, onBack }) {
       subtitle: `${name(scope)} · ${currency} · ${range}`,
       sections: [
         { title: t('Period summary','خلاصه دوره'), receiptColumns: 4, rows: [
-          [t('Opening balance','موجودی اول دوره'),money(selectedLedger.opening)],
+          [openingBalanceLabel,money(selectedLedger.opening)],
           [t('Money In','آمد'),money(selectedLedger.incoming)],
           [t('Money Out','رفت'),money(selectedLedger.outgoing)],
-          [t('Closing balance','موجودی پایان دوره'),money(selectedLedger.balance)],
+          [closingBalanceLabel,money(selectedLedger.balance)],
         ] },
         { title: t('Transactions','معاملات'), widths: [16,48,18,18], numeric: [2,3],
           headers: [t('Date','تاریخ'),t('Description','شرح'),t('Money In','آمد'),t('Money Out','رفت')],
@@ -322,10 +324,10 @@ export default function CashbookPage({ language, profile, onBack }) {
     {!loading&&loaded&&validPeriod&&<section className="cashbook-balances" aria-labelledby="cashbook-balances-title">
       <h2 id="cashbook-balances-title">{t('Balance summary','خلاصه حساب')}</h2>
       <dl>
-        <div><dt>{t('Opening balance','موجودی اول دوره')}</dt><dd><bdi>{money(selectedLedger.opening)}</bdi></dd></div>
+        <div><dt>{openingBalanceLabel}</dt><dd><bdi>{money(selectedLedger.opening)}</bdi></dd></div>
         <div><dt>{t('Money In','پول آمد')}</dt><dd className="simple-money-in"><bdi>{money(selectedLedger.incoming)}</bdi></dd></div>
         <div><dt>{t('Money Out','پول رفت')}</dt><dd className="simple-money-out"><bdi>{money(selectedLedger.outgoing)}</bdi></dd></div>
-        <div className="cashbook-closing"><dt>{t('Closing balance','موجودی پایان دوره')}</dt><dd><bdi>{money(selectedLedger.balance)}</bdi></dd></div>
+        <div className="cashbook-closing"><dt>{closingBalanceLabel}</dt><dd><bdi>{money(selectedLedger.balance)}</bdi></dd></div>
       </dl>
     </section>}
     <form className="simple-cashbook-form" onSubmit={save} aria-labelledby="cashbook-add-title">
@@ -360,7 +362,7 @@ export default function CashbookPage({ language, profile, onBack }) {
               setForm(previous=>({...previous,loan,loan_due_date:loan?previous.loan_due_date:''}))
               if(loan)setLinkPanel(form.driver_id?'driver':'employee')
             }}/>
-            <span>{t('This payment is a loan (optional)','این پرداخت قرض است (اختیاری)')}</span>
+            <span>{t('Loan','قرض')}</span>
           </label>}
         </div>
         {president&&form.loan&&<div className="cashbook-loan-details">
