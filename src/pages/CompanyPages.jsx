@@ -33,6 +33,7 @@ const operations = [
   ['availableVehicles','Vehicles available today','وسایط آماده امروز','availability'],
 ]
 const money = value => Number(value).toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2})
+const payeeTitle = 'پرداخت‌های متفرقه و دفتر'
 
 function useCompanyData(name,args,revision=0) {
   const request = JSON.stringify(args)
@@ -163,7 +164,7 @@ export default function CompanyPages({kind,language,profile,onBack}) {
   return <section className={`registry-page company-page${expenses && !payeeView && !legacyBills ? ' company-expenses-page' : ''}`}>
     <header className="company-header">
       {onBack && <button className="module-back" onClick={onBack}><Icon name="back" size={16}/>{t('Back','بازگشت')}</button>}
-      <h1>{payeeView ? t('Payee payments','پرداخت به گیرنده‌ها') : legacyBills ? t('Outstanding bills','بل‌های پرداخت‌نشده')
+      <h1>{payeeView ? t('Payee payments',payeeTitle) : legacyBills ? t('Outstanding bills','بل‌های پرداخت‌نشده')
         : expenses ? t('Expenses','مصارف') : t('Company overview','خلاصه شرکت')}</h1>
     </header>
     {!expenses && <div className="company-switcher">
@@ -172,7 +173,7 @@ export default function CompanyPages({kind,language,profile,onBack}) {
         <button aria-pressed={tab==='operations'} onClick={()=>setTab('operations')}><ClipboardList size={16} aria-hidden="true"/>{t('Operations','عملیات')}</button>
       </div>
       <RecordLink className="company-payee-link" href={recordLink('expenses',{account:scopedDestination.account,view:'payees'})} returnTo={origin}>
-        <HandCoins size={17} aria-hidden="true"/>{t('Payees','گیرنده‌ها')}
+        <HandCoins size={17} aria-hidden="true"/>{t('Payees',payeeTitle)}
       </RecordLink>
     </div>}
     <div className="company-filters">

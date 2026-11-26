@@ -40,12 +40,13 @@ test('branch navigation and direct Branches URL never render branch management c
     const overviewOrigin = '#/company?tab=operations&period=month&currency=USD'
     globalThis.window.location.hash = withRecordReturn('#/expenses?view=payees',overviewOrigin)
     const payeePage = renderToStaticMarkup(React.createElement(Dashboard,{language:'fa',profile,session:{user:{}}}))
-    assert.match(payeePage,/پرداخت به گیرنده‌ها/)
+    assert.match(payeePage,/<h1>پرداخت‌های متفرقه و دفتر<\/h1>/)
     assert.doesNotMatch(payeePage,/ثبت پول رفت/)
     globalThis.window.location.hash = overviewOrigin
     const overview = renderToStaticMarkup(React.createElement(Dashboard,{language:'fa',profile,session:{user:{}}}))
     assert.match(overview.match(/<button aria-pressed="true"[^>]*>[\s\S]*?<\/button>/)?.[0] ?? '',/عملیات/)
     assert.match(overview,/company-payee-link[^>]*view=payees/)
+    assert.match(overview,/پرداخت‌های متفرقه و دفتر/)
     assert.equal(recordReturnRoute('https://example.test'),null)
     const payeesOrigin = withRecordReturn('#/expenses?view=payees',overviewOrigin)
     const receiptLink = withRecordReturn('#/cashbook?receipt=5',payeesOrigin)
