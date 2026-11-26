@@ -2,6 +2,12 @@ import { supabase } from './supabase'
 export const bookingColumns='id,booking_number,trader_id,vehicle_id,driver_id,service_type,origin,destination,goods,quantity,quantity_unit,quantity_amount,departure_date,created_by,created_at,booking_date,trader_first_name,trader_last_name,trader_address,trader_phone,sender_is_trader,sender_name,sender_phone,sender_address,receiver_is_trader,receiver_name,receiver_phone,receiver_address,weight_tons,volume_m3,branch_id,status,arrival_date,updated_at,archived_at,deleted_at,driver_accepted_at,driver_delivered_at,handoff_location,handoff_date,onward_vehicle_id,onward_driver_id,handoff_confirmed_at,onward_driver_accepted_at,onward_driver_delivered_at'
 export async function rpc(name,args){const {data,error}=await supabase.rpc(name,args);if(error)throw error;return data}
 const messages={
+ BORDER_REQUIRED:['Enter the border handover location.','محل تحویل در مرز را وارد کنید.'],
+ INVALID_MANAGED_CHARGES:['Check the booking expense details, amounts and currencies.','تفصیلات، مبالغ و واحد پول مصارف را بررسی کنید.'],
+ MANAGED_EXPENSE_LOCKED:['An expense with a receipt is locked. Review the payment history in Cashbook.','مصرف دارای رسید قفل است. سابقهٔ تادیه را در روزنامچه بررسی کنید.'],
+ MANAGED_EXPENSE_UNAVAILABLE:['This expense is unavailable. Refresh the booking details.','این مصرف در دسترس نیست. جزئیات بار نامه را تازه کنید.'],
+ MANAGED_EXPENSE_ALREADY_PAID:['This expense already has a payment receipt. Refresh the booking details.','این مصرف قبلاً تادیه شده است. جزئیات بار نامه را تازه کنید.'],
+ MANAGED_PAYMENT_EXCEEDS_BALANCE:['The recorded payment exceeds the booking charges in this currency.','پرداخت ثبت‌شده از بدهی بار نامه در این واحد پول بیشتر است.'],
  DRIVER_COMMISSION_EXCEEDS_BALANCE:['The amount exceeds the unpaid driver commission. Refresh and check the balance.','مبلغ از کمیسیون باقی‌ماندهٔ راننده بیشتر است. صفحه را تازه کنید و باقی‌مانده را بررسی کنید.'],
  COMMISSION_DRIVER_LOCKED:['Reverse the driver commission receipts before changing the assigned payer.','پیش از تغییر رانندهٔ پرداخت‌کننده، رسیدهای کمیسیون او را معکوس کنید.'],
  BOOKING_TYPE_LOCKED:['The booking type is fixed once the commission is recorded.','پس از ثبت کمیسیون، نوع بار نامه قابل تغییر نیست.'],

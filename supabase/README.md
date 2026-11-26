@@ -1,5 +1,11 @@
 # Pedram Transportation Supabase setup
 
+## Deploy company-managed border bookings
+
+Apply [202611260002_managed_border_bookings.sql](migrations/202611260002_managed_border_bookings.sql) after the driver booking commissions migration, then publish the matching frontend. This release adds separate charge lines and currencies to new company-managed bookings. Existing bookings keep their financial history, and existing Vehicle Arrangement bookings keep their driver commission workflow.
+
+Verify a booking in two currencies with a designated trader account. Posting an expense creates a linked Money Out receipt and updating the trader balance requires a separate Money In installment. The President can reverse a mistaken expense receipt from Cashbook. Run `tests/managed-border-bookings-database.mjs` against a disposable database.
+
 ## Deploy driver booking commissions
 
 Run [202611260001_driver_booking_commissions.sql](migrations/202611260001_driver_booking_commissions.sql) in the live project's SQL Editor after the trip-legs migration, then deploy the matching frontend. Schedule both steps together while staff are out of Bookings and Cashbook. This update uses database functions only.

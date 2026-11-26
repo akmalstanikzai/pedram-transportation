@@ -188,6 +188,15 @@
 }
 .booking-form .registration-grid label.registry-check { display: flex; }
 .booking-trip-dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.managed-charge-form { display: grid; gap: 5px; }
+.managed-charge-line { display: grid; gap: 5px; padding-block-end: 5px; border-bottom: 1px solid var(--registration-section-line); }
+.managed-charge-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .8fr) 65px; align-items: center; gap: 6px; }
+.managed-charge-row > span { color: var(--registration-section-ink); overflow-wrap: anywhere; font-size: 12px; font-weight: 700; }
+.managed-charge-row :is(input,select) { min-height: 44px; }
+.managed-charge-heading { padding-block: 3px; }
+.managed-charge-line button, .managed-add-expense { justify-self: start; min-height: 40px; }
+.managed-form-totals { display: flex; align-items: center; flex-wrap: wrap; gap: 5px 8px; padding: 6px; background: #eadef7; border-radius: 6px; font-size: 12px; }
+.managed-form-totals bdi { padding: 3px 5px; background: #fff; border-radius: 4px; }
 .booking-form .booking-handoff-toggle { margin: 0; background: #f3ecfa; border-color: #d7c7e6; }
 .booking-form .registry-check input[type='checkbox'] { width: 17px; min-height: 0; height: 17px; flex-shrink: 0; }
 .booking-form .solar-date-picker { width: 100%; }

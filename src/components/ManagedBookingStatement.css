@@ -1,0 +1,12 @@
+.managed-booking-statement { display: grid; gap: 9px; }
+.managed-booking-statement > section { min-width: 0; border: 1px solid #c7dbe7; border-radius: 8px; overflow: hidden; }
+.managed-booking-statement h3 { margin: 0; padding: 6px 8px; color: #fff; background: #315576; font-size: 13px; }
+.managed-booking-statement .managed-statement-charges h3 { background: #705233; }
+.managed-booking-statement .managed-statement-payments h3 { background: #216251; }
+.managed-booking-statement td button { min-height: 40px; padding-inline: 5px; font-size: 11px; white-space: normal; }
+.trader-booking-statement-button { margin-block-start: 4px; min-height: 40px; padding: 4px 6px; font-size: 11px; white-space: normal; }
+.managed-statement-dialog .record-modal-body { display: grid; gap: 8px; }
+.managed-statement-dialog .record-modal-body > button { justify-self: start; }
+@media (max-width: 450px) {
+  .managed-booking-statement .compact-table :is(th,td) { padding-inline: 4px; font-size: 11px; }
+}

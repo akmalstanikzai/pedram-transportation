@@ -36,11 +36,13 @@ Open **Fleet Availability** from the dashboard before creating a booking. Select
 | Booking type | Payer | Charge |
 | --- | --- | --- |
 | Vehicle arrangement | Assigned driver | Commission |
-| Company-managed transport | Trader | Commission, freight, vehicle or driver costs, and extra expenses |
+| Company-managed transport | Trader | Foreign and Afghan freight, customs, commission, terminal, labour, and other shipment expenses |
 
 When a driver pays at booking time, the President enters the amount in **Received from driver**. For later payments, use **Receive driver commission** in Bookings or choose **Driver → Booking commission** in Cashbook. Each receipt appears in **Cashbook Money In** and in **Fleet → Drivers → Transactions**. The driver can see the remaining commission on the job in their portal.
 
-For company-managed transport, the President can use **Received now**, **Receive payment** in Bookings or Traders, or select the trader and booking in Cashbook. Unpaid charges remain account balances until money is actually recorded. All booking amounts use one currency.
+**New company-managed bookings** use the booking date, a border handover location, foreign vehicle reference details, and one registered Afghan vehicle and driver. The Afghan pair remains busy while the booking is on the road. Each charge has its own currency, with AFN selected initially. In Booking Details, choose **Mark as paid** to record an expense in Cashbook Money Out using the account and date of payment. Branch Managers can use their own branch's Cashbook for their own bookings. The President can choose the paying account. Commission appears as a trader charge.
+
+The President records a company-managed booking's full payment or installment in its original currency using **Receive payment** in Bookings or Traders, or by selecting the trader and booking in Cashbook. The Trader Portal opens a printable statement for each new company-managed booking with charges, installment receipts, and a separate balance in each currency. Existing company-managed bookings keep their recorded charges, dates, and payment history.
 
 Bookings follow **Confirmed → On road → Completed** and can be cancelled. Confirmed bookings can be edited. The departure and arrival dates reserve the assigned vehicle and driver across that period, including both dates.
 

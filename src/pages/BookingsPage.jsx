@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Archive, ArrowLeftRight, ArrowRight, BadgeCheck, Building2, CalendarDays, CheckCheck, CheckCircle2, ClipboardList, Eye, MapPin, Package, Play, Plus, RefreshCw, Search, Send, Truck, UserRound, Users, XCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { allRows, kabulToday } from '../lib/cashbook'
+import { allRows, currencies, kabulToday } from '../lib/cashbook'
 import { attentionForBooking, bookingAttention, driverReportForCurrentLeg } from '../lib/bookingAttention'
 import { printRecord } from '../lib/recordExports'
 import { bookingDue, bookingTotal } from '../lib/bookingFinance'
@@ -10,6 +10,9 @@ import { fleetDirectoryRows } from '../lib/fleetDirectory'
 import { ConfirmArchive, IconButton, Modal, RecordTools } from '../components/RecordTools'
 import SolarHijriDateInput from '../components/SolarHijriDateInput'
 import BookingInformation from '../components/BookingInformation'
+import ManagedBookingCharges from '../components/ManagedBookingCharges'
+import { managedStatementSections } from '../lib/financialReports'
+import { managedChargeLabel, managedChargeLabels } from '../lib/managedBookings'
 import { useBulkSelection } from '../components/BulkSelection'
 import Icon from '../components/Icon'
 import { RegistrationSection } from '../components/RegistrationFields'
@@ -20,6 +23,8 @@ const blank = { booking_date: '', departure_date: '', arrival_date: '', handoff_
   branch_id:'', trader_id: '', trader_first_name: '', trader_last_name: '', trader_phone: '', trader_address: '', sender_is_trader: false, sender_name: '', sender_phone: '', sender_address: '', receiver_is_trader:false, receiver_name: '', receiver_phone: '', receiver_address: '', goods: '', quantity_unit:'tons', quantity_amount:'', origin: '', destination: '', vehicle_id: '', driver_id: '', service_type: 'arrangement',commission_amount:'',commission_currency:'AFN',freight_amount:'',carrier_cost:'',other_expenses:[],received_now:'' }
 const selection = `${bookingColumns}, traders(full_name,phone), vehicles!bookings_vehicle_id_fkey(plate_number), drivers!bookings_driver_id_fkey(full_name), onward_vehicle:vehicles!bookings_onward_vehicle_id_fkey(plate_number), onward_driver:drivers!bookings_onward_driver_id_fkey(full_name)`
 const today = todayISO
+const blankBorder = { border_location:'',foreign_plate:'',foreign_driver:'',foreign_mobile:'',afghan_waybill:'' }
+const managedDefaults = Object.keys(managedChargeLabels).map(key=>({key,amount:'',currency:'AFN'}))
 
 export default function BookingsPage({ language, profile, onBack, attention, onClearAttention }) {
   const branchManager=profile?.role==='branch_manager'
@@ -41,6 +46,11 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
   const [branches,setBranches]=useState([]),[editing,setEditing]=useState(null),[archived,setArchived]=useState(false),[deletion,setDeletion]=useState(null),[detail,setDetail]=useState(null),[cancelRow,setCancelRow]=useState(null),[paymentRow,setPaymentRow]=useState(null),[paymentForm,setPaymentForm]=useState({amount:'',date:kabulToday()}),[paymentError,setPaymentError]=useState('')
   const request=useRef(null)
   const paymentRequest=useRef(null)
+  const expenseRequest=useRef(null)
+  const [border,setBorder]=useState(blankBorder)
+  const [managedCharges,setManagedCharges]=useState(managedDefaults)
+  const [expense,setExpense]=useState(null)
+  const [expenseError,setExpenseError]=useState('')
   const load=useCallback(async()=>{const [bookings,traders,vehicles,drivers,branches,finance]=await Promise.all([allRows(supabase,'bookings',selection),allRows(supabase,'traders'),allRows(supabase,'vehicles','*, vehicle_owners(full_name,phone,archived_at)'),fleetDirectoryRows('driver',president),allRows(supabase,'branches'),rpc('booking_finance_rows',{})]);const money=new Map(finance.map(r=>[r.id,r]));setRows(bookings.filter(r=>!r.deleted_at).map(r=>({...r,...money.get(r.id)})).sort((a,b)=>b.created_at.localeCompare(a.created_at)));setTraders(traders);setVehicles(vehicles);setDrivers(drivers);setBranches(branches);setReady(true)},[president])
   const refreshForm = useCallback(async () => {
     setMessage('')
@@ -48,7 +58,7 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
     catch { setMessage(language==='fa'?'معلومات بوکینگ بارگیری نشد. دکمه تازه‌سازی را بزنید و دوباره کوشش کنید.':'Booking data could not load. Use Refresh to try again.') }
   },[load,language])
   useEffect(()=>{void Promise.resolve().then(refreshForm)},[refreshForm])
-  const refreshBookings=useCallback(async()=>{const [bookings,finance]=await Promise.all([allRows(supabase,'bookings',selection),rpc('booking_finance_rows',{})]);const money=new Map(finance.map(r=>[r.id,r]));setRows(bookings.filter(r=>!r.deleted_at).map(r=>({...r,...money.get(r.id)})).sort((a,b)=>b.created_at.localeCompare(a.created_at)))},[])
+  const refreshBookings=useCallback(async()=>{const [bookings,finance]=await Promise.all([allRows(supabase,'bookings',selection),rpc('booking_finance_rows',{})]);const money=new Map(finance.map(r=>[r.id,r]));const updated=bookings.filter(r=>!r.deleted_at).map(r=>({...r,...money.get(r.id)})).sort((a,b)=>b.created_at.localeCompare(a.created_at));setRows(updated);return updated},[])
   useEffect(()=>{
     const update=()=>{if(!document.hidden&&!busy&&!open)void refreshBookings().catch(e=>setMessage(explain(e,language)))}
     const timer=window.setInterval(update,30000)
@@ -71,7 +81,14 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
       runBatch:rows=>rpc('bulk_completed_bookings',{p_ids:rows.map(row=>row.id),p_action:action.id}),
     })),
   }})
-  function edit(row){setEditing(row);setWithHandoff(!!row.handoff_date);request.current=null;setForm({...Object.fromEntries(Object.keys(blank).map(key=>[key,row[key]??blank[key]])),quantity_unit:row.quantity_unit||(row.volume_m3?'m3':'tons'),quantity_amount:row.quantity_amount||row.weight_tons||row.volume_m3||'',received_now:''});setMessage('');setOpen(true)}
+  function edit(row){
+    setEditing(row);setWithHandoff(!!row.handoff_date);request.current=null
+    setForm({...Object.fromEntries(Object.keys(blank).map(key=>[key,row[key]??blank[key]])),quantity_unit:row.quantity_unit||(row.volume_m3?'m3':'tons'),quantity_amount:row.quantity_amount||row.weight_tons||row.volume_m3||'',received_now:''})
+    setBorder(Object.fromEntries(Object.keys(blankBorder).map(key=>[key,row.managed_transport?.[key]??''])))
+    const charges=row.managed_transport?.charges??[]
+    setManagedCharges([...managedDefaults.map(line=>charges.find(charge=>charge.key===line.key)??line),...charges.filter(charge=>charge.key.startsWith('other:'))])
+    setMessage('');setOpen(true)
+  }
   async function changeStatus(row,status){if(busy)return;setBusy(true);setMessage('');try{await rpc('change_booking_status',{p_id:row.id,p_status:status,p_request:crypto.randomUUID(),p_expected:row.updated_at});setCancelRow(null);setHandoffRow(null);await load()}catch(e){setMessage(explain(e,language))}finally{setBusy(false)}}
   function printBooking(row) {
     const contacts = (name, phone, address) => [name, phone, address].filter(Boolean).join(' · ')
@@ -83,8 +100,10 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
     const sections = [
       { title: t('Booking details','مشخصات بوکینگ'), rows: [
         [t('Booking date','تاریخ بوکینگ'),formatSolarHijri(row.booking_date)],
-        [t('Departure date','تاریخ حرکت'),formatSolarHijri(row.departure_date || row.booking_date)],
-        [t('Arrival date','تاریخ رسیدن'),formatSolarHijri(row.arrival_date || row.departure_date || row.booking_date)],
+        ...(row.managed_transport ? [] : [
+          [t('Departure date','تاریخ حرکت'),formatSolarHijri(row.departure_date || row.booking_date)],
+          [t('Arrival date','تاریخ رسیدن'),formatSolarHijri(row.arrival_date || row.departure_date || row.booking_date)],
+        ]),
         [t('Status','وضعیت'),statuses[row.status]],
         [t('Service','خدمات'),managed?t('Company-managed transport','انتقال توسط شرکت'):t('Vehicle arrangement','معرفی واسطه')],
         [t('Office','دفتر'),branch ? contacts(branch.name,branch.phone,branch.address) : row.branch_id ? '—' : t('Head office','دفتر مرکزی')],
@@ -111,7 +130,16 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
       [t('Transfer status','وضعیت انتقال'),row.handoff_confirmed_at ? t('Confirmed','تأیید شد') : t('Planned','برنامه‌ریزی شده')],
       ...(row.handoff_confirmed_at ? [[t('Confirmed on','تاریخ تأیید'),formatSolarHijri(kabulISODate(new Date(row.handoff_confirmed_at)))]] : []),
     ] })
-    if (row.commission_currency) {
+    if (row.managed_transport) {
+      const details=row.managed_transport
+      sections.push({title:t('Foreign vehicle','مشخصات موتر خارجی'),rows:[
+        [t('Border handover','محل تحویل در مرز'),details.border_location],
+        [t('Plate number','نمبر پلیت'),details.foreign_plate],
+        [t('Driver name','نام راننده'),details.foreign_driver],
+        [t('Mobile','موبایل'),details.foreign_mobile],
+        [t('Afghan waybill','نمبر بارنامهٔ موتر افغانی'),details.afghan_waybill],
+      ]},...managedStatementSections(details,language).filter(section=>section.rows.length))
+    } else if (row.commission_currency) {
       const charges = [[t('Commission','کمیسیون'),amount(row.commission_amount)]]
       if (row.commission_driver_id) charges.push([t('Commission payer','پرداخت‌کنندهٔ کمیسیون'),driver?.full_name || t('Driver','راننده')])
       if (managed) charges.push(
@@ -134,12 +162,21 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
     })
     if (!printed) setMessage(t('Allow pop-ups to print this confirmation.', 'برای چاپ تأییدیه، پنجرهٔ جدید را اجازه دهید.'))
   }
-  function openPayment(row){paymentRequest.current=null;setPaymentError('');setPaymentForm({amount:'',date:kabulToday()});setPaymentRow(row)}
+  const payableBalances = row => (row.managed_transport?.balances??[]).filter(balance=>bookingDue(balance.charged,balance.paid)>0)
+  const paymentLimit = paymentRow ? (paymentRow.managed_transport
+    ? payableBalances(paymentRow).find(balance=>balance.currency===paymentForm.currency)
+    : paymentRow) : null
+  const paymentDue = bookingDue(paymentLimit?.charged,paymentLimit?.paid)
+  function openPayment(row){
+    paymentRequest.current=null;setPaymentError('')
+    setPaymentForm({amount:'',date:kabulToday(),currency:row.managed_transport ? payableBalances(row)[0]?.currency : row.commission_currency})
+    setPaymentRow(row)
+  }
   async function savePayment(e){
     e.preventDefault();if(busy||!paymentRow||!president)return
     const amount=Number(paymentForm.amount)
-    if(!Number.isFinite(amount)||amount<=0||!/^\d+(\.\d{1,2})?$/.test(paymentForm.amount)||amount>bookingDue(paymentRow.charged,paymentRow.paid)/100){setPaymentError(t('Enter a valid amount no greater than the booking balance.','مبلغ درست و کمتر یا مساوی باقی‌مانده بوکینگ وارد کنید.'));return}
-    const payload={branch_id:paymentRow.branch_id,currency:paymentRow.commission_currency,direction:'in',amount:paymentForm.amount,date:paymentForm.date,description:`Booking #${paymentRow.booking_number} payment received`,trader_id:paymentRow.trader_id,booking_id:paymentRow.id}
+    if(!Number.isFinite(amount)||amount<=0||!/^\d+(\.\d{1,2})?$/.test(paymentForm.amount)||amount>paymentDue/100){setPaymentError(t('Enter a valid amount no greater than the booking balance.','مبلغ درست و کمتر یا مساوی باقی‌مانده بوکینگ وارد کنید.'));return}
+    const payload={branch_id:paymentRow.branch_id,currency:paymentForm.currency,direction:'in',amount:paymentForm.amount,date:paymentForm.date,description:`Booking #${paymentRow.booking_number} payment received`,trader_id:paymentRow.trader_id,booking_id:paymentRow.id}
     const key=JSON.stringify(payload);if(paymentRequest.current?.key!==key)paymentRequest.current={key,id:crypto.randomUUID()}
     setBusy(true);setPaymentError('')
     try {
@@ -154,11 +191,41 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
     catch(error){setPaymentError(explain(error,language))}
     finally{setBusy(false)}
   }
+  function openExpense(charge){
+    expenseRequest.current=null;setExpenseError('')
+    setExpense({charge,date:kabulToday(),account:detail.branch_id??''})
+  }
+  async function payExpense(event){
+    event.preventDefault()
+    if (busy||!expense) return
+    const payload={
+      p_charge:expense.charge.id,p_account_branch:expense.account||null,p_date:expense.date,
+      p_expected_amount:expense.charge.amount,p_expected_currency:expense.charge.currency,
+    }
+    const key=JSON.stringify(payload)
+    if(expenseRequest.current?.key!==key)expenseRequest.current={key,id:crypto.randomUUID()}
+    setBusy(true);setExpenseError('')
+    try {
+      await rpc('pay_managed_booking_expense',{p_request:expenseRequest.current.id,...payload})
+      setExpense(null)
+      window.dispatchEvent(new Event('pedram:cashbook-changed'))
+      try {
+        const updated=await refreshBookings()
+        setDetail(current=>updated.find(row=>row.id===current?.id)??null)
+      } catch {
+        setDetail(null)
+        setMessage(t('Expense paid. Refresh Bookings to see the receipt.','تادیهٔ مصرف ثبت شد. برای دیدن رسید، بار نامه‌ها را تازه کنید.'))
+      }
+    } catch(error){setExpenseError(explain(error,language))}
+    finally{setBusy(false)}
+  }
   const vehicle = vehicles.find(v => v.id === form.vehicle_id)
   const driver = drivers.find(d => d.id === form.driver_id)
+  const structuredManaged = form.service_type==='managed' && (!editing || !!editing.managed_transport)
+  const arrangement = form.service_type==='arrangement'
   const driverPaysCommission = editing ? !!editing.commission_driver_id : form.service_type === 'arrangement'
-  const departureDate = form.departure_date || form.booking_date
-  const arrivalDate = form.arrival_date || departureDate
+  const departureDate = structuredManaged ? form.booking_date : form.departure_date || form.booking_date
+  const arrivalDate = structuredManaged ? form.booking_date : form.arrival_date || departureDate
   const handoffDate = form.handoff_date || departureDate
   const canBookForBranch = !branchManager || branches.some(branch => branch.id === profile.branch_id && !branch.archived_at)
   const belongsToBookingBranch = row => row.branch_id == null || row.branch_id === form.branch_id
@@ -167,8 +234,8 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
     (!row.owner_id || row.vehicle_owners && !row.vehicle_owners.archived_at) && (!row.permit_expiry || row.permit_expiry >= endDate))
   const availableDriversFor = (endDate, exclude) => drivers.filter(row => belongsToBookingBranch(row) &&
     row.id !== exclude && !row.archived_at && row.status === 'available' && (!row.license_expiry || row.license_expiry >= endDate))
-  const availableVehicles = availableVehiclesFor(withHandoff ? handoffDate : arrivalDate)
-  const availableDrivers = availableDriversFor(withHandoff ? handoffDate : arrivalDate)
+  const availableVehicles = availableVehiclesFor(withHandoff&&!structuredManaged ? handoffDate : arrivalDate)
+  const availableDrivers = availableDriversFor(withHandoff&&!structuredManaged ? handoffDate : arrivalDate)
   const onwardVehicles = withHandoff ? availableVehiclesFor(arrivalDate, form.vehicle_id) : []
   const onwardDrivers = withHandoff ? availableDriversFor(arrivalDate, form.driver_id) : []
   const sender = form.sender_is_trader ? { sender_name: `${form.trader_first_name} ${form.trader_last_name}`.trim(), sender_phone: form.trader_phone, sender_address: form.trader_address } : { sender_name: form.sender_name, sender_phone: form.sender_phone, sender_address: form.sender_address }
@@ -176,6 +243,11 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
   const quantityText = row => row.quantity_amount ? `${row.quantity_amount} ${{tons:'ټن',pieces:'عدد',m3:'متر مکعب'}[row.quantity_unit]||''}` : row.weight_tons ? `${row.weight_tons} ټن` : row.volume_m3 ? `${row.volume_m3} متر مکعب` : row.quantity||'—'
   const money = (amount,currency) => `${Number(amount||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} ${currency||'AFN'}`
   const field = (key, en, fa, { type = 'text', required = true, value = form[key], disabled = false, minDate, maxDate, maxLength } = {}) => { const finance=['commission_amount','freight_amount','carrier_cost'].includes(key); return <label><span>{t(en,fa)}{required ? ' *' : ''}</span>{type === 'date' ? <SolarHijriDateInput required={required} disabled={disabled} language={language} value={value ?? ''} min={minDate} max={maxDate} onChange={value => setForm(current => ({ ...current, [key]: value }))} ariaLabel={t(en,fa)} /> : <input type={type} required={required} disabled={disabled} maxLength={maxLength} min={type === 'number' ? (finance ? key==='commission_amount'?'0.01':'0' : '0.001') : undefined} step={type === 'number' ? finance?'0.01':'0.001' : undefined} value={value ?? ''} onChange={e => setForm(current => ({ ...current, [key]: e.target.value }))} />}</label> }
+  const borderField=(key,en,fa,{required=false,maxLength=100,type='text',wide=false}={})=><label className={wide?'wide':undefined}>
+    <span>{t(en,fa)}{required?' *':''}</span>
+    <input type={type} required={required} maxLength={maxLength} value={border[key]}
+      onChange={event=>setBorder(current=>({...current,[key]:event.target.value}))}/>
+  </label>
   function fleetSelect(key, rows, en, fa, display) {
     const selected = form[key]
     return <label><span>{t(en,fa)} *</span>
@@ -194,7 +266,7 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
     e.preventDefault()
     if (busy) return
     if (departureDate < form.booking_date || arrivalDate < departureDate) { setMessage(explain(new Error('INVALID_DATES'), language)); return }
-    if (withHandoff && (!form.handoff_location.trim() || handoffDate < departureDate || handoffDate > arrivalDate ||
+    if (withHandoff && !structuredManaged && (!form.handoff_location.trim() || handoffDate < departureDate || handoffDate > arrivalDate ||
       !onwardVehicles.some(row=>row.id===form.onward_vehicle_id) || !onwardDrivers.some(row=>row.id===form.onward_driver_id))) {
       setMessage(explain(new Error('INVALID_HANDOFF'), language)); return
     }
@@ -203,7 +275,7 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
       return
     }
     if (!form.quantity_amount || Number(form.quantity_amount)<=0) { setMessage(t('Enter a positive goods amount.','مقدار بار را بیشتر از صفر وارد کنید.')); return }
-    if (!form.commission_amount || Number(form.commission_amount)<=0) { setMessage(t('Enter the commission amount.','مقدار کمیسیون را وارد کنید.')); return }
+    if (!structuredManaged && (!form.commission_amount || Number(form.commission_amount)<=0)) { setMessage(t('Enter the commission amount.','مقدار کمیسیون را وارد کنید.')); return }
     if (Number(form.received_now||0)<0 || Number(form.received_now||0)>bookingTotal(form)/100) { setMessage(t('Amount received now must not exceed the total owed.','مبلغ دریافتی فعلی نباید از مجموع بدهی بیشتر باشد.')); return }
     setBusy(true); setMessage('')
     try {
@@ -213,6 +285,13 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
       payload.arrival_date=arrivalDate
       Object.assign(payload, withHandoff ? {handoff_date:handoffDate} :
         {handoff_date:null,handoff_location:null,onward_vehicle_id:null,onward_driver_id:null})
+      if (structuredManaged) {
+        payload.departure_date=payload.booking_date
+        payload.arrival_date=payload.booking_date
+        payload.managed_border=border
+        payload.managed_charges=managedCharges.filter(row=>String(row.amount).trim()!=='')
+          .map(({key,amount,currency,description})=>({key,amount,currency,description}))
+      }
       const key=JSON.stringify(payload);if(request.current?.key!==key)request.current={key,id:crypto.randomUUID()}
       const id=await rpc('save_booking_record',{p_id:editing?.id||null,p_request:request.current.id,p_data:payload,p_expected:editing?.updated_at||null})
       if (Number(payload.received_now)>0) window.dispatchEvent(new Event('pedram:cashbook-changed'))
@@ -229,7 +308,7 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
   return <div className="registry-page bookings-registry">
     <header className="booking-top">
       <div className="booking-title-row">{onBack && <button type="button" className="module-back booking-back" onClick={onBack}><Icon name="back" size={16}/>{t('Back','بازگشت')}</button>}<h1>{t('Bookings','بار نامه')}</h1></div>
-      <button type="button" className="registry-primary booking-add" disabled={!ready||!canBookForBranch} onClick={() => { setEditing(null);setWithHandoff(false);request.current=null;setForm({ ...blank, branch_id:branchManager?profile.branch_id:'',booking_date: today() }); setMessage(''); setOpen(true) }}><Plus size={18} aria-hidden="true" />{t('New booking','بار نامه جدید')}</button>
+      <button type="button" className="registry-primary booking-add" disabled={!ready||!canBookForBranch} onClick={() => { setEditing(null);setWithHandoff(false);request.current=null;setBorder(blankBorder);setManagedCharges(managedDefaults);setForm({ ...blank, branch_id:branchManager?profile.branch_id:'',booking_date: today() }); setMessage(''); setOpen(true) }}><Plus size={18} aria-hidden="true" />{t('New booking','بار نامه جدید')}</button>
     </header>
     <div className="booking-filters">
       <div className="booking-top-controls">
@@ -279,7 +358,9 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
             {r.departure_date && (r.departure_date !== r.booking_date || r.arrival_date !== r.departure_date) &&
               <dd>{t('Trip','سفر')} · <bdi dir="ltr">{formatSolarHijri(r.departure_date)} – {formatSolarHijri(r.arrival_date || r.departure_date)}</bdi></dd>}
             <dd>{r.service_type === 'managed' ? t('Company-managed transport','انتقال توسط شرکت') : t('Vehicle arrangement','معرفی واسطه')}</dd>
-            {president && <dd className="booking-card-balance">{r.commission_driver_id ? t('Driver owes','بدهی راننده') : t('Trader owes','بدهی تاجر')} · <bdi dir="ltr">{money(bookingDue(r.charged,r.paid)/100,r.commission_currency)}</bdi></dd>}
+            {president && (r.managed_transport
+              ? (r.managed_transport.balances??[]).map(balance=><dd key={balance.currency} className="booking-card-balance">{t('Trader owes','بدهی تاجر')} · <bdi dir="ltr">{money(bookingDue(balance.charged,balance.paid)/100,balance.currency)}</bdi></dd>)
+              : <dd className="booking-card-balance">{r.commission_driver_id ? t('Driver owes','بدهی راننده') : t('Trader owes','بدهی تاجر')} · <bdi dir="ltr">{money(bookingDue(r.charged,r.paid)/100,r.commission_currency)}</bdi></dd>)}
           </div>
           <div>
             <dt><Users size={14} aria-hidden="true" />{t('Sender / receiver','فرستنده / گیرنده')}</dt>
@@ -315,7 +396,7 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
           {awaitingHandoff && <button type="button" className="registry-secondary booking-handoff-action" disabled={busy} onClick={()=>{setMessage('');setHandoffRow(r)}}><ArrowLeftRight size={17} aria-hidden="true" />{t('Confirm handoff','تأیید انتقال')}</button>}
           {r.status==='in_transit' && !awaitingHandoff && <IconButton icon={CheckCircle2} className="booking-journey" disabled={busy} label={t('Complete journey','تکمیل سفر')} onClick={()=>changeStatus(r,'completed')}/>}
           {['confirmed','in_transit'].includes(r.status) && <IconButton icon={XCircle} className="booking-cancel" disabled={busy} label={t('Cancel booking','لغو بوکینگ')} onClick={()=>{setMessage('');setCancelRow(r)}}/>}
-          {president && (r.commission_driver_id || r.trader_id) && bookingDue(r.charged,r.paid)>0 && <button type="button" className="registry-secondary booking-payment" disabled={busy} onClick={()=>openPayment(r)}>{r.commission_driver_id ? t('Receive driver commission','دریافت کمیسیون راننده') : t('Receive payment','دریافت پول')}</button>}
+          {president && (r.commission_driver_id || r.trader_id) && (r.managed_transport ? payableBalances(r).length>0 : bookingDue(r.charged,r.paid)>0) && <button type="button" className="registry-secondary booking-payment" disabled={busy} onClick={()=>openPayment(r)}>{r.commission_driver_id ? t('Receive driver commission','دریافت کمیسیون راننده') : t('Receive payment','دریافت پول')}</button>}
         </>}
       </div>
     </article>})}</div>
@@ -323,16 +404,19 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
     {open && <Modal title={editing?t('Edit booking','ویرایش بوکینگ'):t('New booking','بوکینگ جدید')}
       busy={busy} onClose={() => setOpen(false)} className="registration-form-card booking-form-card">
       <form className="registration-form booking-form" onSubmit={submit}><fieldset disabled={busy} className="registration-fieldset">
-        <RegistrationSection kind="booking" tone="blue" title={t('Trip dates','تاریخ‌های سفر')} icon={CalendarDays}>{field('booking_date','Booking date','تاریخ ثبت',{type:'date'})}
+        <RegistrationSection kind="booking" tone="blue" title={arrangement ? t('Trip dates','تاریخ‌های سفر') : t('Booking','بار نامه')} icon={CalendarDays}>{field('booking_date','Booking date','تاریخ ثبت',{type:'date'})}
         {!branchManager&&<label><span>{t('Branch','شعبه')}</span><select disabled={!!editing} value={form.branch_id||''} onChange={event=>setForm(current=>({
           ...current,branch_id:event.target.value,vehicle_id:'',driver_id:'',onward_vehicle_id:'',onward_driver_id:'',
           ...(current.trader_id?{trader_id:'',trader_first_name:'',trader_last_name:'',trader_phone:'',trader_address:''}:{}),
         }))}><option value="">{t('Head office','دفتر مرکزی')}</option>{branches.filter(b=>!b.archived_at||b.id===form.branch_id).map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>}
-        <label><span>{t('Booking type','نوع بوکینگ')}</span><select disabled={!!editing?.commission_amount} value={form.service_type} onChange={e => setForm({ ...form, service_type: e.target.value })}><option value="arrangement">{t('Vehicle arrangement','معرفی واسطه')}</option><option value="managed">{t('Company-managed transport','انتقال توسط شرکت')}</option></select></label>
-        <div className="wide booking-trip-dates">
+        <label><span>{t('Booking type','نوع بوکینگ')}</span><select disabled={!!editing?.commission_amount||!!editing?.managed_transport} value={form.service_type} onChange={e => {
+          if(e.target.value==='managed')setWithHandoff(false)
+          setForm({...form,service_type:e.target.value,received_now:''})
+        }}><option value="arrangement">{t('Vehicle arrangement','معرفی واسطه')}</option><option value="managed">{t('Company-managed transport','انتقال توسط شرکت')}</option></select></label>
+        {arrangement&&<div className="wide booking-trip-dates">
           {field('departure_date','Departure date','تاریخ حرکت',{type:'date',value:departureDate,minDate:form.booking_date})}
           {field('arrival_date','Arrival date','تاریخ رسیدن',{type:'date',value:arrivalDate,minDate:departureDate})}
-        </div>
+        </div>}
         </RegistrationSection>
         <RegistrationSection kind="trader" tone="teal" title={t('Trader information','مشخصات تاجر')} icon={UserRound}>
         <label className="wide"><span>{t('Select an existing trader or enter a new trader below','تاجر ثبت‌شده را انتخاب کنید یا مشخصات تاجر جدید را وارد کنید')}</span><select value={form.trader_id} onChange={e => chooseTrader(e.target.value)}><option value="">{t('New trader','تاجر جدید')}</option>{traders.filter(r=>!r.archived_at&&belongsToBookingBranch(r)).map(r => <option key={r.id} value={r.id}>{r.full_name} · {r.phone}</option>)}</select></label>
@@ -356,18 +440,24 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
           </label>
         </RegistrationSection>
         <RegistrationSection kind="route" tone="blue" title={t('Route','مسیر')} icon={MapPin}>{field('origin','Origin location','محل مبدأ')}{field('destination','Destination location','محل مقصد')}
-        <label className="wide registry-check booking-handoff-toggle"><input type="checkbox" checked={withHandoff} onChange={e=>setWithHandoff(e.target.checked)} /><span>{t('Transfer the cargo to a second truck','انتقال بار به واسطهٔ دوم')}</span></label>
-        {withHandoff && <>
+        {structuredManaged && borderField('border_location','Border handover location','محل تحویل در مرز',{required:true,maxLength:200,wide:true})}
+        {arrangement&&<label className="wide registry-check booking-handoff-toggle"><input type="checkbox" checked={withHandoff} onChange={e=>setWithHandoff(e.target.checked)} /><span>{t('Transfer the cargo to a second truck','انتقال بار به واسطهٔ دوم')}</span></label>}
+        {arrangement&&withHandoff && <>
           {field('handoff_location','Transfer location','محل انتقال',{maxLength:200})}
           {field('handoff_date','Transfer date','تاریخ انتقال',{type:'date',value:handoffDate,minDate:departureDate,maxDate:arrivalDate})}
         </>}
         </RegistrationSection>
-        <RegistrationSection kind="finance" tone="purple" title={t('Booking finance','کمیسیون بوکینگ')} icon={Package}><label><span>{t('Currency for all booking amounts','واحد پول همه مبالغ بوکینگ')}</span><select disabled={!!editing?.commission_amount} value={form.commission_currency} onChange={e=>setForm({...form,commission_currency:e.target.value})}>{['AFN','USD','PKR','IRR'].map(c=><option key={c}>{c}</option>)}</select></label>{field('commission_amount','Commission amount','مقدار کمیسیون',{type:'number',disabled:!!editing?.commission_amount})}
+        {structuredManaged&&<RegistrationSection kind="foreign-vehicle" tone="blue" title={t('Foreign vehicle details','مشخصات موتر خارجی')} icon={Truck}>
+          {borderField('foreign_plate','Plate number','نمبر پلیت')}
+          {borderField('foreign_mobile','Mobile','موبایل',{type:'tel',maxLength:80})}
+          {borderField('foreign_driver','Driver name','نام راننده',{maxLength:200,wide:true})}
+        </RegistrationSection>}
+        {!structuredManaged&&<RegistrationSection kind="finance" tone="purple" title={t('Booking finance','کمیسیون بوکینگ')} icon={Package}><label><span>{t('Currency for all booking amounts','واحد پول همه مبالغ بوکینگ')}</span><select disabled={!!editing?.commission_amount} value={form.commission_currency} onChange={e=>setForm({...form,commission_currency:e.target.value})}>{currencies.map(c=><option key={c}>{c}</option>)}</select></label>{field('commission_amount','Commission amount','مقدار کمیسیون',{type:'number',disabled:!!editing?.commission_amount})}
         {form.service_type==='managed'&&<>{field('freight_amount','Freight owed by trader','کرایه بار قابل پرداخت توسط تاجر',{type:'number'})}{field('carrier_cost','Vehicle / driver cost owed by trader','مصارف واسطه و راننده قابل پرداخت توسط تاجر',{type:'number'})}<h3 className="booking-section-heading">{t('More expenses owed by trader','مصارف بیشتر قابل پرداخت توسط تاجر')}</h3>{form.other_expenses.map((expense,index)=><div className="wide booking-preview" key={index}><label><span>{t('Expense','مصرف')}</span><input required value={expense.description} onChange={e=>setForm(current=>({...current,other_expenses:current.other_expenses.map((x,i)=>i===index?{...x,description:e.target.value}:x)}))}/></label><label><span>{t('Amount','مقدار')}</span><input required type="number" min="0.01" step="0.01" value={expense.amount} onChange={e=>setForm(current=>({...current,other_expenses:current.other_expenses.map((x,i)=>i===index?{...x,amount:e.target.value}:x)}))}/></label><button type="button" onClick={()=>setForm(current=>({...current,other_expenses:current.other_expenses.filter((_,i)=>i!==index)}))}>{t('Remove','حذف')}</button></div>)}<button type="button" className="registry-secondary" onClick={()=>setForm(current=>({...current,other_expenses:[...current.other_expenses,{description:'',amount:''}]}))}>{t('Add expense','افزودن مصرف')}</button></>}
         <p className="wide booking-help">{driverPaysCommission ? t('Driver commission','کمیسیون راننده') : t('Total owed by trader','مجموع بدهی تاجر')}: <strong>{money(bookingTotal(form)/100,form.commission_currency)}</strong>{driverPaysCommission && <small> · {driver?.full_name || (withHandoff ? t('First driver','رانندهٔ اول') : t('Assigned driver','راننده تعیین‌شده'))}</small>}</p>
         {president&&!editing&&<label><span>{driverPaysCommission ? t('Received from driver (optional)','دریافت از راننده (اختیاری)') : t('Received now (optional)','دریافت فعلی (اختیاری)')}</span><input type="number" min="0" max={bookingTotal(form)/100} step="0.01" value={form.received_now} onChange={e=>setForm(current=>({...current,received_now:e.target.value}))}/><small>{driverPaysCommission ? t('Record only the amount received. Enter later payments in Bookings or Cashbook.','فقط مبلغ دریافت‌شده را ثبت کنید. پرداخت بعدی را در بار نامه‌ها یا روزنامچه ثبت کنید.') : t('Only this received amount is added to Cashbook Money In. Record later payments from Bookings or the trader account.','فقط مبلغ دریافت‌شده در پول آمد روزنامچه ثبت می‌شود. پرداخت بعدی را از بوکینگ‌ها یا حساب تاجر ثبت کنید.')}</small></label>}
-        </RegistrationSection>
-        <RegistrationSection kind="fleet" tone="teal" title={withHandoff ? t('First leg','مرحلهٔ اول') : t('Vehicle and driver','واسطه و راننده')} icon={Truck}>
+        </RegistrationSection>}
+        <RegistrationSection kind="fleet" tone="teal" title={structuredManaged ? t('Afghan vehicle and driver','موتر و رانندهٔ افغانی') : withHandoff ? t('First leg','مرحلهٔ اول') : t('Vehicle and driver','واسطه و راننده')} icon={Truck}>
         {(!availableVehicles.length||!availableDrivers.length)&&<p className="wide booking-help" role="status">
           {!availableVehicles.length&&t('No eligible vehicle. Check its availability, permit, and active owner in Fleet. ','واسطه واجد شرایط نیست. دسترسی، جواز و مالک فعال آن را در وسایط بررسی کنید. ')}
           {!availableDrivers.length&&t('No eligible driver. Check driver availability and licence in Fleet. ','راننده واجد شرایط نیست. دسترسی و لایسنس راننده را در وسایط بررسی کنید. ')}
@@ -375,11 +465,15 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
         </p>}
         {fleetSelect('vehicle_id',availableVehicles,'Registered vehicle','واسطه ثبت‌شده',v=>`${v.plate_number} · ${v.vehicle_type}`)}
         {fleetSelect('driver_id',availableDrivers,'Registered driver','راننده ثبت‌شده',d=>`${d.full_name} · ${d.phone}`)}
+        {structuredManaged&&borderField('afghan_waybill','Afghan waybill number','نمبر بارنامهٔ موتر افغانی',{wide:true})}
         {vehicle && <dl className="booking-preview"><dt>{t('Plate / foreign plate','پلیت / پلیت خارجی')}</dt><dd>{vehicle.plate_number} / {vehicle.foreign_plate_number || '—'}</dd><dt>{t('Type / color','نوع / رنگ')}</dt><dd>{vehicle.vehicle_type} / {vehicle.color || '—'}</dd><dt>{t('VIN','نمبر شاسی')}</dt><dd>{vehicle.vin_number || '—'}</dd><dt>{t('Owner','مالک')}</dt><dd>{vehicle.vehicle_owners?.full_name || '—'} · {vehicle.vehicle_owners?.phone || '—'}</dd><dt>{t('Permit expiry','تاریخ ختم جواز')}</dt><dd>{formatSolarHijri(vehicle.permit_expiry)}</dd></dl>}
         {driver && <dl className="booking-preview"><dt>{t('Driver','راننده')}</dt><dd>{driver.full_name}</dd><dt>{t('Father name','نام پدر')}</dt><dd>{driver.father_name || '—'}</dd><dt>{t('Contact','تماس')}</dt><dd>{driver.phone}</dd><dt>{t('Address','آدرس')}</dt><dd>{driver.address || '—'}</dd>{president && driver.license_number && <><dt>{t('Licence number','نمبر لایسنس')}</dt><dd>{driver.license_number}</dd></>}</dl>}
         {(driver&&!driver.user_id || withHandoff && onwardDrivers.some(d=>d.id===form.onward_driver_id&&!d.user_id))&&<p className="wide booking-help">{t('Link each driver’s login using the key icon in Fleet → Drivers to show the assignment in their portal.','برای نمایش برنامه در درگاه راننده، حساب هر راننده را با آیکن کلید در بخش وسایط ← رانندگان وصل کنید.')}</p>}
         <p className="wide booking-help">{t('Register missing vehicles and drivers in Fleet first. Trader details are saved with this booking; existing trader profiles are not overwritten.','وسایط و رانندگان جدید را ابتدا در بخش وسایط ثبت کنید. مشخصات تاجر با این بوکینگ ذخیره می‌شود؛ مشخصات قبلی تاجر تغییر نمی‌کند.')}</p>
         </RegistrationSection>
+        {structuredManaged&&<RegistrationSection kind="finance" tone="purple" title={t('Booking finance','کمیسیون بوکینگ')} icon={Package}>
+          <ManagedBookingCharges charges={managedCharges} setCharges={setManagedCharges} language={language}/>
+        </RegistrationSection>}
         {withHandoff && <RegistrationSection kind="onward" tone="purple" title={t('Second leg','مرحلهٔ دوم')} icon={ArrowLeftRight}>
           {fleetSelect('onward_vehicle_id',onwardVehicles,'Second vehicle','واسطهٔ دوم',v=>`${v.plate_number} · ${v.vehicle_type}`)}
           {fleetSelect('onward_driver_id',onwardDrivers,'Second driver','رانندهٔ دوم',d=>`${d.full_name} · ${d.phone}`)}
@@ -390,7 +484,57 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
     </Modal>}
     {deletion&&<ConfirmArchive language={language} busy={busy} error={message} restore={!!deletion.archived_at} onClose={()=>setDeletion(null)} onConfirm={async()=>{setBusy(true);try{await rpc('archive_booking_record',{p_id:deletion.id,p_archived:!deletion.archived_at,p_expected:deletion.updated_at});setDeletion(null);await load()}catch(e){setMessage(explain(e,language))}finally{setBusy(false)}}}/>}
     {bookingSelection.dialog}
-    {paymentRow&&<Modal title={`${paymentRow.commission_driver_id ? t('Receive driver commission','دریافت کمیسیون راننده') : t('Receive payment for booking','دریافت پول بوکینگ')} #${paymentRow.booking_number}`} busy={busy} onClose={()=>setPaymentRow(null)}><form className="registry-form" onSubmit={savePayment}>{paymentRow.commission_driver_id && <p className="wide booking-help">{t('Driver','راننده')}: <strong>{drivers.find(driver=>driver.id===paymentRow.commission_driver_id)?.full_name || paymentRow.drivers?.full_name}</strong></p>}<p className="wide booking-help">{t('Remaining owed','باقی‌مانده قابل پرداخت')}: <strong>{money(bookingDue(paymentRow.charged,paymentRow.paid)/100,paymentRow.commission_currency)}</strong></p><fieldset disabled={busy} className="booking-fields wide"><label><span>{t('Amount received','مبلغ دریافت‌شده')} ({paymentRow.commission_currency}) *</span><input required type="number" min="0.01" max={bookingDue(paymentRow.charged,paymentRow.paid)/100} step="0.01" value={paymentForm.amount} onChange={e=>setPaymentForm(current=>({...current,amount:e.target.value}))}/></label><label><span>{t('Payment date','تاریخ دریافت')} *</span><SolarHijriDateInput required max={kabulToday()} language={language} value={paymentForm.date} onChange={date=>setPaymentForm(current=>({...current,date}))} ariaLabel={t('Payment date','تاریخ دریافت')}/></label></fieldset><p className="wide booking-help">{paymentRow.commission_driver_id ? t('This payment is recorded in Cashbook Money In and the driver’s transactions.','این پرداخت در پول آمد روزنامچه و معاملات راننده ثبت می‌شود.') : t('This payment is added once to Cashbook Money In and the trader account.','این پرداخت یک‌بار در پول آمد روزنامچه و حساب تاجر ثبت می‌شود.')}</p>{paymentError&&<p className="wide registry-notice error" role="alert">{paymentError}</p>}<div className="registry-form-actions"><button type="button" disabled={busy} onClick={()=>setPaymentRow(null)}>{t('Cancel','انصراف')}</button><button className="registry-primary" disabled={busy}>{t('Save payment','ثبت پرداخت')}</button></div></form></Modal>}
+    {paymentRow&&<Modal title={`${paymentRow.commission_driver_id ? t('Receive driver commission','دریافت کمیسیون راننده') : t('Receive payment for booking','دریافت پول بوکینگ')} #${paymentRow.booking_number}`}
+      busy={busy} onClose={()=>setPaymentRow(null)}>
+      <form className="registry-form" onSubmit={savePayment}>
+        {paymentRow.commission_driver_id&&<p className="wide booking-help">{t('Driver','راننده')}: <strong>{drivers.find(driver=>driver.id===paymentRow.commission_driver_id)?.full_name || paymentRow.drivers?.full_name}</strong></p>}
+        <p className="wide booking-help">{t('Remaining owed','باقی‌مانده قابل پرداخت')}: <strong>{money(paymentDue/100,paymentForm.currency)}</strong></p>
+        <fieldset disabled={busy} className="booking-fields wide">
+          {paymentRow.managed_transport&&<label>
+            <span>{t('Payment currency','واحد پول پرداخت')}</span>
+            <select value={paymentForm.currency} onChange={event=>setPaymentForm(current=>({...current,currency:event.target.value,amount:''}))}>
+              {payableBalances(paymentRow).map(row=><option key={row.currency}>{row.currency}</option>)}
+            </select>
+          </label>}
+          <label><span>{t('Amount received','مبلغ دریافت‌شده')} ({paymentForm.currency}) *</span>
+            <input required type="number" min="0.01" max={paymentDue/100} step="0.01" value={paymentForm.amount}
+              onChange={e=>setPaymentForm(current=>({...current,amount:e.target.value}))}/>
+          </label>
+          <label><span>{t('Payment date','تاریخ دریافت')} *</span>
+            <SolarHijriDateInput required max={kabulToday()} language={language} value={paymentForm.date}
+              onChange={date=>setPaymentForm(current=>({...current,date}))} ariaLabel={t('Payment date','تاریخ دریافت')}/>
+          </label>
+        </fieldset>
+        {paymentError&&<p className="wide registry-notice error" role="alert">{paymentError}</p>}
+        <div className="registry-form-actions">
+          <button type="button" disabled={busy} onClick={()=>setPaymentRow(null)}>{t('Cancel','انصراف')}</button>
+          <button className="registry-primary" disabled={busy}>{t('Save payment','ثبت پرداخت')}</button>
+        </div>
+      </form>
+    </Modal>}
+    {expense&&<Modal title={t('Mark expense as paid','ثبت تادیهٔ مصرف')} busy={busy} onClose={()=>setExpense(null)}>
+      <form className="registry-form" onSubmit={payExpense}>
+        <p className="wide booking-help">{managedChargeLabel(expense.charge,language)} · <strong><bdi>{money(expense.charge.amount,expense.charge.currency)}</bdi></strong></p>
+        <fieldset disabled={busy} className="booking-fields wide">
+          {president ? <label><span>{t('Paying account','حساب پرداخت‌کننده')}</span>
+            <select value={expense.account} onChange={event=>setExpense(current=>({...current,account:event.target.value}))}>
+              <option value="">{t('Head office','دفتر مرکزی')}</option>
+              {branches.filter(branch=>!branch.archived_at).map(branch=><option key={branch.id} value={branch.id}>{branch.name}</option>)}
+            </select>
+          </label> : <p>{t('Paying account','حساب پرداخت‌کننده')}: <strong>{branches.find(branch=>branch.id===expense.account)?.name}</strong></p>}
+          <label><span>{t('Expense payment date','تاریخ تادیهٔ مصرف')} *</span>
+            <SolarHijriDateInput required max={kabulToday()} language={language} value={expense.date}
+              onChange={date=>setExpense(current=>({...current,date}))} ariaLabel={t('Expense payment date','تاریخ تادیهٔ مصرف')}/>
+          </label>
+        </fieldset>
+        <p className="wide booking-help">{t('Saving records this expense in Cashbook Money Out.','با ثبت تادیه، مصرف در پول رفت روزنامچه ثبت می‌شود.')}</p>
+        {expenseError&&<p className="wide registry-notice error" role="alert">{expenseError}</p>}
+        <div className="registry-form-actions">
+          <button type="button" disabled={busy} onClick={()=>setExpense(null)}>{t('Cancel','انصراف')}</button>
+          <button className="registry-primary" disabled={busy}>{t('Save expense payment','ثبت تادیه')}</button>
+        </div>
+      </form>
+    </Modal>}
     {cancelRow&&<Modal title={t('Cancel booking','لغو بوکینگ')} onClose={()=>setCancelRow(null)} busy={busy}><div className="record-modal-body"><p>{t('Cancel this booking and release its vehicle and driver?','این بوکینگ لغو و واسطه و راننده آزاد شوند؟')}</p>{message&&<p role="alert" className="registry-notice error">{message}</p>}<button className="registry-primary" disabled={busy} onClick={()=>changeStatus(cancelRow,'cancelled')}>{t('Cancel booking','لغو بوکینگ')}</button></div></Modal>}
     {handoffRow && <Modal title={t('Confirm truck handoff','تأیید انتقال بار')} onClose={()=>setHandoffRow(null)} busy={busy}>
       <div className="record-modal-body">
@@ -400,12 +544,12 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
         <button type="button" className="registry-primary" disabled={busy} onClick={()=>changeStatus(handoffRow,'handoff')}>{t('Confirm handoff','تأیید انتقال')}</button>
       </div>
     </Modal>}
-    {detail && <Modal className="booking-detail-card" title={`${t('Booking details','جزئیات بار نامه')} · \u2066#${detail.booking_number}\u2069`} onClose={()=>setDetail(null)}>
+    {detail && !expense && <Modal className="booking-detail-card" title={`${t('Booking details','جزئیات بار نامه')} · \u2066#${detail.booking_number}\u2069`} onClose={()=>setDetail(null)}>
       <BookingInformation row={detail} language={language} president={president}
         vehicle={vehicles.find(row=>row.id===detail.vehicle_id)}
         driver={drivers.find(row=>row.id===detail.driver_id)}
         branch={branches.find(row=>row.id===detail.branch_id)}
-        onPrint={()=>printBooking(detail)} message={message}/>
+        onPrint={()=>printBooking(detail)} onPayExpense={detail.managed_transport ? openExpense : undefined} message={message}/>
     </Modal>}
   </div>
 }

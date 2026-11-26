@@ -2,9 +2,38 @@ import { cents, kabulToday } from './cashbook.js'
 import { formatSolarHijri } from './solarHijri.js'
 import { bookingBalances, traderBalance } from './traderAccounts.js'
 import { bookingDue } from './bookingFinance.js'
+import { managedChargeLabel } from './managedBookings.js'
 
 const translate = language => (en, fa) => language === 'fa' ? fa : en
 export const reportMoney = (amount, currency) => `${(amount / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`
+
+export function managedStatementSections({ charges, balances, payments }, language) {
+  const t = (en,fa) => language === 'fa' ? fa : en
+  const amount = (value,currency) => reportMoney(cents(value),currency)
+  return [
+    { key:'balances', title:t('Balance by currency','باقی‌مانده به تفکیک واحد پول'),
+      headers:[t('Currency','واحد'),t('Total charged','کل بدهی'),t('Paid by trader','پرداخت تاجر'),t('Remaining','باقی‌مانده')],
+      widths:[16,28,28,28], numeric:[1,2,3], rows:(balances??[]).map(row=>[
+        row.currency,amount(row.charged,row.currency),amount(row.paid,row.currency),reportMoney(bookingDue(row.charged,row.paid),row.currency),
+      ]),
+    },
+    { key:'charges', title:t('Booking charges','مصارف و کمیشن'),
+      headers:[t('Charge','نوع مصرف'),t('Amount','مبلغ'),t('Expense paid on','تاریخ تادیهٔ مصرف')],
+      widths:[43,30,27], numeric:[1], rows:charges.map(row=>[
+        managedChargeLabel(row,language),amount(row.amount,row.currency),row.paid_on ? formatSolarHijri(row.paid_on) : '—',
+      ]),
+    },
+    ...(payments ? [{
+      key:'payments', title:t('Trader payments','پرداخت‌های تاجر'),
+      headers:[t('Date / receipt','تاریخ / رسید'),t('Details','تفصیلات'),t('Amount','مبلغ')],
+      widths:[28,40,32], numeric:[2], rows:payments.map(row=>[
+        [formatSolarHijri(row.date),row.receipt_number ? '#'+row.receipt_number : null].filter(Boolean).join(' · '),
+        row.description,amount(row.direction==='out' ? -Number(row.amount) : row.amount,row.currency),
+      ]),
+    }] : []),
+  ]
+}
+
 export function transactionNotes(row, language) {
   const t = translate(language)
   return [

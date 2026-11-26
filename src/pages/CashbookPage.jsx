@@ -75,7 +75,7 @@ export default function CashbookPage({ language, profile, onBack }) {
     if (!president) return []
     const [entries, operations, corrections] = await Promise.all([
       allRows(supabase,'cashbook_entries'),
-      allRows(supabase,'cashbook_operations','id,receipt_number,mode,reverses_id,payroll_deduction:request_payload->>payroll_loan_deduction'),
+      allRows(supabase,'cashbook_operations','id,receipt_number,mode,reverses_id,payroll_deduction:request_payload->>payroll_loan_deduction,managed_expense:request_payload->>managed_expense_id'),
       allRows(supabase,'cashbook_amount_corrections','request_id,entry_id,previous_amount,corrected_amount,reason,changed_at', 'request_id'),
     ])
     const byId = new Map(operations.map(row => [row.id,row]))
@@ -95,7 +95,7 @@ export default function CashbookPage({ language, profile, onBack }) {
         reversal: operation?.mode === 'reversal',
         reverses_receipt: byId.get(operation?.reverses_id)?.receipt_number,
         reversed_by: reversals.get(entry.operation_id),
-        can_edit_amount: ['income','expense'].includes(operation?.mode) && !entry.is_transfer && !operation.payroll_deduction,
+        can_edit_amount: ['income','expense'].includes(operation?.mode) && !entry.is_transfer && !operation.payroll_deduction && !operation.managed_expense,
         corrections: historyByEntry.get(entry.id) ?? [],
       }
     })
@@ -150,7 +150,11 @@ export default function CashbookPage({ language, profile, onBack }) {
   const activeTraders = traders.filter(row => !row.archived_at && (!row.branch_id || row.branch_id === scope))
   const openLoans = loans.filter(row => row.currency === currency)
   const bookingOptions = bookings.filter(row => !row.commission_driver_id && row.trader_id === form.trader_id && !row.archived_at && !row.deleted_at
-    && row.branch_id === (scope === 'admin' ? null : scope) && row.commission_currency === currency)
+    && row.branch_id === (scope === 'admin' ? null : scope)
+    && (row.managed_transport
+      ? row.managed_transport.balances?.some(balance=>balance.currency===currency && (bookingDue(balance.charged,balance.paid)>0 || row.id===form.booking_id))
+      : row.commission_currency === currency))
+  const managedInstallment = !!(form.trader_id && bookingOptions.find(row=>row.id===form.booking_id)?.managed_transport)
   const links = [
     {id:'employee', icon:BriefcaseBusiness, label:t('Employee','کارمند'), value:form.employee_id},
     {id:'driver', icon:Truck, label:t('Driver','راننده'), value:form.driver_id},
@@ -241,6 +245,7 @@ export default function CashbookPage({ language, profile, onBack }) {
         LOAN_AMOUNT_BELOW_RECOVERED: t('The loan amount cannot be lower than the amount already recovered.','اصل قرض نمی‌تواند کمتر از مبلغ بازپرداخت‌شده باشد.'),
         LOAN_REPAYMENT_EXCEEDS_BALANCE: t('The corrected payment exceeds the outstanding loan.','مبلغ اصلاح‌شده از قرض باقی‌مانده بیشتر است.'),
         DRIVER_COMMISSION_EXCEEDS_BALANCE: t('The correction exceeds the unpaid driver commission.','مبلغ اصلاح‌شده از کمیسیون باقی‌ماندهٔ راننده بیشتر است.'),
+        MANAGED_PAYMENT_EXCEEDS_BALANCE: t('The correction exceeds the booking balance in this currency.','مبلغ اصلاح‌شده از بدهی بار نامه در این واحد پول بیشتر است.'),
         INVALID_AMOUNT: t('Enter a positive amount with up to two decimal places.','یک مبلغ مثبت با حداکثر دو رقم اعشار وارد کنید.'),
         CUSTOMS_EXCEEDS_BALANCE: t('The corrected amount exceeds the remaining fee.','مبلغ اصلاح‌شده از حق‌الزحمه باقی‌مانده بیشتر است.'),
         STALE_RECORD: t('The receipt changed. Close this dialog and refresh.','رسید تغییر کرده است. این پنجره را بسته و صفحه را تازه کنید.'),
@@ -270,6 +275,7 @@ export default function CashbookPage({ language, profile, onBack }) {
       if(failure){
         const messages={ACCESS_DENIED:t('You cannot record money for this account.','شما اجازه ثبت پول در این حساب را ندارید.'),INVALID_AMOUNT:t('Enter a positive amount with up to two decimal places.','یک مبلغ مثبت با حداکثر دو رقم اعشار وارد کنید.'),INVALID_DATE:t('Choose today or an earlier date.','تاریخ امروز یا گذشته را انتخاب کنید.'),DESCRIPTION_REQUIRED:t('Enter a name or description.','نام یا شرح معامله را وارد کنید.'),BOOKING_PAYMENT_UNAVAILABLE:t('Choose an active booking in this currency.','بوکینگ فعال را با همین واحد پول انتخاب کنید.'),EMPLOYEE_UNAVAILABLE:t('Choose an active employee.','یک کارمند فعال را انتخاب کنید.'),INVALID_PARTY_PAYMENT:t('Only one employee or driver can be linked to Money Out.','فقط یک کارمند یا راننده به پول رفت وصل می‌شود.'),DRIVER_UNAVAILABLE:t('Choose an active driver.','یک راننده فعال را انتخاب کنید.'),INVALID_LOAN:t('Link the loan to one employee or driver and record Money Out.','قرض را به یک کارمند یا راننده وصل کرده و پول رفت ثبت کنید.'),INVALID_LOAN_DEADLINE:t('The loan deadline must be on or after the transaction date.','مهلت قرض باید در تاریخ معامله یا پس از آن باشد.'),INVALID_LOAN_REPAYMENT:t('Choose an open loan and record Money In.','یک قرض باز را انتخاب کرده و پول آمد ثبت کنید.'),LOAN_UNAVAILABLE:t('This loan is no longer available. Refresh the cashbook.','این قرض دیگر در دسترس نیست. روزنامچه را تازه کنید.'),LOAN_CURRENCY_MISMATCH:t('Use the same currency as the loan.','از واحد پول قرض استفاده کنید.'),LOAN_REPAYMENT_EXCEEDS_BALANCE:t('The repayment exceeds the remaining loan balance.','بازپرداخت از مانده قرض بیشتر است.')}
         messages.DRIVER_COMMISSION_EXCEEDS_BALANCE=t('The amount exceeds the unpaid driver commission.','مبلغ از کمیسیون باقی‌ماندهٔ راننده بیشتر است.')
+        messages.MANAGED_PAYMENT_EXCEEDS_BALANCE=t('The payment exceeds the booking balance in this currency.','مبلغ از بدهی بار نامه در این واحد پول بیشتر است.')
         const key=Object.keys(messages).find(k=>failure.message.includes(k))
         if(key){setUncertain(false);throw new Error(messages[key])}
         setUncertain(true);setRetryDirection(direction);throw new Error(t('Save was not confirmed. Retry the same direction with the same details, or refresh before entering again.','ثبت تأیید نشد. با همان جهت و معلومات دوباره کوشش کنید یا پیش از ثبت مجدد، فهرست را تازه‌سازی کنید.'))
@@ -464,7 +470,7 @@ export default function CashbookPage({ language, profile, onBack }) {
           <ArrowDownLeft size={17} aria-hidden="true"/>{busy&&retryDirection==='in'?t('Saving…','در حال ثبت…'):uncertain&&retryDirection==='in'?t('Retry Money In','کوشش مجدد آمد'):t('Save Money In','ثبت پول آمد')}
         </button>
         <button type="submit" value="out" className="cashbook-out"
-          disabled={loading||!loaded||busy||driverCommission||!!form.loan_repayment_entry_id||uncertain&&retryDirection!=='out'||(!president&&!profile?.branch_id)}>
+          disabled={loading||!loaded||busy||driverCommission||managedInstallment||!!form.loan_repayment_entry_id||uncertain&&retryDirection!=='out'||(!president&&!profile?.branch_id)}>
           <ArrowUpRight size={17} aria-hidden="true"/>{busy&&retryDirection==='out'?t('Saving…','در حال ثبت…'):uncertain&&retryDirection==='out'?t('Retry Money Out','کوشش مجدد رفت'):t('Save Money Out','ثبت پول رفت')}
         </button>
       </div>
