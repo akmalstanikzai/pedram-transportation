@@ -338,8 +338,10 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
       const report = driverReportForCurrentLeg(r)
       return <article className="booking-record" data-status={r.status} key={r.id}>
       <header className="booking-card-header">
-        {bookingSelection.checkbox(r)}
-        <span className="booking-card-reference"><ClipboardList size={16} aria-hidden="true" /><bdi>#{r.booking_number}</bdi></span>
+        <div className="booking-card-identity">
+          {bookingSelection.checkbox(r)}
+          <span className="booking-card-reference"><ClipboardList size={16} aria-hidden="true" /><bdi>#{r.booking_number}</bdi></span>
+        </div>
         <h3><bdi>{r.trader_first_name ? `${r.trader_first_name} ${r.trader_last_name || ''}` : r.traders?.full_name || '—'}</bdi></h3>
         <span className={`status-pill ${r.status}`}>{statuses[r.status]}</span>
       </header>
@@ -448,9 +450,9 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
         </>}
         </RegistrationSection>
         {structuredManaged&&<RegistrationSection kind="foreign-vehicle" tone="blue" title={t('Foreign vehicle details','مشخصات موتر خارجی')} icon={Truck}>
-          {borderField('foreign_plate','Plate number','نمبر پلیت')}
-          {borderField('foreign_mobile','Mobile','موبایل',{type:'tel',maxLength:80})}
           {borderField('foreign_driver','Driver name','نام راننده',{maxLength:200,wide:true})}
+          {borderField('foreign_mobile','Mobile','موبایل',{type:'tel',maxLength:80})}
+          {borderField('foreign_plate','Plate number','نمبر پلیت')}
         </RegistrationSection>}
         {!structuredManaged&&<RegistrationSection kind="finance" tone="purple" title={t('Booking finance','کمیسیون بوکینگ')} icon={Package}><label><span>{t('Currency for all booking amounts','واحد پول همه مبالغ بوکینگ')}</span><select disabled={!!editing?.commission_amount} value={form.commission_currency} onChange={e=>setForm({...form,commission_currency:e.target.value})}>{currencies.map(c=><option key={c}>{c}</option>)}</select></label>{field('commission_amount','Commission amount','مقدار کمیسیون',{type:'number',disabled:!!editing?.commission_amount})}
         {form.service_type==='managed'&&<>{field('freight_amount','Freight owed by trader','کرایه بار قابل پرداخت توسط تاجر',{type:'number'})}{field('carrier_cost','Vehicle / driver cost owed by trader','مصارف واسطه و راننده قابل پرداخت توسط تاجر',{type:'number'})}<h3 className="booking-section-heading">{t('More expenses owed by trader','مصارف بیشتر قابل پرداخت توسط تاجر')}</h3>{form.other_expenses.map((expense,index)=><div className="wide booking-preview" key={index}><label><span>{t('Expense','مصرف')}</span><input required value={expense.description} onChange={e=>setForm(current=>({...current,other_expenses:current.other_expenses.map((x,i)=>i===index?{...x,description:e.target.value}:x)}))}/></label><label><span>{t('Amount','مقدار')}</span><input required type="number" min="0.01" step="0.01" value={expense.amount} onChange={e=>setForm(current=>({...current,other_expenses:current.other_expenses.map((x,i)=>i===index?{...x,amount:e.target.value}:x)}))}/></label><button type="button" onClick={()=>setForm(current=>({...current,other_expenses:current.other_expenses.filter((_,i)=>i!==index)}))}>{t('Remove','حذف')}</button></div>)}<button type="button" className="registry-secondary" onClick={()=>setForm(current=>({...current,other_expenses:[...current.other_expenses,{description:'',amount:''}]}))}>{t('Add expense','افزودن مصرف')}</button></>}
