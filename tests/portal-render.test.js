@@ -20,9 +20,22 @@ test('branch navigation and direct Branches URL never render branch management c
     assert.equal((html.match(/class="module-card"/g) || []).length, 6)
     assert.match(html, /data-module="company"/)
     assert.match(html, /data-module="expenses"/)
+    assert.ok(html.indexOf('data-module="company"') < html.indexOf('data-module="cashbook"'))
     assert.doesNotMatch(html, />Branches<|Add Branch|Create branch and account/)
     assert.match(html, /Fleet availability|Operations overview/)
     assert.doesNotMatch(html, />Traders<|Traders with overdue balances/)
+    globalThis.window.location.hash = '#/expenses'
+    const expensePage = renderToStaticMarkup(React.createElement(Dashboard, { language: 'fa', profile, session: { user: {} } }))
+    assert.match(expensePage, /ثبت پول رفت/)
+    assert.match(expensePage, /تاریخچه مصارف/)
+    assert.match(expensePage, /value="miscellaneous">متفرقه/)
+    assert.match(expensePage, /value="office">دفتر/)
+    assert.doesNotMatch(expensePage, /ثبت بل پرداخت‌نشده|پرداخت بل/)
+    globalThis.window.location.hash = '#/expenses?view=history&currency=USD&period=today'
+    const expenseHistory = renderToStaticMarkup(React.createElement(Dashboard, { language: 'en', profile, session: { user: {} } }))
+    assert.match(expenseHistory, /Expense history/)
+    assert.match(expenseHistory, /value="USD" selected/)
+    assert.doesNotMatch(expenseHistory, /Save Money Out/)
     globalThis.window.location.hash = '#/trader-accounts'
     const traderUrl = renderToStaticMarkup(React.createElement(Dashboard, { language: 'en', profile }))
     assert.doesNotMatch(traderUrl, /Search traders|Register trader|>Traders</)

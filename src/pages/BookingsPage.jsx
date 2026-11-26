@@ -3,6 +3,7 @@ import { Archive, ArrowLeftRight, ArrowRight, BadgeCheck, Building2, CalendarDay
 import { supabase } from '../lib/supabase'
 import { allRows, currencies, kabulToday } from '../lib/cashbook'
 import { attentionForBooking, bookingAttention, driverReportForCurrentLeg } from '../lib/bookingAttention'
+import { recordQuery } from '../lib/recordRoutes'
 import { printRecord } from '../lib/recordExports'
 import { bookingDue, bookingTotal } from '../lib/bookingFinance'
 import { bookingColumns, rpc, explain } from '../lib/operations'
@@ -42,8 +43,10 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
   const [ready, setReady] = useState(false)
   const [message, setMessage] = useState('')
   const [query, setQuery] = useState('')
-  const [scope, setScope] = useState(()=>new URLSearchParams(window.location.hash.split('?')[1]).get('scope') || 'all')
-  const overviewStatus = new URLSearchParams(window.location.hash.split('?')[1]).get('status')
+  const destination = recordQuery()
+  const [scope, setScope] = useState(()=>destination.get('scope') || 'all')
+  const overviewStatus = destination.get('status')
+  const targetBooking = destination.get('booking')
   const [branches,setBranches]=useState([]),[editing,setEditing]=useState(null),[archived,setArchived]=useState(false),[deletion,setDeletion]=useState(null),[detail,setDetail]=useState(null),[cancelRow,setCancelRow]=useState(null),[paymentRow,setPaymentRow]=useState(null),[paymentForm,setPaymentForm]=useState({amount:'',date:kabulToday()}),[paymentError,setPaymentError]=useState('')
   const request=useRef(null)
   const paymentRequest=useRef(null)
@@ -70,7 +73,7 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
   const attentionDay = attention ? kabulToday() : ''
   const matchesOverview = row => !overviewStatus || (row.status===overviewStatus
     && (overviewStatus!=='in_transit' || !driverReportForCurrentLeg(row).delivered))
-  const visibleRows=rows.filter(r=>!!r.archived_at===archived&&matchesOverview(r)&&(!attention||attentionForBooking(r,attentionDay)===attention)&&(!president||scope==='all'||(scope==='head-office'?!r.branch_id:r.branch_id===scope))&&`${r.booking_number} ${r.trader_first_name||r.traders?.full_name||''} ${r.trader_last_name||''} ${r.origin} ${r.destination}`.toLowerCase().includes(query.toLowerCase()))
+  const visibleRows=rows.filter(r=>(targetBooking ? r.id===targetBooking : !!r.archived_at===archived)&&matchesOverview(r)&&(!attention||attentionForBooking(r,attentionDay)===attention)&&(!president||scope==='all'||(scope==='head-office'?!r.branch_id:r.branch_id===scope))&&`${r.booking_number} ${r.trader_first_name||r.traders?.full_name||''} ${r.trader_last_name||''} ${r.origin} ${r.destination}`.toLowerCase().includes(query.toLowerCase()))
   const bookingSelection = useBulkSelection({bulk:{
     language, cardList:true, disabled:busy, refresh:refreshBookings,
     rows:visibleRows.filter(row=>row.status==='completed' && !row.archived_at),
@@ -328,8 +331,8 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
       </div>
       <label className="registry-search booking-search"><Search size={17} aria-hidden="true" /><input type="search" aria-label={t('Search bookings','جستجوی بار نامه')} placeholder={t('Search booking, trader or route','جستجوی بار نامه، تاجر یا مسیر')} value={query} onChange={e => setQuery(e.target.value)} /></label>
     </div>
-    {overviewStatus && <div className="booking-attention-filter">
-      <strong>{overviewStatus==='confirmed' ? t('Waiting to start','منتظر حرکت') : t('On the road','در راه')} · {visibleRows.length}</strong>
+    {(overviewStatus || targetBooking) && <div className="booking-attention-filter">
+      <strong>{targetBooking ? t('Selected booking','بارنامه انتخاب‌شده') : overviewStatus==='confirmed' ? t('Waiting to start','منتظر حرکت') : t('On the road','در راه')} · {visibleRows.length}</strong>
       <a href="#/bookings">{t('Show all bookings','نمایش همه بارنامه‌ها')}</a>
     </div>}
     {attention && <div className="booking-attention-filter">

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { recordQuery } from '../lib/recordRoutes'
 import { Archive, Files, Plus, RefreshCw, Search, Stamp, UserRound, WalletCards } from 'lucide-react'
 import CustomsAgentAccount from '../components/CustomsAgentAccount'
 import CompactTable from '../components/CompactTable'
@@ -51,7 +52,9 @@ export default function CustomsPage({ language, profile, onBack }) {
   const [editing, setEditing] = useState(null)
   const [open, setOpen] = useState(false)
   const [details, setDetails] = useState(null)
-  const [account, setAccount] = useState(null)
+  const [accountId, setAccountId] = useState(()=>recordQuery().get('agent'))
+  const account = rows.find(row=>row.id===accountId)
+  const destination = recordQuery()
   const [accountBusy, setAccountBusy] = useState(false)
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -175,7 +178,7 @@ export default function CustomsPage({ language, profile, onBack }) {
         <td>{[row.province, row.district, row.village].filter(Boolean).join(' · ') || '—'}</td>
         <td><div className="compact-table-actions">
           <RecordTools language={language} onView={() => { setError(null); setDetails(row) }} onEdit={archived ? undefined : () => start(row)} />
-          <IconButton icon={WalletCards} label={t('Fees & payments', 'حق‌الزحمه و پرداخت‌ها')} onClick={() => setAccount(row)} />
+          <IconButton icon={WalletCards} label={t('Fees & payments', 'حق‌الزحمه و پرداخت‌ها')} onClick={() => setAccountId(row.id)} />
         </div></td>
       </tr>)}
     </CompactTable>}
@@ -204,14 +207,15 @@ export default function CustomsPage({ language, profile, onBack }) {
       <AgentDetails row={details} language={language} onView={viewFile} />
       {message && <p className="registry-notice error" role="alert">{message}</p>}
       <div className="record-modal-body customs-profile-account">
-        <button type="button" className="registry-secondary" onClick={() => { setAccount(details); setDetails(null); setError(null) }}>
+        <button type="button" className="registry-secondary" onClick={() => { setAccountId(details.id); setDetails(null); setError(null) }}>
           <WalletCards size={17} />{t('Fees & payments', 'حق‌الزحمه و پرداخت‌ها')}
         </button>
       </div>
     </Modal>}
     {account && <Modal title={`${account.name} · ${t('Fees & payments', 'حق‌الزحمه و پرداخت‌ها')}`}
-      busy={accountBusy} onClose={() => setAccount(null)}>
-      <CustomsAgentAccount key={account.id} agent={account} language={language} onBusyChange={setAccountBusy} />
+      busy={accountBusy} onClose={() => setAccountId(null)}>
+      <CustomsAgentAccount key={account.id} agent={account} language={language} onBusyChange={setAccountBusy}
+        initialFee={account.id===destination.get('agent') ? destination.get('fee') : null} />
     </Modal>}
   </section>
 }

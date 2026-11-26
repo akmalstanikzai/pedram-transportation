@@ -9,6 +9,7 @@ import TraderLogin from '../components/TraderLogin'
 import CompactTable from '../components/CompactTable'
 import Icon from '../components/Icon'
 import { RegistrationSection } from '../components/RegistrationFields'
+import { recordQuery } from '../lib/recordRoutes'
 import './TradersPage.css'
 const fields=[['first_name','First name','نام',true],['last_name','Surname','تخلص',false],['phone','Mobile','موبایل',true],['address','Address','آدرس',true]]
 export default function TradersPage({language,profile,onBack}){
@@ -19,7 +20,10 @@ export default function TradersPage({language,profile,onBack}){
 
 function TraderDirectory({language,profile,onBack}){
  const t=(en,fa)=>language==='fa'?fa:en
- const [rows,setRows]=useState([]),[query,setQuery]=useState(''),[archived,setArchived]=useState(false),[form,setForm]=useState({}),[edit,setEdit]=useState(null),[open,setOpen]=useState(false),[detail,setDetail]=useState(null),[loginTrader,setLoginTrader]=useState(null),[deletion,setDeletion]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState('')
+ const [rows,setRows]=useState([]),[query,setQuery]=useState(''),[archived,setArchived]=useState(false),[form,setForm]=useState({}),[edit,setEdit]=useState(null),[open,setOpen]=useState(false),[detailId,setDetailId]=useState(()=>recordQuery().get('trader')),[loginTrader,setLoginTrader]=useState(null),[deletion,setDeletion]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState('')
+ const detail = rows.find(row=>row.id===detailId)
+ const destination = recordQuery()
+ const scopedAccount = detailId && detailId===destination.get('trader') ? destination.get('account') : null
  const request=useRef(null)
  const load=useCallback(async()=>{const updated=await allRows(supabase,'traders');setRows(updated);return updated},[])
  useEffect(()=>{void Promise.resolve().then(load).catch(e=>setError(explain(e,language)))},[load,language])
@@ -49,13 +53,13 @@ function TraderDirectory({language,profile,onBack}){
    <th scope="row"><strong>{row.full_name}</strong><small><bdi dir="ltr">{row.phone}</bdi></small></th>
    <td>{row.address || '—'}</td>
    <td><div className="compact-table-actions">
-     <IconButton icon={Eye} label={t('Account and details','حساب و مشخصات')} onClick={()=>setDetail(row)} disabled={busy}/>
+     <IconButton icon={Eye} label={t('Account and details','حساب و مشخصات')} onClick={()=>setDetailId(row.id)} disabled={busy}/>
      {profile?.role==='president'&&!row.archived_at&&<IconButton icon={KeyRound} label={t('Trader login','حساب ورود تاجر')} onClick={()=>setLoginTrader(row)} disabled={busy}/>}
      <RecordTools language={language} archived={row.archived_at} disabled={busy} onEdit={()=>start(row)} onArchive={()=>{setError('');request.current=null;setDeletion(row)}}/>
    </div></td>
  </tr>)}</CompactTable>
  {open&&<Modal title={edit?t('Edit trader','ویرایش تاجر'):t('Register trader','ثبت تاجر')} className="registration-form-card" busy={busy} onClose={()=>setOpen(false)}><form className="registration-form" onSubmit={save}><fieldset disabled={busy} className="registration-fieldset"><RegistrationSection kind="trader" tone="blue" title={t("Trader information","معلومات تاجر")} icon={UserRound}>{fields.map(([key,en,fa,required])=><label key={key}><span>{t(en,fa)}{required?' *':''}</span><input type={key==='phone'?'tel':'text'} required={required} value={form[key]||''} onChange={e=>setForm({...form,[key]:e.target.value})}/></label>)}</RegistrationSection></fieldset><p className="wide booking-help">{t('Changes update the trader profile. Previous booking details remain as originally recorded.','تغییرات در مشخصات تاجر ثبت می‌شود. معلومات بوکینگ‌های قبلی به شکل اصلی باقی می‌ماند.')}</p>{error&&<p className="wide registry-notice error" role="alert">{error}</p>}<div className="registry-form-actions registration-actions"><button type="button" disabled={busy} onClick={()=>setOpen(false)}>{t('Cancel','انصراف')}</button><button className="registry-primary" disabled={busy}>{t('Save','ثبت')}</button></div></form></Modal>}
- {detail&&<Modal title={detail.full_name} onClose={()=>setDetail(null)}><div className="record-modal-body trader-detail"><RegistrationSection kind="trader" tone="blue" title={t("Trader information","معلومات تاجر")} icon={UserRound}><dl className="record-details trader-detail-fields wide">{fields.map(([key,en,fa])=><div key={key}><dt>{t(en,fa)}</dt><dd>{(key==='first_name' ? detail.first_name || detail.full_name : detail[key])||'—'}</dd></div>)}</dl></RegistrationSection><TraderAccount trader={detail} language={language} profile={profile}/></div></Modal>}
+ {detail&&<Modal title={detail.full_name} onClose={()=>setDetailId(null)}><div className="record-modal-body trader-detail"><RegistrationSection kind="trader" tone="blue" title={t("Trader information","معلومات تاجر")} icon={UserRound}><dl className="record-details trader-detail-fields wide">{fields.map(([key,en,fa])=><div key={key}><dt>{t(en,fa)}</dt><dd>{(key==='first_name' ? detail.first_name || detail.full_name : detail[key])||'—'}</dd></div>)}</dl></RegistrationSection><TraderAccount key={detail.id} trader={detail} language={language} account={scopedAccount} initialCurrency={detailId===destination.get('trader') ? destination.get('currency') : null}/></div></Modal>}
  {loginTrader&&<Modal title={t('Trader login','حساب ورود تاجر')} className="branch-password-modal" busy={busy} onClose={()=>setLoginTrader(null)}><TraderLogin key={loginTrader.id} trader={loginTrader} language={language} onBusyChange={setBusy} onChanged={async()=>{const updated=await load();setLoginTrader(updated.find(row=>row.id===loginTrader.id)||null)}}/></Modal>}
  {deletion&&<ConfirmArchive language={language} busy={busy} error={error} restore={!!deletion.archived_at} onClose={()=>setDeletion(null)} onConfirm={async()=>{setBusy(true);try{await archiveTrader(deletion,!deletion.archived_at);setDeletion(null);await load()}catch(e){setError(explain(e,language))}finally{setBusy(false)}}}/>}
  </div>

@@ -57,6 +57,10 @@
 .dashboard-menu .module-card:focus-visible { outline: 2px solid #245981; outline-offset: 2px; }
 .dashboard-menu .module-card strong { font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
 .dashboard-menu .module-card[data-module='cashbook'] { --shortcut-color: #e0f3e9; }
+.dashboard-menu .module-card[data-module='company'] { --shortcut-color: #deedfc; border-color: #accce8; }
+.dashboard-menu .module-card[data-module='company'] .dashboard-icon { color: #1e527e; }
+.dashboard-menu .module-card[data-module='expenses'] { --shortcut-color: #f0e6fb; }
+.dashboard-menu .module-card[data-module='expenses'] .dashboard-icon { color: #604185; }
 .dashboard-menu .module-card[data-module='vehicles'] { --shortcut-color: #e0f2f2; }
 .dashboard-menu .module-card[data-module='bookings'] { --shortcut-color: #fff0dd; }
 .dashboard-menu .module-card[data-module='customs'] { --shortcut-color: #f0e8f8; }

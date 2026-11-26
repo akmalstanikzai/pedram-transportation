@@ -12,6 +12,7 @@ import { printRecord } from '../lib/recordExports'
 import { canPrintReceipt, cashbookReceipt } from '../lib/financialReports'
 import SolarHijriDateInput from '../components/SolarHijriDateInput'
 import { formatSolarHijri, solarHijriToday, solarHijriToISODate } from '../lib/solarHijri'
+import { recordQuery } from '../lib/recordRoutes'
 import './CashbookPage.css'
 
 function periodBounds(period){
@@ -27,9 +28,9 @@ function periodBounds(period){
 }
 
 export default function CashbookPage({ language, profile, onBack }) {
-  const destination = new URLSearchParams(window.location.hash.split('?')[1])
+  const destination = recordQuery()
   const receipt = destination.get('receipt')
-  const receiptDate = destination.get('date')
+  const receiptDate = /^\d{4}-\d{2}-\d{2}$/.test(destination.get('date') || '') ? destination.get('date') : null
   const t=(en,fa)=>language==='fa'?fa:en
   const openingBalanceLabel=t('Opening balance','موجودی قبلی')
   const closingBalanceLabel=t('Closing balance','بیلانس')
@@ -47,7 +48,7 @@ export default function CashbookPage({ language, profile, onBack }) {
   const [selectedScope,setScope]=useState(()=>destination.get('account') || 'admin')
   const scope=president?selectedScope:profile?.branch_id || ''
   const [currency,setCurrency]=useState(()=>currencies.includes(destination.get('currency')) ? destination.get('currency') : 'AFN')
-  const [period,setPeriod]=useState(()=>receiptDate && /^\d{4}-\d{2}-\d{2}$/.test(receiptDate) ? 'date' : 'today')
+  const [period,setPeriod]=useState(()=>receiptDate ? 'date' : ['today','month','all'].includes(destination.get('period')) ? destination.get('period') : 'today')
   const [customRange,setCustomRange]=useState(()=>({start:receiptDate || kabulToday(),end:receiptDate || kabulToday()}))
   const [shown,setShown]=useState(20)
   const [linkPanel,setLinkPanel]=useState('')

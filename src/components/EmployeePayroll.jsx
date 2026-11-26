@@ -9,6 +9,7 @@ import { printRecord } from '../lib/recordExports'
 import { IconButton, Modal } from './RecordTools'
 import CompactTable from './CompactTable'
 import SolarHijriDateInput from './SolarHijriDateInput'
+import { recordQuery } from '../lib/recordRoutes'
 
 const totalLabels = [
   ['salary','Total salary','مجموع معاش'],
@@ -17,7 +18,7 @@ const totalLabels = [
   ['remaining','Remaining','باقی‌مانده'],
 ]
 
-export function PayrollCards({rows, language, onPay, onPrint, onReverse}) {
+export function PayrollCards({rows, language, onPay, onPrint, onReverse, showHistory}) {
   const t = (en,fa) => language === 'fa' ? fa : en
   const amount = value => <bdi dir="ltr">{payrollMoney(cents(value))}</bdi>
   return <CompactTable className="payroll-employees" label={t('Monthly payroll','معاش ماهانه')} columns={[
@@ -41,7 +42,7 @@ export function PayrollCards({rows, language, onPay, onPrint, onReverse}) {
       </div></td>
     </tr>
     {!!row.payments.length && <tr className="payroll-history-row"><td colSpan={4}>
-      <details className="payroll-history"><summary>{t('Payment history','تاریخچه پرداخت')} · {row.name}</summary>
+      <details className="payroll-history" open={showHistory || undefined}><summary>{t('Payment history','تاریخچه پرداخت')} · {row.name}</summary>
         {row.payments.map(payment => <div key={payment.id}>
           <span>{formatSolarHijri(payment.date)} · {payment.kind === 'advance' ? t('Salary advance','پیش‌پرداخت معاش') : t('Salary payment','پرداخت معاش')} · {payment.account}</span>
           <strong>{amount(payment.amount)}{payment.reversed ? ` · ${t('Reversed','معکوس‌شده')}` : ''}</strong>
@@ -58,7 +59,15 @@ export function PayrollCards({rows, language, onPay, onPrint, onReverse}) {
 
 export default function EmployeePayroll({language}) {
   const t = (en,fa) => language === 'fa' ? fa : en
-  const [period,setPeriod] = useState(() => { const date = solarHijriToday(); return {year:date.year,month:date.month} })
+  const destination = recordQuery()
+  const targetPayroll = destination.get('row')
+  const [period,setPeriod] = useState(() => {
+    const date = solarHijriToday()
+    const year = Number(destination.get('year'))
+    const month = Number(destination.get('month'))
+    return Number.isInteger(year) && year>=1300 && year<=1600 && Number.isInteger(month) && month>=1 && month<=12
+      ? {year,month} : {year:date.year,month:date.month}
+  })
   const [rows,setRows] = useState([]), [branches,setBranches] = useState([])
   const [loans,setLoans] = useState([])
   const [loadedPeriod,setLoadedPeriod] = useState('')
@@ -80,7 +89,9 @@ export default function EmployeePayroll({language}) {
   useEffect(() => { let active = true; void Promise.resolve().then(() => { if (active) void load(() => active) }); return () => { active = false } }, [load])
   const currentPeriodLoaded = loadedPeriod === `${period.year}/${period.month}`
   const reading = loading || !currentPeriodLoaded
-  const totals = payrollTotals(rows)
+  const focused = targetPayroll && period.year===Number(destination.get('year')) && period.month===Number(destination.get('month'))
+  const visibleRows = focused ? rows.filter(row=>row.id===targetPayroll) : rows
+  const totals = payrollTotals(visibleRows)
   const monthLabel = payrollMonthLabel(period.year,period.month,language)
   const currentYear = solarHijriToday().year
   const payrollYears = Array.from(new Set([period.year,...Array.from({length:11},(_,i)=>currentYear-5+i)])).sort((a,b)=>a-b)
@@ -162,7 +173,8 @@ export default function EmployeePayroll({language}) {
             {totalLabels.map(([key,en,fa])=><div key={key} data-metric={key}><dt>{t(en,fa)}</dt><dd><bdi dir="ltr">{payrollMoney(totals[key])}</bdi></dd></div>)}
           </dl>
         </section>
-        <PayrollCards rows={rows} language={language} onPay={startPayment} onPrint={print} onReverse={entry=>{setReason('');setPaymentError('');setReversal(entry)}}/>
+        {focused && <a href={`#/employees?payroll=1&year=${period.year}&month=${period.month}`}>{t('Show all employees for this month','نمایش همه کارمندان این ماه')}</a>}
+        <PayrollCards rows={visibleRows} showHistory={focused} language={language} onPay={startPayment} onPrint={print} onReverse={entry=>{setReason('');setPaymentError('');setReversal(entry)}}/>
         <details className="payroll-help">
           <summary>{t('About payroll','درباره معاش ماهانه')}</summary>
           <p>{t('The month keeps the salary set when it started. You can deduct an employee’s outstanding AFN loan when recording salary.','معاش تعیین‌شده هنگام آغاز ماه ثابت می‌ماند. هنگام ثبت معاش می‌توانید قرض باقی‌ماندهٔ افغانی کارمند را کسر کنید.')}</p>

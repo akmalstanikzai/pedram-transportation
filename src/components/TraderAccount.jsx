@@ -10,11 +10,11 @@ import CompactTable from './CompactTable'
 import SolarHijriDateInput from './SolarHijriDateInput'
 import { formatSolarHijri } from '../lib/solarHijri'
 
-export default function TraderAccount({ trader, language }) {
+export default function TraderAccount({ trader, language, account, initialCurrency }) {
   const t = (en, fa) => language === 'fa' ? fa : en
   const [data, setData] = useState(null)
   const [branches, setBranches] = useState([])
-  const [currency, setCurrency] = useState('AFN')
+  const [currency, setCurrency] = useState(()=>currencies.includes(initialCurrency) ? initialCurrency : 'AFN')
   const [mode, setMode] = useState('')
   const [form, setForm] = useState({})
   const [busy, setBusy] = useState(false)
@@ -22,8 +22,10 @@ export default function TraderAccount({ trader, language }) {
   const [voiding, setVoiding] = useState(null)
   const request = useRef(null)
   const load = useCallback(async () => {
-    setData(await rpc('trader_account_statement', { p_trader: trader.id }))
-  }, [trader.id])
+    const args = { p_trader: trader.id }
+    setData(await (account ? rpc('company_trader_statement', {...args,p_branch:account==='admin' ? null : account})
+      : rpc('trader_account_statement',args)))
+  }, [trader.id,account])
   useEffect(() => {
     void Promise.resolve().then(() => Promise.all([load(), allRows(supabase, 'branches').then(setBranches)]))
       .catch(error => setError(explain(error, language)))
@@ -63,7 +65,7 @@ export default function TraderAccount({ trader, language }) {
     setError('')
     request.current = null
     setForm({
-      date: kabulToday(), amount: '', booking_id: '', scope: trader.branch_id || 'admin',
+      date: kabulToday(), amount: '', booking_id: '', scope: account || trader.branch_id || 'admin',
       description: next === 'payment' ? `${t('Payment from','پرداخت از')} ${trader.full_name}` : '',
     })
   }
@@ -134,8 +136,8 @@ export default function TraderAccount({ trader, language }) {
       {mode && <form className="registry-form trader-account-form" onSubmit={save}>
         <fieldset className="booking-fields wide" disabled={busy}>
           <label><span>{t('Account','حساب')} *</span><select required value={form.scope} onChange={event => setForm({ ...form, scope: event.target.value, booking_id: '' })}>
-            {!trader.branch_id && <option value="admin">{t('Admin account','حساب مرکزی')}</option>}
-            {branches.filter(branch => !branch.archived_at && (!trader.branch_id || branch.id === trader.branch_id)).map(branch => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
+            {!trader.branch_id && (!account || account==='admin') && <option value="admin">{t('Admin account','حساب مرکزی')}</option>}
+            {branches.filter(branch => !branch.archived_at && (!trader.branch_id || branch.id === trader.branch_id) && (!account || branch.id===account)).map(branch => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
           </select></label>
           {mode === 'payment' && <label><span>{t('Booking (optional)','بوکینگ (اختیاری)')}</span><select value={form.booking_id} onChange={event => {
             const booking = bookings.find(row => row.id === event.target.value)

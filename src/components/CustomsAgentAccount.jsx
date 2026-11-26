@@ -12,12 +12,13 @@ import CompactTable from './CompactTable'
 import { IconButton } from './RecordTools'
 import './CustomsAgentAccount.css'
 
-export default function CustomsAgentAccount({ agent, language, initialAccount = '', onPayment, onBusyChange }) {
+export default function CustomsAgentAccount({ agent, language, initialAccount = '', initialFee, onPayment, onBusyChange }) {
   const t = (en, fa) => language === 'fa' ? fa : en
   const [data, setData] = useState(null)
   const [lookups, setLookups] = useState(null)
   const [currencyFilter, setCurrencyFilter] = useState('')
   const [form, setForm] = useState(null)
+  const [focusedFee, setFocusedFee] = useState(initialFee)
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -46,6 +47,7 @@ export default function CustomsAgentAccount({ agent, language, initialAccount = 
   useEffect(() => { void Promise.resolve().then(load) }, [load])
 
   const view = data && customsStatementView(data, currencyFilter)
+  const visibleFees = view?.fees.filter(fee=>!focusedFee || fee.id===focusedFee)
   const updateForm = (key, value) => setForm(current => ({ ...current, [key]: value }))
   const showMoney = (amount, currency) => reportMoney(cents(amount), currency)
 
@@ -207,11 +209,12 @@ export default function CustomsAgentAccount({ agent, language, initialAccount = 
               <Plus size={15} aria-hidden="true" />{t('Record agreed fee', 'ثبت حق‌الزحمه')}
             </button>}
           </header>
-          {view.fees.length ? <CompactTable label={t('Agreed fees', 'حق‌الزحمه‌ها')} columns={[
+          {focusedFee && <button type="button" className="registry-secondary" onClick={()=>setFocusedFee(null)}>{t('Show all fees','نمایش همه حق‌الزحمه‌ها')}</button>}
+          {visibleFees.length ? <CompactTable label={t('Agreed fees', 'حق‌الزحمه‌ها')} columns={[
             { label: t('Fee / date', 'حق‌الزحمه / تاریخ') },
             { label: t('Agreed / paid', 'توافق / پرداخت'), width: '29%' },
             { label: t('Remaining', 'باقی‌مانده'), width: '29%' },
-          ]}>{view.fees.map(fee => <tr key={fee.id}>
+          ]}>{visibleFees.map(fee => <tr key={fee.id}>
             <th scope="row"><strong>{fee.description}</strong>
               <small><bdi>{formatSolarHijri(fee.date)}{fee.booking_number != null && ` · #${fee.booking_number}`}</bdi></small>
             </th>

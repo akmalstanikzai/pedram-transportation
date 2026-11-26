@@ -38,16 +38,16 @@ import './DashboardPage.css'
 import './RolePortals.css'
 
 const moduleDefinitions = [
-  { id: 'cashbook', icon: BookOpen, titleKey: 'cashbook', color: 'green' },
   { id: 'company', icon: ChartNoAxesCombined, titleKey: 'company', color: 'blue' },
+  { id: 'cashbook', icon: BookOpen, titleKey: 'cashbook', color: 'green', art: 0 },
   { id: 'expenses', icon: Receipt, titleKey: 'expenses', color: 'cyan' },
-  { id: 'branches', icon: Building2, titleKey: 'branches', pageKey: 'branchesPage', color: 'blue' },
-  { id: 'vehicles', icon: Truck, titleKey: 'vehicles', pageKey: 'vehiclesPage', color: 'green' },
-  { id: 'bookings', icon: ClipboardList, titleKey: 'bookings', pageKey: 'bookingsPage', color: 'red' },
-  { id: 'customs', icon: Stamp, titleKey: 'customs', color: 'cyan' },
-  { id: 'traders', icon: Users, titleKey: 'traders', color: 'cyan' },
-  { id: 'employees', icon: Users, titleKey: 'employees', color: 'blue' },
-  { id: 'availability', icon: CalendarDays, titleKey: 'availability', color: 'blue' },
+  { id: 'branches', icon: Building2, titleKey: 'branches', pageKey: 'branchesPage', color: 'blue', art: 1 },
+  { id: 'vehicles', icon: Truck, titleKey: 'vehicles', pageKey: 'vehiclesPage', color: 'green', art: 2 },
+  { id: 'bookings', icon: ClipboardList, titleKey: 'bookings', pageKey: 'bookingsPage', color: 'red', art: 3 },
+  { id: 'customs', icon: Stamp, titleKey: 'customs', color: 'cyan', art: 4 },
+  { id: 'traders', icon: Users, titleKey: 'traders', color: 'cyan', art: 5 },
+  { id: 'employees', icon: Users, titleKey: 'employees', color: 'blue', art: 6 },
+  { id: 'availability', icon: CalendarDays, titleKey: 'availability', color: 'blue', art: 7 },
 ]
 
 const registryModules = ['vehicles', 'bookings', 'customs', 'cashbook', 'traders', 'employees', 'availability', 'company', 'expenses']
@@ -57,8 +57,9 @@ function getModuleFromHash() {
   const [raw, query] = window.location.hash.replace('#/', '').split('?')
   const id = raw === 'trader-accounts' ? 'traders' : raw
   const module = moduleDefinitions.find(module => module.id === id)
+  if (!module) return null
   const attention = new URLSearchParams(query).get('attention')
-  return module?.id === 'bookings' && Object.hasOwn(bookingAttention,attention) ? { ...module, attention } : module || null
+  return { ...module, query, attention: module.id === 'bookings' && Object.hasOwn(bookingAttention,attention) ? attention : undefined }
 }
 
 export default function DashboardPage({ language, onLanguageChange, session, profile, onSignOut }) {
@@ -121,7 +122,7 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
       </header>
 
       {activeModule ? (
-        <section className={compactModuleClass ? `module-page ${compactModuleClass}` : 'module-page'}>
+        <section key={activeModule.id+'?'+(activeModule.query??'')} className={compactModuleClass ? `module-page ${compactModuleClass}` : 'module-page'}>
           {!compactModuleClass && <button className="module-back" onClick={closeModule}><Icon name="back" size={17} /> {role === 'president' ? text.presidentDashboard : text.roles.branch_manager}</button>}
           <div className={`module-shell ${activeModule.id === 'branches' ? 'branch-shell' : registryModules.includes(activeModule.id) ? 'fleet-shell' : ''}`}>
             {activeModule.id !== 'branches' && !registryModules.includes(activeModule.id) && <div className="module-heading">
@@ -151,10 +152,11 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
             <nav className="dashboard-menu" aria-labelledby="dashboard-menu-title">
               <h2 id="dashboard-menu-title">{dari ? 'منوی اصلی' : 'Main menu'}</h2>
               <div className="module-grid">
-                {moduleDefinitions.map((module, index) => canAccessModule(role, module.id) &&
+                {moduleDefinitions.map(module => canAccessModule(role, module.id) &&
                   <button type="button" className="module-card" data-module={module.id} key={module.id} onClick={() => openModule(module)}>
                     <span className="dashboard-icon" aria-hidden="true">
-                      <span style={{ backgroundPosition: `${(index % 4) * 100 / 3}% ${index < 4 ? 0 : 100}%` }} />
+                      {module.art == null ? <module.icon size={28}/> :
+                        <span style={{ backgroundPosition: `${(module.art % 4) * 100 / 3}% ${module.art < 4 ? 0 : 100}%` }} />}
                     </span>
                     <strong>{text[module.titleKey]}</strong>
                     <ChevronRight className="dashboard-card-arrow" size={15} aria-hidden="true" />
