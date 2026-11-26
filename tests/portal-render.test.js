@@ -17,7 +17,9 @@ test('branch navigation and direct Branches URL never render branch management c
     const { default: Branches } = await server.ssrLoadModule('/src/pages/BranchesPage.jsx')
     const profile = { id: 'test-user', role: 'branch_manager', branch_id: 'test-branch', account_enabled: true, full_name: 'Branch user' }
     const html = renderToStaticMarkup(React.createElement(Dashboard, { language: 'en', profile, session: { user: {} }, onLanguageChange() {}, onSignOut() {} }))
-    assert.equal((html.match(/class="module-card"/g) || []).length, 4)
+    assert.equal((html.match(/class="module-card"/g) || []).length, 6)
+    assert.match(html, /data-module="company"/)
+    assert.match(html, /data-module="expenses"/)
     assert.doesNotMatch(html, />Branches<|Add Branch|Create branch and account/)
     assert.match(html, /Fleet availability|Operations overview/)
     assert.doesNotMatch(html, />Traders<|Traders with overdue balances/)

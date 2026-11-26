@@ -37,7 +37,7 @@ export default function VehiclesPage({language,profile,onBack}){
  const [data,setData]=useState({vehicle:[],owner:[],driver:[]}),[photos,setPhotos]=useState({}),[photoFile,setPhotoFile]=useState(null),[ownerFiles,setOwnerFiles]=useState({}),[driverFiles,setDriverFiles]=useState({}),[vehicleFiles,setVehicleFiles]=useState({}),[typeCustom,setTypeCustom]=useState(false),[conditionCustom,setConditionCustom]=useState(false),[capacity,setCapacity]=useState(()=>vehicleWeightsFromRow(null)),[queries,setQueries]=useState({vehicle:'',driver:'',owner:''}),[archives,setArchives]=useState({vehicle:false,driver:false,owner:false}),[editor,setEditor]=useState(null),[detail,setDetail]=useState(null),[account,setAccount]=useState(null),[deletion,setDeletion]=useState(null),[destinationCompany,setDestinationCompany]=useState(''),[form,setForm]=useState({}),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState('')
  const [inlineOwner,setInlineOwner]=useState(false)
  const [driverTransactions,setDriverTransactions]=useState(null)
- const [active,setActive]=useState('vehicle')
+ const [active,setActive]=useState(()=>new URLSearchParams(window.location.hash.split('?')[1]).has('drivers') ? 'driver' : 'vehicle')
  const [loadFailure,setLoadFailure]=useState(null)
  const [scopeEditor,setScopeEditor]=useState(null)
  const [branches,setBranches]=useState([])

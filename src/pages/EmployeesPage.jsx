@@ -25,7 +25,7 @@ async function archiveEmployee(row, archived) {
 export default function EmployeesPage({ language, profile, onBack }) {
   const t = (en, fa) => language === 'fa' ? fa : en
   const transactionsLabel = t('Transactions', 'معاملات')
-  const [payroll, setPayroll] = useState(false)
+  const [payroll, setPayroll] = useState(()=>new URLSearchParams(window.location.hash.split('?')[1]).has('payroll'))
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')

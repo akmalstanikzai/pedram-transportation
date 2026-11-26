@@ -1,0 +1,43 @@
+.company-page { max-inline-size: 1050px; margin-inline: auto; color: #193047; }
+.company-header { display: flex; justify-content: space-between; align-items: end; flex-wrap: wrap; gap: .65rem; margin-block-end: .75rem; }
+.company-header h1 { margin: .2rem 0 0; font-size: clamp(1.35rem, 4vw, 1.8rem); font-weight: 750; }
+.company-controls { display: flex; flex-wrap: wrap; align-items: end; gap: .5rem; }
+.company-filters, .company-panel, .company-card { padding: .75rem; background: #fff; border: 1px solid #d5e2eb; border-radius: .75rem; }
+.company-filters { background: #edf5fb; margin-block-end: .75rem; }
+.company-page label { display: grid; gap: .25rem; font-size: .87rem; min-inline-size: 0; }
+.company-page select, .company-page input { width: 100%; min-inline-size: 0; min-block-size: 42px; border: 1px solid #b7cbd9; padding: .3rem .5rem; border-radius: .45rem; background: #fff; color: inherit; }
+.company-tabs { margin-block: .75rem; }
+.company-tabs button { padding: .4rem .95rem; border-radius: .5rem; border: 1px solid #bdcedd; background: white; }
+.company-tabs button[aria-pressed=true] { background: #174361; color: white; }
+.company-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%, 210px),1fr)); gap: .6rem; }
+.company-card { display: grid; gap: .4rem; border-block-start: 3px solid #357599; background: #f5faff; }
+.company-card[data-metric=cash], .company-card[data-metric=incoming] { background: #edf8f2; border-block-start-color: #247458; }
+.company-card[data-metric=bills], .company-card[data-metric=outgoing], .company-card[data-metric=expenses] { background: #fff6e9; border-block-start-color: #a76b24; }
+.company-card a, .company-row a { color: #16486b; text-decoration: underline; text-underline-offset: .15em; }
+.company-card > strong { font-size: 1.35rem; }
+.company-amount, .company-row { display: flex; justify-content: space-between; align-items: start; gap: .6rem; }
+.company-amount { flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+.company-date, .company-row small { color: #496178; font-size: .83rem; }
+.company-panel { margin-block: .75rem; }
+.company-panel h2 { font-size: 1.02rem; margin: 0 0 .55rem; font-weight: 700; }
+.company-metrics { margin-block: .8rem; }
+.company-metrics h2 { font-size: 1.02rem; margin: 0 0 .4rem; font-weight: 700; }
+.company-group-totals { margin-block-end: .5rem; }
+.company-group-totals bdi { background: #e8edf5; padding: .2rem .5rem; border-radius: .4rem; font-weight: 700; }
+.company-form { background: #edf8f2; }
+.company-bills { background: #fff8ee; }
+.company-form fieldset { display: grid; grid-template-columns: 1fr auto; gap: .65rem; border: 0; padding: 0; min-inline-size: 0; }
+.company-fields, .company-form fieldset > :is(label, div, p) { grid-column: 1/-1; }
+.company-fields { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%, 105px),1fr)); gap: .5rem; }
+.company-form fieldset > button { justify-self: start; }
+.company-message, .company-total { background: #e8f4f1; color: #174d41; padding: .5rem .7rem; border-radius: .45rem; }
+.company-message[role=alert] { background: #fff0ec; color: #8b2926; }
+.company-total { display: grid; gap: .15rem; }
+.company-row { padding: .6rem 0; border-block-start: 1px solid #d5e2eb; overflow-wrap: anywhere; }
+.company-row > :last-child { text-align: end; flex-shrink: 0; max-inline-size: 48%; }
+.company-row small { display: block; }
+@media (max-width: 550px) {
+  .company-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .company-card, .company-panel, .company-filters { padding: .55rem; }
+  .company-card a { font-size: .88rem; }
+}

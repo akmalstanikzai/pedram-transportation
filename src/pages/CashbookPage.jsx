@@ -27,6 +27,9 @@ function periodBounds(period){
 }
 
 export default function CashbookPage({ language, profile, onBack }) {
+  const destination = new URLSearchParams(window.location.hash.split('?')[1])
+  const receipt = destination.get('receipt')
+  const receiptDate = destination.get('date')
   const t=(en,fa)=>language==='fa'?fa:en
   const openingBalanceLabel=t('Opening balance','موجودی قبلی')
   const closingBalanceLabel=t('Closing balance','بیلانس')
@@ -41,11 +44,11 @@ export default function CashbookPage({ language, profile, onBack }) {
   const [loaded,setLoaded]=useState(false)
   const [error,setError]=useState('')
   const [notice,setNotice]=useState('')
-  const [selectedScope,setScope]=useState('admin')
+  const [selectedScope,setScope]=useState(()=>destination.get('account') || 'admin')
   const scope=president?selectedScope:profile?.branch_id || ''
-  const [currency,setCurrency]=useState('AFN')
-  const [period,setPeriod]=useState('today')
-  const [customRange,setCustomRange]=useState({start:kabulToday(),end:kabulToday()})
+  const [currency,setCurrency]=useState(()=>currencies.includes(destination.get('currency')) ? destination.get('currency') : 'AFN')
+  const [period,setPeriod]=useState(()=>receiptDate && /^\d{4}-\d{2}-\d{2}$/.test(receiptDate) ? 'date' : 'today')
+  const [customRange,setCustomRange]=useState(()=>({start:receiptDate || kabulToday(),end:receiptDate || kabulToday()}))
   const [shown,setShown]=useState(20)
   const [linkPanel,setLinkPanel]=useState('')
   const [form,setForm]=useState({amount:'',description:'',date:kabulToday(),trader_id:'',booking_id:'',employee_id:'',driver_id:'',loan:false,loan_due_date:'',loan_repayment_entry_id:''})
@@ -137,7 +140,8 @@ export default function CashbookPage({ language, profile, onBack }) {
   const [periodStart,periodEnd]=period==='date'?[customRange.start,customRange.start]:period==='custom'?[customRange.start,customRange.end]:periodBounds(period)
   const validPeriod=periodStart&&periodEnd&&periodStart<=periodEnd
   const selectedLedger=ledgerPeriod(ledger,periodStart,periodEnd)
-  const displayedRecords=selectedLedger.rows.slice(0,shown)
+  const matchingRecords=receipt ? selectedLedger.rows.filter(row=>String(row.receipt_number)===receipt) : selectedLedger.rows
+  const displayedRecords=matchingRecords.slice(0,shown)
   const accountOptions=<>{president&&<option value="admin">{t('Admin account','حساب مرکزی')}</option>}{data.branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</>
   const activeEmployees = employees.filter(row => !row.archived_at)
   const commissionBookings = bookings.filter(row => row.commission_driver_id
@@ -477,6 +481,7 @@ export default function CashbookPage({ language, profile, onBack }) {
     </form>
     {loading?<p role="status">{t('Loading…','در حال بارگیری…')}</p>:loaded&&!validPeriod?<p role="status">{t('Choose a valid start and end date.','تاریخ آغاز و پایان درست انتخاب کنید.')}</p>:loaded&&<>
       <section className="cashbook-ledger" aria-labelledby="cashbook-ledger-title"><h2 id="cashbook-ledger-title">{t('Saved records','معاملات ثبت‌شده')}</h2>
+        {receipt && <a href="#/cashbook">{t('Show all Cashbook records','نمایش همه معاملات روزنامچه')}</a>}
         <CompactTable key={JSON.stringify([scope,currency,periodStart,periodEnd])} label={t('Cashbook records','معاملات روزنامچه')} bulk={president ? {
           language, rows:displayedRecords.filter(row=>row.operation_id && !row.reversed_by && !row.reversal), disabled:busy||uncertain||loading,
           name:row=>row.receipt_number ? '#'+row.receipt_number : description(row),
@@ -514,8 +519,8 @@ export default function CashbookPage({ language, profile, onBack }) {
             <strong><bdi>{row.direction==='in'?'+':'−'}{money(cents(row.amount))}</bdi></strong>
           </td>
         </tr>)}
-        {!selectedLedger.rows.length&&<tr><td colSpan={3} className="simple-cashbook-empty">{t('No records for this period.','در این بازه معامله‌ای ثبت نشده است.')}</td></tr>}
-      </CompactTable>{selectedLedger.rows.length>shown&&<button type="button" className="cashbook-see-more" onClick={()=>setShown(current=>current+20)}>{t('See more','نمایش بیشتر')}</button>}</section>
+        {!matchingRecords.length&&<tr><td colSpan={3} className="simple-cashbook-empty">{t('No matching records.','معامله مطابق یافت نشد.')}</td></tr>}
+      </CompactTable>{matchingRecords.length>shown&&<button type="button" className="cashbook-see-more" onClick={()=>setShown(current=>current+20)}>{t('See more','نمایش بیشتر')}</button>}</section>
     </>}
     {customsDirectory && president && <Modal title={t('Commission agent payments', 'پرداخت‌های کمیشن کار')}
       busy={customsBusy || customsDirectory.loading} onClose={() => setCustomsDirectory(null)}>

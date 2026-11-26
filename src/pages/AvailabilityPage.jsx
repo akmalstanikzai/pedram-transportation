@@ -11,7 +11,7 @@ export default function AvailabilityPage({ language, onBack }) {
   const t = (en, fa) => language === 'fa' ? fa : en
   const [start, setStart] = useState(kabulToday)
   const [days, setDays] = useState(14)
-  const [kind, setKind] = useState('vehicle')
+  const [kind, setKind] = useState(()=>new URLSearchParams(window.location.hash.split('?')[1]).has('drivers') ? 'driver' : 'vehicle')
   const [search, setSearch] = useState('')
   const [result, setResult] = useState(null)
   const [attempt, setAttempt] = useState(0)
