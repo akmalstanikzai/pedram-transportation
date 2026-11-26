@@ -1,6 +1,7 @@
 import { cents, kabulToday } from './cashbook.js'
 import { formatSolarHijri } from './solarHijri.js'
 import { bookingBalances, traderBalance } from './traderAccounts.js'
+import { bookingDue } from './bookingFinance.js'
 
 const translate = language => (en, fa) => language === 'fa' ? fa : en
 export const reportMoney = (amount, currency) => `${(amount / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`
@@ -16,7 +17,22 @@ export function transactionNotes(row, language) {
   ].filter(Boolean).join(' · ')
 }
 
-export function personStatement({ language, name, kind, transactions, start = '', end = '', currency = '' }) {
+export function driverCommissionSection(rows, language) {
+  const t = translate(language)
+  return {
+    title: t('Booking commissions', 'کمیسیون بار نامه‌ها'),
+    headers: [t('Booking / date', 'بار نامه / تاریخ'), t('Charged', 'کمیسیون'), t('Paid', 'پرداخت'), t('Remaining', 'باقی‌مانده')],
+    numeric: [1, 2, 3],
+    rows: rows.map(row => [
+      `#${row.booking_number} · ${formatSolarHijri(row.date)}`,
+      reportMoney(cents(row.charged), row.currency),
+      reportMoney(cents(row.paid), row.currency),
+      reportMoney(bookingDue(row.charged, row.paid), row.currency),
+    ]),
+  }
+}
+
+export function personStatement({ language, name, kind, transactions, commissions = [], start = '', end = '', currency = '' }) {
   const t = translate(language)
   const rows = transactions.filter(row => (!start || row.date >= start) && (!end || row.date <= end) && (!currency || row.currency === currency))
     .slice().sort((a, b) => b.date.localeCompare(a.date) || (b.receipt_number || 0) - (a.receipt_number || 0))
@@ -27,8 +43,9 @@ export function personStatement({ language, name, kind, transactions, start = ''
     sections: [
       { title: t('Recorded Cashbook totals', 'مجموع معاملات ثبت‌شده روزنامچه'), headers: [t('Currency', 'واحد پول'), t('Money In', 'آمد'), t('Money Out', 'رفت')], numeric: [1, 2], rows: units.map(unit => [unit, ...['in', 'out'].map(direction => reportMoney(rows.filter(row => row.currency === unit && row.direction === direction).reduce((sum, row) => sum + cents(row.amount), 0), unit))]) },
       { title: t('Transactions', 'معاملات'), headers: [t('Date', 'تاریخ'), t('Account', 'حساب'), t('Description', 'شرح'), t('Money In', 'آمد'), t('Money Out', 'رفت')], widths: [14, 16, 34, 18, 18], numeric: [3, 4], rows: rows.map(row => [formatSolarHijri(row.date), row.branch, [row.description, transactionNotes(row, language)].filter(Boolean).join(' · '), row.direction === 'in' ? reportMoney(cents(row.amount), row.currency) : '', row.direction === 'out' ? reportMoney(cents(row.amount), row.currency) : '']) },
+      ...(commissions.length ? [driverCommissionSection(commissions, language)] : []),
     ],
-    note: `${t('Printed on', 'تاریخ چاپ')} ${formatSolarHijri(kabulToday())} · ${t('Recorded cash movements only; this is not a salary calculation. Loan balances are current.', 'فقط معاملات نقدی ثبت‌شده؛ این گزارش محاسبه معاش نیست. باقی‌مانده قرض فعلی است.')}${rows.length ? '' : ` · ${t('No transactions for this period.', 'در این بازه معامله‌ای ثبت نشده است.')}`}`,
+    note: `${t('Printed on', 'تاریخ چاپ')} ${formatSolarHijri(kabulToday())} · ${commissions.length ? t('Commission balances include all payments recorded to date. Cashbook transactions follow the selected dates.', 'باقی‌ماندهٔ کمیسیون شامل همه پرداخت‌های ثبت‌شده تا امروز است. معاملات روزنامچه مطابق تاریخ‌های انتخاب‌شده است.') : t('Recorded cash movements only; this is not a salary calculation. Loan balances are current.', 'فقط معاملات نقدی ثبت‌شده؛ این گزارش محاسبه معاش نیست. باقی‌مانده قرض فعلی است.')}${rows.length ? '' : ` · ${t('No transactions for this period.', 'در این بازه معامله‌ای ثبت نشده است.')}`}`,
   }
 }
 

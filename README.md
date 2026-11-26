@@ -33,16 +33,18 @@ Open **Fleet Availability** from the dashboard before creating a booking. Select
 4. Select a registered vehicle and driver separately. The save checks resource availability, scheduling conflicts, capacity, and applicable permit or licence expiry.
 5. Enter the commission amount and booking currency. For company-managed transport, also enter sender and receiver details, freight, vehicle or driver costs, and any extra expenses. Use **Trader is the sender** or **Trader is the receiver** to reuse trader contact details.
 
-| Booking type | Charge to the trader |
-| --- | --- |
-| Vehicle arrangement | Commission |
-| Company-managed transport | Commission, freight, vehicle or driver costs, and extra expenses |
+| Booking type | Payer | Charge |
+| --- | --- | --- |
+| Vehicle arrangement | Assigned driver | Commission |
+| Company-managed transport | Trader | Commission, freight, vehicle or driver costs, and extra expenses |
 
-The booking charge records the amount owed. When money is collected at booking time, the President can enter the amount in **Received now**. The President can record a later or partial payment using **Receive payment** in Bookings or Traders, or by selecting the trader and booking in Cashbook. Each recorded receipt appears in **Cashbook Money In** and reduces the trader's balance. Booking amounts share one currency.
+When a driver pays at booking time, the President enters the amount in **Received from driver**. For later payments, use **Receive driver commission** in Bookings or choose **Driver → Booking commission** in Cashbook. Each receipt appears in **Cashbook Money In** and in **Fleet → Drivers → Transactions**. The driver can see the remaining commission on the job in their portal.
+
+For company-managed transport, the President can use **Received now**, **Receive payment** in Bookings or Traders, or select the trader and booking in Cashbook. Unpaid charges remain account balances until money is actually recorded. All booking amounts use one currency.
 
 Bookings follow **Confirmed → On road → Completed** and can be cancelled. Confirmed bookings can be edited. The departure and arrival dates reserve the assigned vehicle and driver across that period, including both dates.
 
-For a shipment that changes trucks, enable **Transfer the cargo to a second truck** in **Route**. Enter the transfer location and planned date, then select different trucks and drivers in **First leg** and **Second leg**. The first assignment is reserved through the transfer date and the second from transfer through arrival. Both are shown separately in Fleet Availability. Each driver sees only their assigned leg. When the cargo reaches the transfer point, the first driver can report arrival. The office selects **Confirm handoff** once the cargo has moved to the second truck. This records the transfer, completes the first leg, releases its resources, and starts the second leg. The office completes the booking after final delivery. Both legs share one booking number and one trader balance.
+For a shipment that changes trucks, enable **Transfer the cargo to a second truck** in **Route**. Enter the transfer location and planned date, then select different trucks and drivers in **First leg** and **Second leg**. The first assignment is reserved through the transfer date and the second from transfer through arrival. Both are shown separately in Fleet Availability. Each driver sees only their assigned leg. When the cargo reaches the transfer point, the first driver can report arrival. The office selects **Confirm handoff** once the cargo has moved to the second truck. This records the transfer, completes the first leg, releases its resources, and starts the second leg. The office completes the booking after final delivery. Both legs share one booking number. On a vehicle arrangement, the first driver pays the commission.
 
 Open a booking and choose **Print confirmation** for the route, trip dates, handoff details when applicable, cargo, contacts, fleet details, and charges. The President's copy also shows the payment balance. Apply the role retirement and trip legs migrations before deploying the updated frontend.
 

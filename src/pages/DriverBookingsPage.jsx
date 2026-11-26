@@ -4,6 +4,8 @@ import { rpc, explain } from '../lib/operations'
 import { licenceWarning, mapHref, telephoneHref } from '../lib/driverPortal'
 import { IconButton, Modal } from '../components/RecordTools'
 import { formatSolarHijri } from '../lib/solarHijri'
+import { bookingDue } from '../lib/bookingFinance'
+import { reportMoney } from '../lib/financialReports'
 
 function Contact({ icon: Icon, kind, title, name, phone, address, location, t }) {
   const telephone = telephoneHref(phone)
@@ -32,6 +34,9 @@ function Job({ job, t, busy, blocked, onAction }) {
       <span className={`status-pill ${job.status}`}>{job.awaiting_handoff ? t('Awaiting handoff','منتظر انتقال') : status[job.status]}</span>
     </header>
     <div className="driver-route"><div><small><MapPin size={16} />{t('From', 'مبدأ')}</small><h2>{job.origin}</h2></div><ArrowRight className="driver-route-arrow" size={25} aria-hidden="true" /><div><small><Navigation size={16} />{t('To', 'مقصد')}</small><h2>{job.destination}</h2></div></div>
+    {job.driver_commission && <div className="driver-job-facts">
+      <div><span><small>{t('Commission remaining','کمیسیون باقی‌مانده')}</small><strong><bdi>{reportMoney(bookingDue(job.driver_commission.charged,job.driver_commission.paid),job.driver_commission.currency)}</bdi></strong></span></div>
+    </div>}
     <div className="driver-job-facts">
       <div><CalendarDays size={22} /><span><small>{t('Departure / arrival', 'حرکت / رسیدن')}</small><bdi dir="ltr">{formatSolarHijri(job.departure_date)} → {formatSolarHijri(job.arrival_date)}</bdi></span></div>
       <div><Package size={22} /><span><strong>{job.goods || '—'}</strong><small>{[job.weight_tons ? `${job.weight_tons} ${t('tons', 'تن')}` : '', job.volume_m3 ? `${job.volume_m3} m³` : '', !job.weight_tons && !job.volume_m3 ? job.quantity : ''].filter(Boolean).join(' · ') || '—'}</small></span></div>

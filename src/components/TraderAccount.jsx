@@ -142,7 +142,7 @@ export default function TraderAccount({ trader, language }) {
             setForm({ ...form, booking_id: event.target.value, description: booking ? `${t('Payment for booking','پرداخت بوکینگ')} #${booking.number}` : `${t('Payment from','پرداخت از')} ${trader.full_name}` })
           }}>
             <option value="">{t('General account entry','معامله عمومی حساب')}</option>
-            {bookings.filter(row => !row.archived && !row.deleted && (!row.currency || row.currency === currency) && (row.branch_id || 'admin') === form.scope)
+            {bookings.filter(row => !row.driver_commission && !row.archived && !row.deleted && (!row.currency || row.currency === currency) && (row.branch_id || 'admin') === form.scope)
               .map(row => <option value={row.id} key={row.id}>#{row.number} · {row.origin} → {row.destination}</option>)}
           </select></label>}
           <label><span>{t('Date','تاریخ')} *</span><SolarHijriDateInput required max={mode === 'payment' ? kabulToday() : undefined} language={language} value={form.date} onChange={date => setForm({ ...form, date })} ariaLabel={t('Date','تاریخ')}/></label>

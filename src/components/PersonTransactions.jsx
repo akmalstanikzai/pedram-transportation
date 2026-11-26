@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { rpc } from '../lib/operations'
 import { currencies, cents } from '../lib/cashbook'
 import { formatSolarHijri } from '../lib/solarHijri'
-import { personStatement, reportMoney, transactionNotes } from '../lib/financialReports'
+import { driverCommissionSection, personStatement, reportMoney, transactionNotes } from '../lib/financialReports'
 import { printRecord } from '../lib/recordExports'
 import { Modal } from './RecordTools'
 import './PersonTransactions.css'
@@ -15,6 +15,7 @@ export default function PersonTransactions({ person, kind, language, onClose }) 
   const t = (en, fa) => language === 'fa' ? fa : en
   const name = kind === 'employee' ? `${person.first_name} ${person.last_name}` : person.full_name
   const [transactions, setTransactions] = useState([])
+  const [commissions, setCommissions] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [printError, setPrintError] = useState('')
@@ -25,18 +26,29 @@ export default function PersonTransactions({ person, kind, language, onClose }) 
     kind === 'employee' ? 'employee_cashbook_transactions' : 'driver_cashbook_transactions',
     kind === 'employee' ? { p_employee:person.id } : { p_driver:person.id },
   ), [person.id,kind])
+  const readCommissions = useCallback(async () => {
+    if (kind !== 'driver') return []
+    const { data, error } = await supabase.rpc('driver_booking_commissions', { p_driver: person.id })
+    if (error && error.code !== 'PGRST202') throw error
+    return data || []
+  }, [kind, person.id])
   useEffect(() => {
     let active = true
-    void read().then(({ data, error: loadError }) => {
+    void Promise.all([read(), readCommissions()]).then(([{ data, error: loadError }, driverCommissions]) => {
       if (!active) return
       if (loadError) setError(loadError.message)
-      else setTransactions(data || [])
+      else {
+        setTransactions(data || [])
+        setCommissions(driverCommissions)
+      }
       setLoading(false)
     }).catch(loadError => { if (active) { setError(loadError.message); setLoading(false) } })
     return () => { active = false }
-  }, [read])
+  }, [read, readCommissions])
   const valid = !start || !end || start <= end
-  const report = personStatement({ language, name, kind, transactions, start, end, currency })
+  const currentCommissions = commissions.filter(row => !currency || row.currency === currency)
+  const commissionSection = driverCommissionSection(currentCommissions, language)
+  const report = personStatement({ language, name, kind, transactions, commissions:currentCommissions, start, end, currency })
   const visible = transactions.filter(row => (!start || row.date >= start) && (!end || row.date <= end) && (!currency || row.currency === currency))
   async function reverse(row, reason) {
     const { data, error } = await supabase.from('cashbook_entries').select('operation_id')
@@ -65,6 +77,15 @@ export default function PersonTransactions({ person, kind, language, onClose }) 
         </div>
         {printError && <p className="registry-notice error" role="alert">{printError}</p>}
         {!valid ? <p role="alert">{t('Choose a valid start and end date.', 'تاریخ آغاز و پایان درست انتخاب کنید.')}</p> : <>
+          {commissionSection.rows.length > 0 && <section>
+            <h3>{commissionSection.title}</h3>
+            <p>{t('The balances below include all recorded payments to date.', 'باقی‌مانده‌های زیر شامل همه پرداخت‌های ثبت‌شده تا امروز است.')}</p>
+            <CompactTable label={commissionSection.title} columns={commissionSection.headers.map((label,i)=>({label,width:i===0?'30%':undefined}))}>
+              {commissionSection.rows.map(([booking, charged, paid, remaining],i) => <tr key={currentCommissions[i].booking_id}>
+                <th scope="row">{booking}</th><td><bdi>{charged}</bdi></td><td><bdi>{paid}</bdi></td><td><strong><bdi>{remaining}</bdi></strong></td>
+              </tr>)}
+            </CompactTable>
+          </section>}
           {!!report.sections[0].rows.length && <CompactTable className="financial-statement-totals" label={report.sections[0].title} columns={[
             { label: t('Currency', 'واحد پول'), width: '23%' },
             { label: t('Money In', 'آمد') },

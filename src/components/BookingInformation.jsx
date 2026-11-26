@@ -68,6 +68,7 @@ export default function BookingInformation({ row, language, president = false, v
     <div className="booking-information-overview">
       <InformationGroup tone="amber" icon={ReceiptText} title={t('Charges','بدهی‌ها')} fields={[
         field('commission','Commission','کمیسیون',money(row.commission_amount),numeric),
+        ...(row.commission_driver_id ? [field('payer','Commission payer','پرداخت‌کنندهٔ کمیسیون',driver?.full_name || t('Driver','راننده'))] : []),
         field('freight','Freight','کرایه بار',hasValue(row.freight_amount) ? money(row.freight_amount) : null,{ ...numeric,...optional }),
         field('vehicle-cost','Vehicle / driver cost','مصارف واسطه و راننده',hasValue(row.carrier_cost) ? money(row.carrier_cost) : null,{ ...numeric,...optional }),
         field('expenses','Other expenses','مصارف دیگر',expenses.length ? <ul className="booking-information-expenses">{expenses.map((expense,index) => <li key={index}><span>{expense.description}</span><bdi dir="ltr">{money(expense.amount)}</bdi></li>)}</ul> : null,{ ...optional,wide:true }),

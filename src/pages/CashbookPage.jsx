@@ -3,6 +3,7 @@ import { ArrowDownLeft, ArrowUpRight, BadgeDollarSign, BriefcaseBusiness, HandCo
 import { supabase } from '../lib/supabase'
 import { allRows, cents, currencies, kabulToday, simpleLedger, ledgerPeriod } from '../lib/cashbook'
 import { rpc } from '../lib/operations'
+import { bookingDue } from '../lib/bookingFinance'
 import { IconButton, Modal } from '../components/RecordTools'
 import Icon from '../components/Icon'
 import CompactTable from '../components/CompactTable'
@@ -139,10 +140,16 @@ export default function CashbookPage({ language, profile, onBack }) {
   const displayedRecords=selectedLedger.rows.slice(0,shown)
   const accountOptions=<>{president&&<option value="admin">{t('Admin account','حساب مرکزی')}</option>}{data.branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</>
   const activeEmployees = employees.filter(row => !row.archived_at)
-  const activeDrivers = drivers.filter(row => !row.archived_at && (!row.branch_id || scope === 'admin' || row.branch_id === scope))
+  const commissionBookings = bookings.filter(row => row.commission_driver_id
+    && row.branch_id === (scope === 'admin' ? null : scope) && row.commission_currency === currency)
+  const driverCommission = !!(form.driver_id && form.booking_id)
+  const driverCommissionOptions = commissionBookings.filter(row => row.commission_driver_id === form.driver_id
+    && (bookingDue(row.charged,row.paid)>0 || row.id===form.booking_id))
+  const activeDrivers = drivers.filter(row => (!row.archived_at && (!row.branch_id || scope === 'admin' || row.branch_id === scope))
+    || commissionBookings.some(booking => booking.commission_driver_id===row.id && bookingDue(booking.charged,booking.paid)>0))
   const activeTraders = traders.filter(row => !row.archived_at && (!row.branch_id || row.branch_id === scope))
   const openLoans = loans.filter(row => row.currency === currency)
-  const bookingOptions = bookings.filter(row => row.trader_id === form.trader_id && !row.archived_at && !row.deleted_at
+  const bookingOptions = bookings.filter(row => !row.commission_driver_id && row.trader_id === form.trader_id && !row.archived_at && !row.deleted_at
     && row.branch_id === (scope === 'admin' ? null : scope) && row.commission_currency === currency)
   const links = [
     {id:'employee', icon:BriefcaseBusiness, label:t('Employee','کارمند'), value:form.employee_id},
@@ -151,7 +158,7 @@ export default function CashbookPage({ language, profile, onBack }) {
   ]
   function description(row) {
     if (row.opening) return t('Earlier balance','موجودی قبلی')
-    if (row.private_activity) return t('Trader activity total','مجموع معاملات تاجران')
+    if (row.private_activity) return t('Linked booking and trader activity','مجموع معاملات بار نامه‌ها و تاجران')
     return `${row.description}${row.loan_due_date ? ` · ${t('Loan due','مهلت قرض')} ${formatSolarHijri(row.loan_due_date)}` : ''}${row.loan_repayment_entry_id ? ` · ${t('Loan repayment','بازپرداخت قرض')}` : ''}`
   }
 
@@ -233,6 +240,7 @@ export default function CashbookPage({ language, profile, onBack }) {
         PAYROLL_DEDUCTION_REVERSE_REQUIRED: t('Reverse this salary payment before recording a correction.','برای اصلاح، ابتدا این پرداخت معاش را معکوس کنید.'),
         LOAN_AMOUNT_BELOW_RECOVERED: t('The loan amount cannot be lower than the amount already recovered.','اصل قرض نمی‌تواند کمتر از مبلغ بازپرداخت‌شده باشد.'),
         LOAN_REPAYMENT_EXCEEDS_BALANCE: t('The corrected payment exceeds the outstanding loan.','مبلغ اصلاح‌شده از قرض باقی‌مانده بیشتر است.'),
+        DRIVER_COMMISSION_EXCEEDS_BALANCE: t('The correction exceeds the unpaid driver commission.','مبلغ اصلاح‌شده از کمیسیون باقی‌ماندهٔ راننده بیشتر است.'),
         INVALID_AMOUNT: t('Enter a positive amount with up to two decimal places.','یک مبلغ مثبت با حداکثر دو رقم اعشار وارد کنید.'),
         CUSTOMS_EXCEEDS_BALANCE: t('The corrected amount exceeds the remaining fee.','مبلغ اصلاح‌شده از حق‌الزحمه باقی‌مانده بیشتر است.'),
         STALE_RECORD: t('The receipt changed. Close this dialog and refresh.','رسید تغییر کرده است. این پنجره را بسته و صفحه را تازه کنید.'),
@@ -249,13 +257,19 @@ export default function CashbookPage({ language, profile, onBack }) {
     e.preventDefault();if(busy)return
     const direction=e.nativeEvent.submitter?.value
     if(!['in','out'].includes(direction)||uncertain&&direction!==retryDirection)return
+    if(driverCommission && (direction!=='in' || !driverCommissionOptions.some(row=>row.id===form.booking_id))){
+      setError(t('Select a driver commission for this account and currency, then save Money In.','کمیسیون راننده را برای همین حساب و واحد پول انتخاب کنید و پول آمد را ثبت کنید.'));return
+    }
     if(form.loan&&(!form.loan_due_date||(!form.employee_id&&!form.driver_id)||form.loan_due_date<form.date)){setError(t('Choose an employee or driver and a loan deadline on or after the transaction date.','یک کارمند یا راننده و مهلت قرض را در تاریخ معامله یا پس از آن انتخاب کنید.'));return}
     if(form.loan_repayment_entry_id&&direction!=='in'){setError(t('Record a loan repayment as Money In.','بازپرداخت قرض را به‌عنوان پول آمد ثبت کنید.'));return}
     setBusy(true);setError('')
     try{
-      const {error:failure}=await supabase.rpc('cashbook_simple_post',{p_request:request,p_data:{branch_id:scope==='admin'?null:scope,currency,direction,amount:form.amount,date:form.date,description:form.description.trim(),trader_id:form.trader_id||null,booking_id:form.booking_id||null,employee_id:direction==='out'?form.employee_id||null:null,driver_id:direction==='out'?form.driver_id||null:null,loan_due_date:direction==='out'&&form.loan?form.loan_due_date:null,loan_repayment_entry_id:direction==='in'?form.loan_repayment_entry_id||null:null}})
+      const {error:failure}=await (driverCommission
+        ? supabase.rpc('receive_driver_booking_commission',{p_request:request,p_booking:form.booking_id,p_driver:form.driver_id,p_amount:form.amount,p_date:form.date,p_description:form.description.trim()})
+        : supabase.rpc('cashbook_simple_post',{p_request:request,p_data:{branch_id:scope==='admin'?null:scope,currency,direction,amount:form.amount,date:form.date,description:form.description.trim(),trader_id:form.trader_id||null,booking_id:form.booking_id||null,employee_id:direction==='out'?form.employee_id||null:null,driver_id:direction==='out'?form.driver_id||null:null,loan_due_date:direction==='out'&&form.loan?form.loan_due_date:null,loan_repayment_entry_id:direction==='in'?form.loan_repayment_entry_id||null:null}}))
       if(failure){
         const messages={ACCESS_DENIED:t('You cannot record money for this account.','شما اجازه ثبت پول در این حساب را ندارید.'),INVALID_AMOUNT:t('Enter a positive amount with up to two decimal places.','یک مبلغ مثبت با حداکثر دو رقم اعشار وارد کنید.'),INVALID_DATE:t('Choose today or an earlier date.','تاریخ امروز یا گذشته را انتخاب کنید.'),DESCRIPTION_REQUIRED:t('Enter a name or description.','نام یا شرح معامله را وارد کنید.'),BOOKING_PAYMENT_UNAVAILABLE:t('Choose an active booking in this currency.','بوکینگ فعال را با همین واحد پول انتخاب کنید.'),EMPLOYEE_UNAVAILABLE:t('Choose an active employee.','یک کارمند فعال را انتخاب کنید.'),INVALID_PARTY_PAYMENT:t('Only one employee or driver can be linked to Money Out.','فقط یک کارمند یا راننده به پول رفت وصل می‌شود.'),DRIVER_UNAVAILABLE:t('Choose an active driver.','یک راننده فعال را انتخاب کنید.'),INVALID_LOAN:t('Link the loan to one employee or driver and record Money Out.','قرض را به یک کارمند یا راننده وصل کرده و پول رفت ثبت کنید.'),INVALID_LOAN_DEADLINE:t('The loan deadline must be on or after the transaction date.','مهلت قرض باید در تاریخ معامله یا پس از آن باشد.'),INVALID_LOAN_REPAYMENT:t('Choose an open loan and record Money In.','یک قرض باز را انتخاب کرده و پول آمد ثبت کنید.'),LOAN_UNAVAILABLE:t('This loan is no longer available. Refresh the cashbook.','این قرض دیگر در دسترس نیست. روزنامچه را تازه کنید.'),LOAN_CURRENCY_MISMATCH:t('Use the same currency as the loan.','از واحد پول قرض استفاده کنید.'),LOAN_REPAYMENT_EXCEEDS_BALANCE:t('The repayment exceeds the remaining loan balance.','بازپرداخت از مانده قرض بیشتر است.')}
+        messages.DRIVER_COMMISSION_EXCEEDS_BALANCE=t('The amount exceeds the unpaid driver commission.','مبلغ از کمیسیون باقی‌ماندهٔ راننده بیشتر است.')
         const key=Object.keys(messages).find(k=>failure.message.includes(k))
         if(key){setUncertain(false);throw new Error(messages[key])}
         setUncertain(true);setRetryDirection(direction);throw new Error(t('Save was not confirmed. Retry the same direction with the same details, or refresh before entering again.','ثبت تأیید نشد. با همان جهت و معلومات دوباره کوشش کنید یا پیش از ثبت مجدد، فهرست را تازه‌سازی کنید.'))
@@ -357,7 +371,7 @@ export default function CashbookPage({ language, profile, onBack }) {
             <input required placeholder={t('Name or reason','نام شخص یا دلیل')} value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/>
           </label>
           {president&&<label className="cashbook-loan-toggle">
-            <input type="checkbox" checked={form.loan} disabled={!!form.loan_repayment_entry_id} onChange={e=>{
+            <input type="checkbox" checked={form.loan} disabled={!!form.loan_repayment_entry_id||driverCommission} onChange={e=>{
               const loan=e.target.checked
               setForm(previous=>({...previous,loan,loan_due_date:loan?previous.loan_due_date:''}))
               if(loan)setLinkPanel(form.driver_id?'driver':'employee')
@@ -398,14 +412,24 @@ export default function CashbookPage({ language, profile, onBack }) {
               </select>
               {!activeEmployees.length&&<small>{t('Add an employee on the Employees page first.','ابتدا یک کارمند در صفحه کارمندان اضافه کنید.')}</small>}
             </label>}
-            {linkPanel==='driver'&&<label className="cashbook-field">
-              <span>{t('Driver','راننده')}</span>
-              <select value={form.driver_id} onChange={e=>setForm({...form,driver_id:e.target.value,trader_id:'',booking_id:'',employee_id:'',loan_repayment_entry_id:''})}>
-                <option value="">—</option>
-                {activeDrivers.map(row=><option key={row.id} value={row.id}>{row.full_name} · {row.phone}</option>)}
-              </select>
-              {!activeDrivers.length&&<small>{t('No active drivers for this account.','برای این حساب راننده فعال وجود ندارد.')}</small>}
-            </label>}
+            {linkPanel==='driver'&&<div className="cashbook-trader-fields">
+              <label className="cashbook-field">
+                <span>{t('Driver','راننده')}</span>
+                <select value={form.driver_id} onChange={e=>setForm({...form,driver_id:e.target.value,trader_id:'',booking_id:'',employee_id:'',loan_repayment_entry_id:''})}>
+                  <option value="">—</option>
+                  {activeDrivers.map(row=><option key={row.id} value={row.id}>{row.full_name} · {row.phone}</option>)}
+                </select>
+                {!activeDrivers.length&&<small>{t('No active drivers for this account.','برای این حساب راننده فعال وجود ندارد.')}</small>}
+              </label>
+              {driverCommissionOptions.length>0&&<label className="cashbook-field">
+                <span>{t('Booking commission','کمیسیون بار نامه')}</span>
+                <select value={form.booking_id} onChange={e=>setForm({...form,booking_id:e.target.value,loan:false,loan_due_date:''})}>
+                  <option value="">{t('Choose a booking','بار نامه را انتخاب کنید')}</option>
+                  {driverCommissionOptions.map(row=><option key={row.id} value={row.id}>#{row.booking_number} · {money(bookingDue(row.charged,row.paid))} {t('remaining','باقی‌مانده')}</option>)}
+                </select>
+                <small>{t('Choose a booking to record commission as Money In.','برای ثبت کمیسیون در پول آمد، بار نامه را انتخاب کنید.')}</small>
+              </label>}
+            </div>}
             {linkPanel==='trader'&&<div className="cashbook-trader-fields">
               <label className="cashbook-field">
                 <span>{t('Trader','تاجر')}</span>
@@ -436,11 +460,11 @@ export default function CashbookPage({ language, profile, onBack }) {
       </fieldset>
       <div className="simple-cashbook-buttons">
         <button type="submit" value="in" className="cashbook-in"
-          disabled={loading||!loaded||busy||!!form.employee_id||!!form.driver_id||form.loan||uncertain&&retryDirection!=='in'||(!president&&!profile?.branch_id)}>
+          disabled={loading||!loaded||busy||!!form.employee_id||(!!form.driver_id&&!driverCommission)||form.loan||uncertain&&retryDirection!=='in'||(!president&&!profile?.branch_id)}>
           <ArrowDownLeft size={17} aria-hidden="true"/>{busy&&retryDirection==='in'?t('Saving…','در حال ثبت…'):uncertain&&retryDirection==='in'?t('Retry Money In','کوشش مجدد آمد'):t('Save Money In','ثبت پول آمد')}
         </button>
         <button type="submit" value="out" className="cashbook-out"
-          disabled={loading||!loaded||busy||!!form.loan_repayment_entry_id||uncertain&&retryDirection!=='out'||(!president&&!profile?.branch_id)}>
+          disabled={loading||!loaded||busy||driverCommission||!!form.loan_repayment_entry_id||uncertain&&retryDirection!=='out'||(!president&&!profile?.branch_id)}>
           <ArrowUpRight size={17} aria-hidden="true"/>{busy&&retryDirection==='out'?t('Saving…','در حال ثبت…'):uncertain&&retryDirection==='out'?t('Retry Money Out','کوشش مجدد رفت'):t('Save Money Out','ثبت پول رفت')}
         </button>
       </div>

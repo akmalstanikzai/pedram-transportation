@@ -1,5 +1,11 @@
 # Pedram Transportation Supabase setup
 
+## Deploy driver booking commissions
+
+Run [202611260001_driver_booking_commissions.sql](migrations/202611260001_driver_booking_commissions.sql) in the live project's SQL Editor after the trip-legs migration, then deploy the matching frontend. Schedule both steps together while staff are out of Bookings and Cashbook. This update uses database functions only.
+
+The migration moves the unpaid part of older automatically generated vehicle-arrangement charges with a known driver. It preserves historical receipts and the amount already covered by trader payments. Unassigned bookings and unrelated manual trader charges are outside this automatic transfer. New vehicle arrangements charge the first assigned driver. If a driver has already paid, reverse those receipts before changing the payer. Run `tests/driver-booking-commissions-database.mjs` with `PEDRAM_PGLITE_PATH` to verify on a disposable database.
+
 ## Resolve the duplicate migration version on an existing project
 
 Employees keeps version `202611120001`. Vehicle weights moves to `202611120006`. The vehicle migration can run again without changing existing weights.
