@@ -148,6 +148,9 @@
 .cashbook-customs-button { border-color: #d2ab75; color: #643d13; background: #f8e3be; }
 .cashbook-link-panel { min-width: 0; padding: 7px 8px; border: 1px solid var(--cashbook-border); border-radius: 7px; background: #fffbf5; }
 .cashbook-trader-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.cashbook-link-button[data-kind='payee'] { color: #55347a; background: #f5eefb; border-color: #dcc9ec; }
+.cashbook-link-button[data-kind='payee']:is([aria-expanded='true'],[data-linked='true']) { background: #eaddf7; border-color: #b99bd6; }
+.cashbook-payee-fields > :only-child { grid-column: 1/-1; }
 
 .simple-cashbook-buttons { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; padding: 8px 10px; border-top: 1px solid #ecc7ce; border-radius: 0 0 9px 9px; background: #fceef1; }
 .simple-cashbook-buttons button { display: inline-flex; gap: 5px; align-items: center; justify-content: center; min-height: 42px; padding: 5px 11px; border: 1px solid transparent; border-radius: 8px; font-size: 13px; line-height: 1.3; font-weight: 800; }

@@ -209,7 +209,7 @@ try {
   assert.equal((await overview()).money[0].bills,2000)
   assert.equal((await list()).payments.filter(row=>row.expense_id===rent[0]).reduce((total,row)=>total+(row.direction==='out'?1:-1)*row.amount,0),0)
   await signIn(manager)
-  const labour = [uid(),branch,'labour','AFN','Unloading',today,500,'miscellaneous','  احمد  ']
+  const labour = [uid(),branch,'other','AFN','Unloading',today,500,'miscellaneous','  احمد  ']
   await assert.rejects(call('save_paid_office_expense',[...labour.slice(0,-1),' ']),/INVALID_EXPENSE_PAYEE/)
   assert.equal(await call('save_paid_office_expense',labour),labour[0])
   assert.equal(await call('save_paid_office_expense',labour),labour[0])
@@ -224,14 +224,24 @@ try {
   assert.equal(posted.description,'متفرقه: احمد · Unloading')
   assert.equal(posted.direction,'out')
   assert.equal(posted.receipt_number,misc.receipt_number)
-  const desk = [uid(),branch,'supplies','AFN','Paper',today,300,'office',null]
+  const desk = [uid(),branch,'other','AFN','Paper',today,300,'office',null]
   await call('save_paid_office_expense',desk)
   const deskReceipt = (await list()).payments.find(row=>row.operation_id===desk[0])
   assert.equal(deskReceipt.payee_type,'office')
   assert.equal((await call('branch_cashbook_rows')).find(row=>row.id===deskReceipt.id).description,'دفتر · Paper')
   await call('save_paid_office_expense',[uid(),branch,'other','AFN','Misc supplies',today,20])
+  const custom = [uid(),branch,'  پارکینگ  ','AFN','Truck parking',today,120]
+  await assert.rejects(call('save_custom_office_expense',[uid(),branch,' ',...custom.slice(3)]),/INVALID_EXPENSE_CATEGORY/)
+  assert.equal(await call('save_custom_office_expense',custom),custom[0])
+  assert.equal(await call('save_custom_office_expense',custom),custom[0])
+  await assert.rejects(call('save_custom_office_expense',[...custom.slice(0,2),'Changed',...custom.slice(3)]),/REQUEST_CONFLICT/)
+  const customRecords = (await list()).payments.filter(row=>row.operation_id===custom[0])
+  assert.equal(customRecords.length,1)
+  assert.equal(customRecords[0].custom_category,'پارکینگ')
+  assert.equal((await call('branch_cashbook_rows')).find(row=>row.id===customRecords[0].id).receipt_number,customRecords[0].receipt_number)
   await signIn(otherManager)
   assert.ok(!(await list()).payments.some(row=>row.payee_name==='احمد'))
+  assert.ok(!(await list()).payments.some(row=>row.custom_category==='پارکینگ'))
   console.log('Company overview and expenses passed: one receipt per request, branch isolation, partial payment, corrections and reversal.')
   console.log('Managed bookings passed: structured charges, one fleet pair, mixed currencies, installments, expense receipts, reversals and role isolation.')
 } catch(error) {

@@ -29,8 +29,8 @@ test('branch navigation and direct Branches URL never render branch management c
     const expensePage = renderToStaticMarkup(React.createElement(Dashboard, { language: 'fa', profile, session: { user: {} } }))
     assert.match(expensePage, /ثبت پول رفت/)
     assert.match(expensePage, /تاریخچه مصارف/)
-    assert.match(expensePage, /value="miscellaneous">متفرقه/)
-    assert.match(expensePage, /value="office">دفتر/)
+    assert.doesNotMatch(expensePage, /value="miscellaneous"|value="office"|نام گیرنده/)
+    assert.match(expensePage, /value="custom">نوع مصرف دلخواه/)
     assert.doesNotMatch(expensePage, /ثبت بل پرداخت‌نشده|پرداخت بل/)
     globalThis.window.location.hash = '#/expenses?view=history&currency=USD&period=today'
     const expenseHistory = renderToStaticMarkup(React.createElement(Dashboard, { language: 'en', profile, session: { user: {} } }))
@@ -138,7 +138,8 @@ test('branch navigation and direct Branches URL never render branch management c
       const branchCashbook = renderToStaticMarkup(React.createElement(Cashbook, { language, profile }))
       const toolbar = branchCashbook.split('cashbook-filters')[1].split('<form')[0]
       assert.ok(toolbar.indexOf('cashbook-account-display') < toolbar.indexOf('solar-date-picker'))
-      assert.doesNotMatch(branchCashbook, /value="admin"|Admin account|حساب مرکزی|Edit amount|Reverse receipt|cashbook-link-buttons/)
+      assert.doesNotMatch(branchCashbook, /value="admin"|Admin account|حساب مرکزی|Edit amount|Reverse receipt|data-kind="(?:employee|driver|trader)"|cashbook-customs-button/)
+      assert.match(branchCashbook, /data-kind="payee"/)
       assert.match(branchCashbook, /value="in"/)
       assert.match(branchCashbook, /value="out"/)
       assert.match(toolbar, /value="custom"/)
@@ -149,6 +150,7 @@ test('branch navigation and direct Branches URL never render branch management c
       const presidentToolbar = presidentCashbook.split('cashbook-filters')[1].split('<form')[0]
       assert.ok(presidentToolbar.indexOf('value="admin"') < presidentToolbar.indexOf('solar-date-picker'))
       assert.match(presidentCashbook, /cashbook-customs-button/)
+      assert.match(presidentCashbook, /data-kind="trader"[\s\S]*data-kind="payee"/)
     }
     globalThis.window.location.hash = '#/vehicles'
     for (const role of ['president', 'branch_manager']) {

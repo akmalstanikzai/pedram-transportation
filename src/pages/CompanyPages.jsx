@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowDownLeft, ArrowUpRight, Building2, ChevronRight, ClipboardList, HandCoins, Plus, Receipt, Truck, Users, Wallet } from 'lucide-react'
-import { allRows, currencies, kabulToday } from '../lib/cashbook'
+import { allRows, currencies, kabulToday, payees } from '../lib/cashbook'
 import { formatSolarHijri, solarHijriToISODate, solarHijriToday } from '../lib/solarHijri'
 import { rpc } from '../lib/operations'
 import { supabase } from '../lib/supabase'
@@ -17,7 +17,6 @@ const categories = {
   supplies:['Office supplies','لوازم دفتر'], labour:['Labour','کاریگر'], other:['Other','سایر'], salary:['Salary','معاش'],
   shipment:['Shipment costs','مصارف محموله'],
 }
-const payees = {miscellaneous:['Miscellaneous','متفرقه'],office:['Office','دفتر']}
 const amounts = {
   cash:['Cash balance','بیلانس'], incoming:['Money in','آمد'], outgoing:['Money out','رفت'],
   trader:['Traders owe','طلب از تاجران'], driver:['Driver commissions due','کمیسیون رانندگان'],
@@ -161,7 +160,7 @@ export default function CompanyPages({kind,language,profile,onBack}) {
     if (recordQuery().has('detail')) window.history.replaceState(window.history.state,'',origin)
     setDetail(null)
   }
-  return <section className="registry-page company-page">
+  return <section className={`registry-page company-page${expenses && !payeeView && !legacyBills ? ' company-expenses-page' : ''}`}>
     <header className="company-header">
       {onBack && <button className="module-back" onClick={onBack}><Icon name="back" size={16}/>{t('Back','بازگشت')}</button>}
       <h1>{payeeView ? t('Payee payments','پرداخت به گیرنده‌ها') : legacyBills ? t('Outstanding bills','بل‌های پرداخت‌نشده')
@@ -232,7 +231,7 @@ export default function CompanyPages({kind,language,profile,onBack}) {
 
 function ExpenseHistoryRow({row,t,branchName,returnTo,showPayeeFirst=false}) {
   const payee = payees[row.payee_type] && (row.payee_name || t(...payees[row.payee_type]))
-  const category = t(...categories[row.category])
+  const category = row.custom_category || t(...categories[row.category])
   const title = showPayeeFirst ? row.payee_name || row.description : category
   return <RecordLink className="company-record" href={cashbookRecordLink(row)} returnTo={returnTo}>
     <span>
@@ -269,7 +268,7 @@ function PayeeHistory({rows,t,currency,branchName,returnTo}) {
 function ExpenseRecords({t,language,president,scope,currency,branches,branchName,branchOptions,profile,today,data,legacyBills,historyFirst,onSaved,returnTo}) {
   const [editing,setEditing] = useState(!historyFirst && !legacyBills)
   const [bill,setBill] = useState(null)
-  const [form,setForm] = useState({date:today,category:'',currency:currency || 'AFN',amount:'',description:'',account:null,payeeType:'',payeeName:''})
+  const [form,setForm] = useState({date:today,category:'',customCategory:'',currency:currency || 'AFN',amount:'',description:'',account:null})
   const [busy,setBusy] = useState(false)
   const [message,setMessage] = useState(null)
   const [limit,setLimit] = useState(20)
@@ -279,23 +278,21 @@ function ExpenseRecords({t,language,president,scope,currency,branches,branchName
   const branchId = president ? account==='admin' ? null : account : profile.branch_id
   const rows = data?.payments.filter(row=>!currency || row.currency===currency) ?? []
   const bills = data?.bills.filter(row=>!currency || row.currency===currency) ?? []
-  const miscellaneous = form.payeeType==='miscellaneous'
-  const descriptionField = <label>{t('Details','تفصیلات')}<input required maxLength={500} value={form.description}
-    onChange={e=>change('description',e.target.value)}/></label>
+  const custom = form.category==='custom'
 
   async function save(event) {
     event.preventDefault()
     if (busy || (!president && !branchId)) return
     const description = form.description?.trim()
-    const payeeName = !bill && miscellaneous ? form.payeeName.trim() : null
-    if (!form.date || (!bill && (!description || !form.category || form.category==='salary' || (miscellaneous && !payeeName)))) {
+    if (!form.date || (!bill && (!description || !form.category || form.category==='salary' ||
+        (custom && !form.customCategory.trim())))) {
       setMessage({error:true,text:t('Complete the required fields.','خانه‌های ضروری را تکمیل کنید.')})
       return
     }
-    const name = bill ? 'pay_office_bill' : 'save_paid_office_expense'
+    const name = bill ? 'pay_office_bill' : custom ? 'save_custom_office_expense' : 'save_paid_office_expense'
     const args = bill ? {p_bill:bill.id,p_date:form.date,p_amount:form.amount} : {
-      p_branch:branchId,p_category:form.category,p_currency:form.currency,p_description:description,p_date:form.date,p_amount:form.amount,
-      p_payee_type:form.payeeType || null,p_payee_name:payeeName,
+      p_branch:branchId,p_currency:form.currency,p_description:description,p_date:form.date,p_amount:form.amount,
+      ...(custom ? {p_custom_category:form.customCategory.trim()} : {p_category:form.category}),
     }
     const signature = JSON.stringify(args)
     if (pending.current?.signature!==signature) pending.current={signature,id:crypto.randomUUID()}
@@ -304,7 +301,7 @@ function ExpenseRecords({t,language,president,scope,currency,branches,branchName
     try {
       await rpc(name,{p_request:pending.current.id,...args})
       pending.current=null
-      setForm(previous=>({...previous,amount:'',description:'',category:'',payeeType:'',payeeName:''}))
+      setForm(previous=>({...previous,amount:'',description:'',category:'',customCategory:''}))
       setBill(null)
       if (bill) setEditing(false)
       setLimit(20)
@@ -313,8 +310,8 @@ function ExpenseRecords({t,language,president,scope,currency,branches,branchName
       setMessage({text:t('Saved as Money Out in Cashbook.','به‌عنوان پول رفت در روزنامچه ثبت شد.')})
     } catch (error) {
       const invalid = /INVALID_AMOUNT|INVALID_DATE|ACCESS_DENIED/.test(error.message)
-      setMessage({error:true,text:error.message?.includes('INVALID_EXPENSE_PAYEE')
-        ? t('Check the payee and name.','گیرنده و نام را بررسی کنید.')
+      setMessage({error:true,text:error.message?.includes('INVALID_EXPENSE_CATEGORY')
+        ? t('Enter a category name, up to 80 characters.','نام نوع مصرف را تا ۸۰ حرف وارد کنید.')
         : invalid ? t('Check the amount, date and account.','مبلغ، تاریخ و حساب را بررسی کنید.')
         : t('Could not confirm the save. Retry with the same details.','ثبت تأیید نشد. با همان معلومات دوباره کوشش کنید.')})
     } finally {
@@ -323,18 +320,23 @@ function ExpenseRecords({t,language,president,scope,currency,branches,branchName
   }
 
   return <>
-    {editing && <form className="company-expense-form" onSubmit={save}>
+    {editing && <form className="company-expense-form" onSubmit={save} aria-labelledby="expense-form-title">
+      <h2 id="expense-form-title"><span className="company-group-icon"><Plus size={17} aria-hidden="true"/></span>
+        {bill ? t('Pay bill','پرداخت بل') : t('Record expense','ثبت مصرف')}
+      </h2>
       <fieldset disabled={busy}>
-        <legend>{bill ? t('Pay bill','پرداخت بل') : t('Record expense','ثبت مصرف')}</legend>
         {bill ? <p>{bill.description}</p> : <div className="company-fields">
           <label>{t('Category','نوع مصرف')}<select required value={form.category} onChange={e=>change('category',e.target.value)}>
             <option value="">{t('Select','انتخاب کنید')}</option>
             {Object.keys(categories).filter(id=>id!=='shipment' && (id!=='salary'||president)).map(id=><option key={id} value={id}>{t(...categories[id])}</option>)}
+            <option value="custom">{t('Custom category','نوع مصرف دلخواه')}</option>
           </select></label>
           {president && <label>{t('Paying account','حساب پرداخت')}<select value={account} onChange={e=>change('account',e.target.value)}>
             <option value="admin">{branchName(null)}</option>{branchOptions}
           </select></label>}
         </div>}
+        {!bill && custom && <label className="company-custom-category">{t('Category name','نام نوع مصرف')}<input required maxLength={80} value={form.customCategory}
+          onChange={e=>change('customCategory',e.target.value)}/></label>}
         {form.category==='salary' && !bill
           ? <RecordLink className="registry-primary" href={recordLink('employees',{payroll:1})} returnTo={returnTo}>{t('Record salary in payroll','ثبت معاش در معاش ماهانه')}</RecordLink>
           : <>
@@ -345,18 +347,10 @@ function ExpenseRecords({t,language,president,scope,currency,branches,branchName
                 max={bill ? bill.remaining : '999999999999.99'} value={form.amount} onChange={e=>change('amount',e.target.value)}/></label>
               <label>{t('Currency','واحد پول')}<select disabled={!!bill} value={form.currency} onChange={e=>change('currency',e.target.value)}>{currencies.map(c=><option key={c} value={c}>{c}</option>)}</select></label>
             </div>
-            {!bill && <>
-              <div className="company-fields">
-                <label>{t('Payee','گیرنده')}<select value={form.payeeType} onChange={e=>setForm(previous=>({...previous,payeeType:e.target.value,payeeName:''}))}>
-                  <option value="">—</option>
-                  {Object.entries(payees).map(([id,label])=><option key={id} value={id}>{t(...label)}</option>)}
-                </select></label>
-                {miscellaneous ? <label>{t('Payee name','نام گیرنده')}<input required maxLength={100} value={form.payeeName}
-                  onChange={e=>change('payeeName',e.target.value)}/></label> : descriptionField}
-              </div>
-              {miscellaneous && descriptionField}
-            </>}
+            {!bill && <label>{t('Details','تفصیلات')}<input required maxLength={500} value={form.description}
+              onChange={e=>change('description',e.target.value)}/></label>}
             <button className="registry-primary" disabled={(!president && !branchId) || (president && branches===null)}>
+              <ArrowUpRight size={16} aria-hidden="true"/>
               {busy ? t('Saving…','در حال ثبت…') : t('Save Money Out','ثبت پول رفت')}
             </button>
             {bill && <button className="registry-secondary" type="button" onClick={()=>{setEditing(false);setBill(null)}}>{t('Cancel','انصراف')}</button>}

@@ -78,15 +78,26 @@
 .company-block li svg, .company-record > svg { color: #42647f; }
 :dir(rtl) .company-block li svg, :dir(rtl) .company-record > svg { transform: scaleX(-1); }
 .company-history, .company-expense-form { margin-block: .7rem; border: 1px solid #d2e1ea; border-radius: .75rem; background: white; }
-.company-expense-form { background: #edf8f3; border-color: #bdddd0; padding: .68rem; }
-.company-expense-form fieldset { display: grid; gap: .52rem; border: 0; padding: 0; min-inline-size: 0; margin: 0; }
-.company-expense-form legend { margin-block-end: .48rem; font-size: 1rem; color: #175547; font-weight: 750; }
-.company-expense-form :is(.registry-primary,.registry-secondary) { justify-self: start; min-block-size: 42px; }
+.company-expense-form { overflow: visible; background: #eef8f4; border-color: #bfded1; }
+.company-expense-form h2 {
+  display: flex; align-items: center; gap: .42rem; margin: 0; padding: .48rem .7rem;
+  border-radius: .7rem .7rem 0 0; border-block-end: 1px solid #bfded1;
+  background: #d9f0e6; color: #174f40; font-size: .95rem; font-weight: 750;
+}
+.company-expense-form fieldset { display: grid; gap: .55rem; border: 0; padding: .65rem .7rem .7rem; min-inline-size: 0; margin: 0; }
+.company-expense-form :is(.registry-primary,.registry-secondary) { justify-self: start; min-block-size: 44px; }
+.company-expense-form .registry-primary { display: inline-flex; align-items: center; gap: .35rem; }
+.company-custom-category { padding: .4rem .5rem; border-radius: .48rem; background: #f2eafa; border: 1px solid #ddcbee; color: #50366d; }
+.company-expenses-page .company-filters { background: #eff0fa; border-color: #d8dbef; }
 .company-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .5rem; }
 .company-fields > :only-child { grid-column: 1/-1; }
 .company-amount-fields { grid-template-columns: minmax(0,1.25fr) minmax(0,1fr) minmax(64px,.65fr); }
 .company-amount-fields .solar-date-picker { min-inline-size: 0; font-weight: 400; }
 .company-history header { display: flex; align-items: center; justify-content: space-between; gap: .4rem; flex-wrap: wrap; padding: .5rem .65rem; background: #e8f3fc; border-radius: .7rem .7rem 0 0; color: #1d5275; }
+.company-expenses-page .company-history header { border-block-end: 1px solid #cfdfec; }
+.company-expenses-page .company-history .company-record:nth-of-type(even) { background: #f1f7fc; }
+.company-expenses-page .company-history .company-record:hover { background: #e5f1fb; }
+.company-expenses-page .company-record-money > bdi { display: inline-block; padding: .12rem .35rem; border-radius: .32rem; background: #e7eff9; color: #214f72; }
 .company-history p, .company-details-body p, .company-payee-group p { padding: .65rem .7rem; margin: 0; }
 .company-record {
   display: grid;
