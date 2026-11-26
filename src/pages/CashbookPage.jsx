@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ArrowDownLeft, ArrowUpRight, BadgeDollarSign, BriefcaseBusiness, HandCoins, Landmark, Pencil, Printer, RefreshCw, RotateCcw, Stamp, Truck, UserRound } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { allRows, cents, currencies, kabulToday, simpleLedger, ledgerPeriod, payees } from '../lib/cashbook'
+import { allRows, cents, currencies, kabulToday, simpleLedger, ledgerPeriod, payees, payeeTitleDari } from '../lib/cashbook'
 import { rpc } from '../lib/operations'
 import { bookingDue } from '../lib/bookingFinance'
 import { IconButton, Modal } from '../components/RecordTools'
@@ -172,7 +172,7 @@ export default function CashbookPage({ language, profile, onBack }) {
   ]
   const links = [
     ...(president ? roleLinks : []),
-    {id:'payee', icon:UserRound, label:t('Payee','گیرنده'), value:form.payee_type},
+    {id:'payee', icon:UserRound, label:t('Payee',payeeTitleDari), value:form.payee_type},
   ]
   function description(row) {
     if (row.opening) return t('Earlier balance','موجودی قبلی')
@@ -279,7 +279,7 @@ export default function CashbookPage({ language, profile, onBack }) {
     if(form.payee_type && direction!=='out')return
     if(form.payee_type==='miscellaneous' && !form.payee_name.trim()){
       setLinkPanel('payee')
-      setError(t('Enter the payee name.','نام گیرنده را وارد کنید.'))
+      setError(t('Enter the payee name.','نام شخص را وارد کنید.'))
       return
     }
     if(driverCommission && (direction!=='in' || !driverCommissionOptions.some(row=>row.id===form.booking_id))){
@@ -302,7 +302,7 @@ export default function CashbookPage({ language, profile, onBack }) {
         const messages={ACCESS_DENIED:t('You cannot record money for this account.','شما اجازه ثبت پول در این حساب را ندارید.'),INVALID_AMOUNT:t('Enter a positive amount with up to two decimal places.','یک مبلغ مثبت با حداکثر دو رقم اعشار وارد کنید.'),INVALID_DATE:t('Choose today or an earlier date.','تاریخ امروز یا گذشته را انتخاب کنید.'),DESCRIPTION_REQUIRED:t('Enter a name or description.','نام یا شرح معامله را وارد کنید.'),BOOKING_PAYMENT_UNAVAILABLE:t('Choose an active booking in this currency.','بوکینگ فعال را با همین واحد پول انتخاب کنید.'),EMPLOYEE_UNAVAILABLE:t('Choose an active employee.','یک کارمند فعال را انتخاب کنید.'),INVALID_PARTY_PAYMENT:t('Only one employee or driver can be linked to Money Out.','فقط یک کارمند یا راننده به پول رفت وصل می‌شود.'),DRIVER_UNAVAILABLE:t('Choose an active driver.','یک راننده فعال را انتخاب کنید.'),INVALID_LOAN:t('Link the loan to one employee or driver and record Money Out.','قرض را به یک کارمند یا راننده وصل کرده و پول رفت ثبت کنید.'),INVALID_LOAN_DEADLINE:t('The loan deadline must be on or after the transaction date.','مهلت قرض باید در تاریخ معامله یا پس از آن باشد.'),INVALID_LOAN_REPAYMENT:t('Choose an open loan and record Money In.','یک قرض باز را انتخاب کرده و پول آمد ثبت کنید.'),LOAN_UNAVAILABLE:t('This loan is no longer available. Refresh the cashbook.','این قرض دیگر در دسترس نیست. روزنامچه را تازه کنید.'),LOAN_CURRENCY_MISMATCH:t('Use the same currency as the loan.','از واحد پول قرض استفاده کنید.'),LOAN_REPAYMENT_EXCEEDS_BALANCE:t('The repayment exceeds the remaining loan balance.','بازپرداخت از مانده قرض بیشتر است.')}
         messages.DRIVER_COMMISSION_EXCEEDS_BALANCE=t('The amount exceeds the unpaid driver commission.','مبلغ از کمیسیون باقی‌ماندهٔ راننده بیشتر است.')
         messages.MANAGED_PAYMENT_EXCEEDS_BALANCE=t('The payment exceeds the booking balance in this currency.','مبلغ از بدهی بار نامه در این واحد پول بیشتر است.')
-        messages.INVALID_EXPENSE_PAYEE=t('Check the payee type and name.','نوع گیرنده و نام را بررسی کنید.')
+        messages.INVALID_EXPENSE_PAYEE=t('Check the payee type and name.','نوع پرداخت و نام شخص را بررسی کنید.')
         const key=Object.keys(messages).find(k=>failure.message.includes(k))
         if(key){setUncertain(false);throw new Error(messages[key])}
         setUncertain(true);setRetryDirection(direction);throw new Error(t('Save was not confirmed. Retry the same direction with the same details, or refresh before entering again.','ثبت تأیید نشد. با همان جهت و معلومات دوباره کوشش کنید یا پیش از ثبت مجدد، فهرست را تازه‌سازی کنید.'))
@@ -439,7 +439,7 @@ export default function CashbookPage({ language, profile, onBack }) {
           {linkPanel&&(president||linkPanel==='payee')&&<div id="cashbook-link-panel" className="cashbook-link-panel">
             {linkPanel==='payee'&&<div className="cashbook-trader-fields cashbook-payee-fields">
               <label className="cashbook-field">
-                <span>{t('Payee','گیرنده')}</span>
+                <span>{t('Payee',payeeTitleDari)}</span>
                 <select value={form.payee_type} onChange={e=>{
                   const type=e.target.value
                   setForm(previous=>({...previous,...(type ? emptyLinks : emptyPayee),payee_type:type}))
@@ -449,7 +449,7 @@ export default function CashbookPage({ language, profile, onBack }) {
                 </select>
               </label>
               {form.payee_type==='miscellaneous'&&<label className="cashbook-field">
-                <span>{t('Payee name','نام گیرنده')} *</span>
+                <span>{t('Payee name','نام شخص')} *</span>
                 <input required maxLength={100} value={form.payee_name} onChange={e=>setForm({...form,payee_name:e.target.value})}/>
               </label>}
             </div>}

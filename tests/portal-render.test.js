@@ -29,7 +29,7 @@ test('branch navigation and direct Branches URL never render branch management c
     const expensePage = renderToStaticMarkup(React.createElement(Dashboard, { language: 'fa', profile, session: { user: {} } }))
     assert.match(expensePage, /ثبت پول رفت/)
     assert.match(expensePage, /تاریخچه مصارف/)
-    assert.doesNotMatch(expensePage, /value="miscellaneous"|value="office"|نام گیرنده/)
+    assert.doesNotMatch(expensePage, /value="miscellaneous"|value="office"|نام شخص/)
     assert.match(expensePage, /value="custom">نوع مصرف دلخواه/)
     assert.doesNotMatch(expensePage, /ثبت بل پرداخت‌نشده|پرداخت بل/)
     globalThis.window.location.hash = '#/expenses?view=history&currency=USD&period=today'
@@ -141,6 +141,7 @@ test('branch navigation and direct Branches URL never render branch management c
       assert.ok(toolbar.indexOf('cashbook-account-display') < toolbar.indexOf('solar-date-picker'))
       assert.doesNotMatch(branchCashbook, /value="admin"|Admin account|حساب مرکزی|Edit amount|Reverse receipt|data-kind="(?:employee|driver|trader)"|cashbook-customs-button/)
       assert.match(branchCashbook, /data-kind="payee"/)
+      assert.match(branchCashbook, language==='fa' ? /پرداخت‌های متفرقه و دفتر<\/button>/ : /Payee<\/button>/)
       assert.match(branchCashbook, /value="in"/)
       assert.match(branchCashbook, /value="out"/)
       assert.match(toolbar, /value="custom"/)

@@ -1,5 +1,6 @@
 export const currencies = ['AFN', 'USD', 'PKR', 'IRR']
 export const payees = {miscellaneous:['Miscellaneous','متفرقه'],office:['Office','دفتر']}
+export const payeeTitleDari = 'پرداخت‌های متفرقه و دفتر'
 export function kabulToday() {
   const parts = new Intl.DateTimeFormat('en', { timeZone: 'Asia/Kabul', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date())
   return ['year','month','day'].map(key => parts.find(p => p.type === key).value).join('-')
