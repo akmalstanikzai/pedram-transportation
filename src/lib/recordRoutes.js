@@ -18,3 +18,24 @@ export function cashbookRecordLink(row, currency = row.currency) {
     receipt: (row.receipt_number ?? row.number) || null,
   })
 }
+
+export function recordReturnRoute(value) {
+  return /^#\/(?:company|expenses)(?:\?[^#]*)?$/.test(value ?? '') ? value : null
+}
+
+export function withRecordReturn(href, source) {
+  if (!recordReturnRoute(source)) return href
+  const [page, search] = href.split('?')
+  const query = new URLSearchParams(search)
+  query.set('return', source)
+  return page + '?' + query
+}
+
+export function followRecordLink(event, source) {
+  if (!recordReturnRoute(source) || event.defaultPrevented || event.button!==0 ||
+      event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+  event.preventDefault()
+  window.history.replaceState(window.history.state,'',source)
+  window.history.pushState({recordBackTo:source},'',event.currentTarget.hash)
+  window.dispatchEvent(new Event('hashchange'))
+}

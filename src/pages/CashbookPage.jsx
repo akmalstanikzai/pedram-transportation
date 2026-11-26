@@ -12,7 +12,7 @@ import { printRecord } from '../lib/recordExports'
 import { canPrintReceipt, cashbookReceipt } from '../lib/financialReports'
 import SolarHijriDateInput from '../components/SolarHijriDateInput'
 import { formatSolarHijri, solarHijriToday, solarHijriToISODate } from '../lib/solarHijri'
-import { recordQuery } from '../lib/recordRoutes'
+import { recordQuery, withRecordReturn } from '../lib/recordRoutes'
 import './CashbookPage.css'
 
 function periodBounds(period){
@@ -482,7 +482,7 @@ export default function CashbookPage({ language, profile, onBack }) {
     </form>
     {loading?<p role="status">{t('Loading…','در حال بارگیری…')}</p>:loaded&&!validPeriod?<p role="status">{t('Choose a valid start and end date.','تاریخ آغاز و پایان درست انتخاب کنید.')}</p>:loaded&&<>
       <section className="cashbook-ledger" aria-labelledby="cashbook-ledger-title"><h2 id="cashbook-ledger-title">{t('Saved records','معاملات ثبت‌شده')}</h2>
-        {receipt && <a href="#/cashbook">{t('Show all Cashbook records','نمایش همه معاملات روزنامچه')}</a>}
+        {receipt && <a href={withRecordReturn('#/cashbook',destination.get('return'))}>{t('Show all Cashbook records','نمایش همه معاملات روزنامچه')}</a>}
         <CompactTable key={JSON.stringify([scope,currency,periodStart,periodEnd])} label={t('Cashbook records','معاملات روزنامچه')} bulk={president ? {
           language, rows:displayedRecords.filter(row=>row.operation_id && !row.reversed_by && !row.reversal), disabled:busy||uncertain||loading,
           name:row=>row.receipt_number ? '#'+row.receipt_number : description(row),

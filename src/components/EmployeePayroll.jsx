@@ -9,7 +9,7 @@ import { printRecord } from '../lib/recordExports'
 import { IconButton, Modal } from './RecordTools'
 import CompactTable from './CompactTable'
 import SolarHijriDateInput from './SolarHijriDateInput'
-import { recordQuery } from '../lib/recordRoutes'
+import { recordLink, recordQuery, withRecordReturn } from '../lib/recordRoutes'
 
 const totalLabels = [
   ['salary','Total salary','مجموع معاش'],
@@ -173,7 +173,7 @@ export default function EmployeePayroll({language}) {
             {totalLabels.map(([key,en,fa])=><div key={key} data-metric={key}><dt>{t(en,fa)}</dt><dd><bdi dir="ltr">{payrollMoney(totals[key])}</bdi></dd></div>)}
           </dl>
         </section>
-        {focused && <a href={`#/employees?payroll=1&year=${period.year}&month=${period.month}`}>{t('Show all employees for this month','نمایش همه کارمندان این ماه')}</a>}
+        {focused && <a href={withRecordReturn(recordLink('employees',{payroll:1,year:period.year,month:period.month}),destination.get('return'))}>{t('Show all employees for this month','نمایش همه کارمندان این ماه')}</a>}
         <PayrollCards rows={visibleRows} showHistory={focused} language={language} onPay={startPayment} onPrint={print} onReverse={entry=>{setReason('');setPaymentError('');setReversal(entry)}}/>
         <details className="payroll-help">
           <summary>{t('About payroll','درباره معاش ماهانه')}</summary>

@@ -7,6 +7,7 @@ import { initialBranchForm } from '../src/lib/branchForm.js'
 import { vehicleWeightsFromRow } from '../src/lib/capacity.js'
 import { driverFormFromRow } from '../src/lib/driverForm.js'
 import { ownerFormFromRow } from '../src/lib/ownerForm.js'
+import { recordReturnRoute, withRecordReturn } from '../src/lib/recordRoutes.js'
 
 test('branch navigation and direct Branches URL never render branch management controls', async () => {
   const server = await createServer({ server: { middlewareMode: true }, appType: 'custom' })
@@ -36,6 +37,19 @@ test('branch navigation and direct Branches URL never render branch management c
     assert.match(expenseHistory, /Expense history/)
     assert.match(expenseHistory, /value="USD" selected/)
     assert.doesNotMatch(expenseHistory, /Save Money Out/)
+    const overviewOrigin = '#/company?tab=operations&period=month&currency=USD'
+    globalThis.window.location.hash = withRecordReturn('#/expenses?view=payees',overviewOrigin)
+    const payeePage = renderToStaticMarkup(React.createElement(Dashboard,{language:'fa',profile,session:{user:{}}}))
+    assert.match(payeePage,/پرداخت به گیرنده‌ها/)
+    assert.doesNotMatch(payeePage,/ثبت پول رفت/)
+    globalThis.window.location.hash = overviewOrigin
+    const overview = renderToStaticMarkup(React.createElement(Dashboard,{language:'fa',profile,session:{user:{}}}))
+    assert.match(overview.match(/<button aria-pressed="true"[^>]*>[\s\S]*?<\/button>/)?.[0] ?? '',/عملیات/)
+    assert.match(overview,/company-payee-link[^>]*view=payees/)
+    assert.equal(recordReturnRoute('https://example.test'),null)
+    const payeesOrigin = withRecordReturn('#/expenses?view=payees',overviewOrigin)
+    const receiptLink = withRecordReturn('#/cashbook?receipt=5',payeesOrigin)
+    assert.equal(new URLSearchParams(receiptLink.split('?')[1]).get('return'),payeesOrigin)
     globalThis.window.location.hash = '#/trader-accounts'
     const traderUrl = renderToStaticMarkup(React.createElement(Dashboard, { language: 'en', profile }))
     assert.doesNotMatch(traderUrl, /Search traders|Register trader|>Traders</)

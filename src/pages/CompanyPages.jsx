@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowDownLeft, ArrowUpRight, ChevronRight, ClipboardList, Plus, Receipt, Wallet } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Building2, ChevronRight, ClipboardList, HandCoins, Plus, Receipt, Truck, Users, Wallet } from 'lucide-react'
 import { allRows, currencies, kabulToday } from '../lib/cashbook'
 import { formatSolarHijri, solarHijriToISODate, solarHijriToday } from '../lib/solarHijri'
 import { rpc } from '../lib/operations'
 import { supabase } from '../lib/supabase'
 import { payrollMonthLabel } from '../lib/payroll'
-import { cashbookRecordLink, recordLink, recordQuery } from '../lib/recordRoutes'
+import { cashbookRecordLink, followRecordLink, recordLink, recordQuery, recordReturnRoute, withRecordReturn } from '../lib/recordRoutes'
 import SolarHijriDateInput from '../components/SolarHijriDateInput'
 import { Modal } from '../components/RecordTools'
 import Icon from '../components/Icon'
@@ -32,7 +32,6 @@ const operations = [
   ['drivers','Active drivers','رانندگان فعال','vehicles',{drivers:1}],
   ['availableDrivers','Drivers available today','رانندگان آماده امروز','availability',{drivers:1}],
   ['availableVehicles','Vehicles available today','وسایط آماده امروز','availability'],
-  ['branches','Active branches','شعبه‌های فعال','branches'],
 ]
 const money = value => Number(value).toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2})
 
@@ -51,13 +50,18 @@ function useCompanyData(name,args,revision=0) {
   return result?.request===request && result.revision===revision ? result : null
 }
 
-function Details({metric,scope,branch,t,currency,start,language,branchName,onClose}) {
-  const [page,setPage] = useState(0)
+function RecordLink({href,returnTo,className,children}) {
+  return <a className={className} href={withRecordReturn(href,returnTo)} onClick={event=>followRecordLink(event,returnTo)}>{children}</a>
+}
+
+function Details({metric,scope,branch,t,currency,start,language,branchName,onClose,origin,initialPage}) {
+  const [page,setPage] = useState(initialPage)
   const [revision,retry] = useState(0)
   const result = useCompanyData('company_financial_details',{
     p_metric:metric,p_all:scope==='all',p_branch:branch,p_currency:currency,p_start:start,p_offset:page*20,
   },revision)
   const payout = metric==='foreignFreight' || metric==='traderOut'
+  const returnTo = origin+'&detail='+metric+(page ? '&page='+page : '')
   function link(row) {
     if (metric==='trader') return recordLink('traders',{trader:row.id,currency,account:scope==='all' ? null : scope})
     if (metric==='driver') return recordLink('bookings',{booking:row.id})
@@ -78,10 +82,10 @@ function Details({metric,scope,branch,t,currency,start,language,branchName,onClo
           row.direction && branchName(row.branch_id),
         ].filter(Boolean).join(' · ')
         const name = row.label || (row.direction==='opening' ? t('Opening balance','موجودی قبلی') : t('Cashbook activity','گردش روزنامچه'))
-        return <a className="company-record" key={row.id} href={link(row)}>
+        return <RecordLink className="company-record" key={row.id} href={link(row)} returnTo={returnTo}>
           <span><strong>{name}</strong>{meta && <small>{meta}</small>}</span>
           <bdi dir="ltr">{((metric==='cash' && row.direction==='out') || (payout && row.direction==='in')) ? '−' : ''}{money(row.amount)}</bdi><ChevronRight size={16} aria-hidden="true"/>
-        </a>
+        </RecordLink>
       })}
       {(page>0 || result?.data?.length>20) && <div className="company-pagination">
         <button className="registry-secondary" disabled={!page} onClick={()=>setPage(n=>n-1)}>{t('Previous','قبلی')}</button>
@@ -93,14 +97,14 @@ function Details({metric,scope,branch,t,currency,start,language,branchName,onClo
 
 function SummaryGroup({title,icon:GroupIcon,tone,children}) {
   return <section className="company-block" data-tone={tone}>
-    <h2><GroupIcon size={17} aria-hidden="true"/>{title}</h2>
+    <h2><span className="company-group-icon"><GroupIcon size={17} aria-hidden="true"/></span>{title}</h2>
     <ul>{children}</ul>
   </section>
 }
 
-function SummaryRow({label,value,href,onClick}) {
+function SummaryRow({label,value,href,onClick,returnTo}) {
   const content = <><span>{label}</span><bdi dir="ltr">{value}</bdi>{(href||onClick) && <ChevronRight size={14} aria-hidden="true"/>}</>
-  return <li>{href ? <a href={href}>{content}</a> : onClick ? <button type="button" onClick={onClick}>{content}</button> : <div>{content}</div>}</li>
+  return <li>{href ? <RecordLink href={href} returnTo={returnTo}>{content}</RecordLink> : onClick ? <button type="button" onClick={onClick}>{content}</button> : <div>{content}</div>}</li>
 }
 
 export default function CompanyPages({kind,language,profile,onBack}) {
@@ -109,6 +113,7 @@ export default function CompanyPages({kind,language,profile,onBack}) {
   const president = profile.role==='president'
   const expenses = kind==='expenses'
   const legacyBills = expenses && destination.has('bills')
+  const payeeView = expenses && destination.get('view')==='payees'
   const defaultScope = president ? destination.get('account') || 'all' : profile.branch_id
   const [scope,setScope] = useState(defaultScope)
   const [period,setPeriod] = useState(()=>['today','month','all'].includes(destination.get('period'))
@@ -116,8 +121,10 @@ export default function CompanyPages({kind,language,profile,onBack}) {
   const [currency,setCurrency] = useState(()=>currencies.includes(destination.get('currency'))
     ? destination.get('currency') : expenses ? '' : 'AFN')
   const [branches,setBranches] = useState([])
-  const [tab,setTab] = useState('money')
-  const [detail,setDetail] = useState(null)
+  const [tab,setTab] = useState(()=>!expenses && destination.get('tab')==='operations' ? 'operations' : 'money')
+  const restoredMetric = destination.get('detail')
+  const [detail,setDetail] = useState(()=>!expenses && tab==='money' && Object.hasOwn(amounts,restoredMetric) &&
+    restoredMetric!=='bills' && restoredMetric!=='expenses' ? {metric:restoredMetric,page:Math.max(0,parseInt(destination.get('page'),10)||0)} : null)
   const [revision,refresh] = useState(0)
   const today = kabulToday()
   const {year,month} = solarHijriToday()
@@ -145,17 +152,29 @@ export default function CompanyPages({kind,language,profile,onBack}) {
     refresh(n=>n+1)
   }
 
-  const summaryRow = (metric,href) => currencyRow?.[metric]!=null && <SummaryRow key={metric} label={t(...amounts[metric])}
-    value={money(currencyRow[metric])} href={href} onClick={href ? undefined : ()=>setDetail(metric)}/>
   const scopedDestination = {account:president && !all ? scope : null,currency,period}
+  const origin = recordLink(kind,{...scopedDestination,tab:tab==='operations' ? tab : null,
+    view:expenses ? destination.get('view') : null,bills:legacyBills ? 1 : null,return:recordReturnRoute(destination.get('return'))})
+  const summaryRow = (metric,href) => currencyRow?.[metric]!=null && <SummaryRow key={metric} label={t(...amounts[metric])}
+    value={money(currencyRow[metric])} href={href} returnTo={origin} onClick={href ? undefined : ()=>setDetail({metric,page:0})}/>
+  function closeDetails() {
+    if (recordQuery().has('detail')) window.history.replaceState(window.history.state,'',origin)
+    setDetail(null)
+  }
   return <section className="registry-page company-page">
     <header className="company-header">
       {onBack && <button className="module-back" onClick={onBack}><Icon name="back" size={16}/>{t('Back','بازگشت')}</button>}
-      <h1>{legacyBills ? t('Outstanding bills','بل‌های پرداخت‌نشده') : expenses ? t('Expenses','مصارف') : t('Company overview','خلاصه شرکت')}</h1>
+      <h1>{payeeView ? t('Payee payments','پرداخت به گیرنده‌ها') : legacyBills ? t('Outstanding bills','بل‌های پرداخت‌نشده')
+        : expenses ? t('Expenses','مصارف') : t('Company overview','خلاصه شرکت')}</h1>
     </header>
-    {!expenses && <div className="company-tabs" role="group" aria-label={t('Overview','خلاصه')}>
-      <button aria-pressed={tab==='money'} onClick={()=>setTab('money')}><Wallet size={16}/>{t('Money','مالی')}</button>
-      <button aria-pressed={tab==='operations'} onClick={()=>setTab('operations')}><ClipboardList size={16}/>{t('Operations','عملیات')}</button>
+    {!expenses && <div className="company-switcher">
+      <div className="company-tabs" role="group" aria-label={t('Overview','خلاصه')}>
+        <button aria-pressed={tab==='money'} onClick={()=>setTab('money')}><Wallet size={16} aria-hidden="true"/>{t('Money','مالی')}</button>
+        <button aria-pressed={tab==='operations'} onClick={()=>setTab('operations')}><ClipboardList size={16} aria-hidden="true"/>{t('Operations','عملیات')}</button>
+      </div>
+      <RecordLink className="company-payee-link" href={recordLink('expenses',{account:scopedDestination.account,view:'payees'})} returnTo={origin}>
+        <HandCoins size={17} aria-hidden="true"/>{t('Payees','گیرنده‌ها')}
+      </RecordLink>
     </div>}
     <div className="company-filters">
       {president && <label>{t('Account','حساب')}<select value={scope} onChange={e=>setScope(e.target.value)}>
@@ -173,16 +192,21 @@ export default function CompanyPages({kind,language,profile,onBack}) {
     {branches===null && <p role="alert">{t('Could not load branches.','شعبه‌ها بارگیری نشد.')}</p>}
     {!result && <p role="status">{t('Loading…','در حال بارگیری…')}</p>}
     {result?.error && <p role="alert">{t('Could not load records.','ریکاردها بارگیری نشد.')} <button onClick={()=>refresh(n=>n+1)}>{t('Retry','تلاش دوباره')}</button></p>}
-    {expenses && <ExpenseRecords {...{t,language,president,scope,currency,branches,branchName,branchOptions,profile,today,data,legacyBills}}
-      key={legacyBills ? 'bills' : 'expenses'} historyFirst={destination.get('view')==='history'} onSaved={recordSaved}/>}
+    {payeeView ? data && <PayeeHistory rows={data.payments} {...{t,currency,branchName}} returnTo={origin} key={scope+period+currency}/>
+      : expenses && <ExpenseRecords {...{t,language,president,scope,currency,branches,branchName,branchOptions,profile,today,data,legacyBills}}
+        returnTo={origin} key={legacyBills ? 'bills' : 'expenses'} historyFirst={destination.get('view')==='history'} onSaved={recordSaved}/>}
     {!expenses && data && (tab==='operations' ? <div className="company-blocks">
       <SummaryGroup tone="blue" icon={ClipboardList} title={t('Bookings','بار نامه')}>
         {operations.slice(0,3).map(([id,en,fa,page,params])=><SummaryRow key={id} label={t(en,fa)} value={data.operations[id]}
-          href={recordLink(page,{...params,scope:all ? null : branch || 'head-office'})}/>)}
+          href={recordLink(page,{...params,scope:all ? null : branch || 'head-office'})} returnTo={origin}/>)}
       </SummaryGroup>
-      <SummaryGroup tone="green" icon={Wallet} title={t('Fleet and branches','وسایط و شعبه‌ها')}>
+      <SummaryGroup tone="green" icon={Truck} title={t('Fleet','وسایط و رانندگان')}>
         {operations.slice(3).map(([id,en,fa,page,params])=><SummaryRow key={id} label={t(en,fa)} value={data.operations[id]}
-          href={page==='branches' && !president ? null : recordLink(page,params)}/>)}
+          href={recordLink(page,params)} returnTo={origin}/>)}
+      </SummaryGroup>
+      <SummaryGroup tone="violet" icon={Building2} title={t('Branches','شعبه‌ها')}>
+        <SummaryRow label={t('Active branches','شعبه‌های فعال')} value={data.operations.branches}
+          href={president ? recordLink('branches') : null} returnTo={origin}/>
       </SummaryGroup>
     </div> : <div className="company-blocks">
       <SummaryGroup tone="blue" icon={Wallet} title={t('Cashbook','روزنامچه')}>
@@ -201,11 +225,48 @@ export default function CompanyPages({kind,language,profile,onBack}) {
         {summaryRow('traderOut')}
       </SummaryGroup>
     </div>)}
-    {detail && <Details key={detail} metric={detail} {...{scope,branch,t,currency,start,language,branchName}} onClose={()=>setDetail(null)}/>}
+    {detail && <Details key={detail.metric} metric={detail.metric} initialPage={detail.page}
+      {...{scope,branch,t,currency,start,language,branchName,origin}} onClose={closeDetails}/>}
   </section>
 }
 
-function ExpenseRecords({t,language,president,scope,currency,branches,branchName,branchOptions,profile,today,data,legacyBills,historyFirst,onSaved}) {
+function ExpenseHistoryRow({row,t,branchName,returnTo,showPayeeFirst=false}) {
+  const payee = payees[row.payee_type] && (row.payee_name || t(...payees[row.payee_type]))
+  const category = t(...categories[row.category])
+  const title = showPayeeFirst ? row.payee_name || row.description : category
+  return <RecordLink className="company-record" href={cashbookRecordLink(row)} returnTo={returnTo}>
+    <span>
+      <strong>{title}{row.direction==='in' && ' · '+t('Reversal','معکوس')}</strong>
+      {title!==row.description && <small>{row.description}</small>}
+      <small>{showPayeeFirst ? category : payee}{(showPayeeFirst || payee) && ' · '}
+        <bdi>{formatSolarHijri(row.entry_date)}</bdi> · {branchName(row.branch_id)}</small>
+    </span>
+    <span className="company-record-money">
+      <bdi dir="ltr">{row.direction==='in'?'−':''}{money(row.amount)} {row.currency}</bdi>
+      <small>{t('Receipt','رسید')} <bdi dir="ltr">#{row.receipt_number}</bdi></small>
+    </span>
+    <ChevronRight size={16} aria-hidden="true"/>
+  </RecordLink>
+}
+
+function PayeeHistory({rows,t,currency,branchName,returnTo}) {
+  const [limits,setLimits] = useState({miscellaneous:20,office:20})
+  return <div className="company-payee-history">
+    {Object.entries(payees).map(([type,label])=>{
+      const records = rows.filter(row=>row.payee_type===type && (!currency || row.currency===currency))
+      const GroupIcon = type==='miscellaneous' ? Users : Building2
+      return <section key={type} className="company-block company-payee-group" data-tone={type==='miscellaneous' ? 'violet' : 'green'}>
+        <h2><span className="company-group-icon"><GroupIcon size={17} aria-hidden="true"/></span>{t(...label)}</h2>
+        {records.length===0 && <p>{t('No payments for this selection.','برای این انتخاب پرداختی ثبت نشده است.')}</p>}
+        {records.slice(0,limits[type]).map(row=><ExpenseHistoryRow key={row.id} {...{row,t,branchName,returnTo}} showPayeeFirst/>)}
+        {records.length>limits[type] && <button type="button" className="registry-secondary company-more"
+          onClick={()=>setLimits(previous=>({...previous,[type]:previous[type]+20}))}>{t('See more','مشاهده بیشتر')}</button>}
+      </section>
+    })}
+  </div>
+}
+
+function ExpenseRecords({t,language,president,scope,currency,branches,branchName,branchOptions,profile,today,data,legacyBills,historyFirst,onSaved,returnTo}) {
   const [editing,setEditing] = useState(!historyFirst && !legacyBills)
   const [bill,setBill] = useState(null)
   const [form,setForm] = useState({date:today,category:'',currency:currency || 'AFN',amount:'',description:'',account:null,payeeType:'',payeeName:''})
@@ -275,7 +336,7 @@ function ExpenseRecords({t,language,president,scope,currency,branches,branchName
           </select></label>}
         </div>}
         {form.category==='salary' && !bill
-          ? <a className="registry-primary" href={recordLink('employees',{payroll:1})}>{t('Record salary in payroll','ثبت معاش در معاش ماهانه')}</a>
+          ? <RecordLink className="registry-primary" href={recordLink('employees',{payroll:1})} returnTo={returnTo}>{t('Record salary in payroll','ثبت معاش در معاش ماهانه')}</RecordLink>
           : <>
             <div className="company-fields company-amount-fields">
               <div className="company-field">{t('Date','تاریخ')}<SolarHijriDateInput required ariaLabel={t('Expense date','تاریخ مصرف')}
@@ -317,15 +378,7 @@ function ExpenseRecords({t,language,president,scope,currency,branches,branchName
         {!editing && <button className="registry-primary" onClick={()=>setEditing(true)}><Plus size={16}/>{t('Record expense','ثبت مصرف')}</button>}
       </header>
       {data && rows.length===0 && <p>{t('No expenses for this selection.','مصرفی در این انتخاب ثبت نشده است.')}</p>}
-      {rows.slice(0,limit).map(row=><a className="company-record" key={row.id} href={cashbookRecordLink(row)}>
-        <span><strong>{t(...categories[row.category])}{row.direction==='in' && ' · '+t('Reversal','معکوس')}</strong>
-          <small>{row.description}</small>
-          {payees[row.payee_type] && <small>{t(...payees[row.payee_type])}{row.payee_name && ' · '+row.payee_name}</small>}
-          <small><bdi>{formatSolarHijri(row.entry_date)}</bdi> · {branchName(row.branch_id)}</small></span>
-        <span className="company-record-money"><bdi dir="ltr">{row.direction==='in'?'−':''}{money(row.amount)} {row.currency}</bdi>
-          <small>{t('Receipt','رسید')} <bdi dir="ltr">#{row.receipt_number}</bdi></small></span>
-        <ChevronRight size={16} aria-hidden="true"/>
-      </a>)}
+      {rows.slice(0,limit).map(row=><ExpenseHistoryRow key={row.id} {...{row,t,branchName,returnTo}}/>)}
       {rows.length>limit && <button className="registry-secondary company-more" onClick={()=>setLimit(n=>n+20)}>{t('See more','مشاهده بیشتر')}</button>}
     </section>}
   </>

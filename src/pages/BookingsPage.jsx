@@ -3,7 +3,7 @@ import { Archive, ArrowLeftRight, ArrowRight, BadgeCheck, Building2, CalendarDay
 import { supabase } from '../lib/supabase'
 import { allRows, currencies, kabulToday } from '../lib/cashbook'
 import { attentionForBooking, bookingAttention, driverReportForCurrentLeg } from '../lib/bookingAttention'
-import { recordQuery } from '../lib/recordRoutes'
+import { recordQuery, withRecordReturn } from '../lib/recordRoutes'
 import { printRecord } from '../lib/recordExports'
 import { bookingDue, bookingTotal } from '../lib/bookingFinance'
 import { bookingColumns, rpc, explain } from '../lib/operations'
@@ -333,7 +333,7 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
     </div>
     {(overviewStatus || targetBooking) && <div className="booking-attention-filter">
       <strong>{targetBooking ? t('Selected booking','بارنامه انتخاب‌شده') : overviewStatus==='confirmed' ? t('Waiting to start','منتظر حرکت') : t('On the road','در راه')} · {visibleRows.length}</strong>
-      <a href="#/bookings">{t('Show all bookings','نمایش همه بارنامه‌ها')}</a>
+      <a href={withRecordReturn('#/bookings',destination.get('return'))}>{t('Show all bookings','نمایش همه بارنامه‌ها')}</a>
     </div>}
     {attention && <div className="booking-attention-filter">
       <strong>{t(...bookingAttention[attention])}{ready && <> · <bdi>{visibleRows.length}</bdi></>}</strong>

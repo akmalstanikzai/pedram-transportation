@@ -19,6 +19,7 @@ import { getTranslation } from '../lib/i18n'
 import { canAccessModule } from '../lib/roles'
 import { kabulToday } from '../lib/cashbook'
 import { bookingAttention } from '../lib/bookingAttention'
+import { recordLink, recordQuery, recordReturnRoute } from '../lib/recordRoutes'
 import { formatSolarHijri } from '../lib/solarHijri'
 import { LanguageSwitch } from './LoginPage'
 import VehiclesPage from './VehiclesPage'
@@ -99,11 +100,22 @@ export default function DashboardPage({ language, onLanguageChange, session, pro
   }
 
   function clearBookingAttention() {
-    window.history.replaceState('', document.title, '#/bookings')
+    const query = recordQuery()
+    query.delete('attention')
+    window.history.replaceState(window.history.state, '', recordLink('bookings',Object.fromEntries(query)))
     setActiveModule(getModuleFromHash())
   }
 
   function closeModule() {
+    const backTo = recordReturnRoute(recordQuery().get('return'))
+    if (backTo && canAccessModule(role, backTo.slice(2).split('?')[0])) {
+      if (window.history.state?.recordBackTo===backTo) window.history.back()
+      else {
+        window.history.replaceState(null,'',backTo)
+        setActiveModule(getModuleFromHash())
+      }
+      return
+    }
     window.history.pushState('', document.title, `${window.location.pathname}${window.location.search}`)
     setActiveModule(null)
   }
