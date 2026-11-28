@@ -1,6 +1,6 @@
 import { cents, kabulToday } from './cashbook.js'
 import { formatSolarHijri } from './solarHijri.js'
-import { bookingBalances, traderBalance } from './traderAccounts.js'
+import { bookingBalances, extraChargeBalances, traderBalance } from './traderAccounts.js'
 import { bookingDue } from './bookingFinance.js'
 import { managedChargeLabel } from './managedBookings.js'
 
@@ -102,12 +102,16 @@ export function traderPortalStatement({ data, currency, language }) {
   const history = [...data.charges.filter(row => row.currency === currency).map(row => ({ ...row, type: 'charge' })), ...data.payments.filter(row => row.currency === currency).map(row => ({ ...row, type: 'payment' }))]
     .sort((a, b) => b.date.localeCompare(a.date))
   const bookings = bookingBalances(data, currency).filter(row => !row.currency || row.currency === currency || row.charged || row.paid).sort((a, b) => b.date.localeCompare(a.date) || b.number - a.number)
+  const extras = extraChargeBalances(data,currency)
   return {
     language, title: `${t('My account statement', 'صورت حساب من')} · ${data.trader.name}`, subtitle: `${currency} · ${formatSolarHijri(kabulToday())}`,
     sections: [
       { receiptColumns: 4, rows: [[t('Total charges', 'مجموع بدهی'), money(totals.charged)], [t('Paid (net)', 'پرداخت خالص'), money(totals.received)], [t('Amount you owe', 'باقی‌مانده شما'), money(totals.owed)], [t('Your credit', 'طلب شما'), money(totals.credit)]] },
       { title: t('My bookings', 'بوکینگ‌های من'), headers: [t('Date', 'تاریخ'), t('Booking', 'بوکینگ'), t('Route / goods', 'مسیر / بار'), t('Charge', 'بدهی'), t('Paid', 'پرداخت'), t('Remaining', 'باقی‌مانده')], widths: [14, 10, 28, 16, 16, 16], numeric: [3, 4, 5], rows: bookings.length ? bookings.map(row => [formatSolarHijri(row.date), `#${row.number}`, `${row.origin} → ${row.destination} · ${row.goods || ''} · ${row.status || ''}`, money(row.charged), money(row.paid), money(row.remaining)]) : [['', '', t('No bookings yet.', 'هنوز بوکینگ ثبت نشده است.'), '', '', '']] },
-      { title: t('Account activity', 'معاملات حساب'), headers: [t('Date', 'تاریخ'), t('Description', 'شرح'), t('Charge', 'بدهی'), t('Payment', 'پرداخت')], widths: [16, 44, 20, 20], numeric: [2, 3], rows: history.length ? history.map(row => [formatSolarHijri(row.date), `${row.description || ''}${row.voided_at ? ` · ${t('Cancelled', 'لغوشده')}` : ''}`, row.type === 'charge' ? money(cents(row.amount)) : '', row.type === 'payment' ? money((row.direction === 'in' ? 1 : -1) * cents(row.amount)) : '']) : [['', t('No account activity yet.', 'هنوز معامله‌ای ثبت نشده است.'), '', '']] },
+      ...(extras.length ? [{title:t('Extra charges','بدهی‌های اضافی'),
+        headers:[t('Description','شرح'),t('Charge','بدهی'),t('Received','دریافتی'),t('Remaining','باقی‌مانده')],
+        widths:[40,20,20,20],numeric:[1,2,3],rows:extras.map(row=>[row.description,money(row.charged),money(row.paid),money(row.remaining)])}] : []),
+      { title: t('Account activity', 'معاملات حساب'), headers: [t('Date', 'تاریخ'), t('Description', 'شرح'), t('Charge', 'بدهی'), t('Payment', 'پرداخت')], widths: [16, 44, 20, 20], numeric: [2, 3], rows: history.length ? history.map(row => [formatSolarHijri(row.date), [row.description,row.receipt_number && `${t('Receipt','رسید')} #${row.receipt_number}`,row.voided_at && t('Cancelled','لغوشده')].filter(Boolean).join(' · '), row.type === 'charge' ? money(cents(row.amount)) : '', row.type === 'payment' ? money((row.direction === 'in' ? 1 : -1) * cents(row.amount)) : '']) : [['', t('No account activity yet.', 'هنوز معامله‌ای ثبت نشده است.'), '', '']] },
     ], note: t('Cancelled charges are shown for history and excluded from totals. Refunds reduce net payments.', 'بدهی‌های لغوشده در تاریخچه نمایش داده شده و در مجموع حساب نمی‌شوند. بازپرداخت‌ها از پرداخت خالص کم می‌شوند.'),
   }
 }

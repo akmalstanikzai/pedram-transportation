@@ -3,13 +3,14 @@ import { ArrowDownLeft, Ellipsis, Plus, Printer, Trash2 } from 'lucide-react'
 import { allRows, cents, currencies, kabulToday } from '../lib/cashbook'
 import { supabase } from '../lib/supabase'
 import { rpc, explain } from '../lib/operations'
-import { bookingBalances, traderBalance } from '../lib/traderAccounts'
+import { bookingBalances, extraChargeBalances, traderBalance } from '../lib/traderAccounts'
 import { managedChargeLabel } from '../lib/managedBookings'
 import { printRecord } from '../lib/recordExports'
 import { IconButton, Modal } from './RecordTools'
 import CompactTable from './CompactTable'
 import SolarHijriDateInput from './SolarHijriDateInput'
 import { formatSolarHijri } from '../lib/solarHijri'
+import TraderExtraCharges from './TraderExtraCharges'
 
 export default function TraderAccount({ trader, language, account, initialCurrency }) {
   const t = (en, fa) => language === 'fa' ? fa : en
@@ -51,6 +52,9 @@ export default function TraderAccount({ trader, language, account, initialCurren
     && ((row.branch_id || 'admin')==='admin' ? adminAvailable : accountOptions.some(branch=>branch.id===row.branch_id))
   const payableBookings = bookings.filter(canReceiveFor)
   const selectedBooking = payableBookings.find(row=>row.id===form.booking_id)
+  const extras = data ? extraChargeBalances(data,currency).sort((a,b)=>b.charge_date.localeCompare(a.charge_date)) : []
+  const selectedExtra = extras.find(row=>row.id===form.extra_charge_id)
+  const canReceiveExtra = row => row.branch_id ? accountOptions.some(branch=>branch.id===row.branch_id) : adminAvailable
   const history = data ? [
     ...data.charges.filter(row => row.currency === currency).map(row => ({ ...row, date: row.charge_date, type: 'charge' })),
     ...data.payments.filter(row => row.currency === currency).map(row => ({ ...row, type: 'payment' })),
@@ -71,7 +75,8 @@ export default function TraderAccount({ trader, language, account, initialCurren
   ]
   const historyCells = row => [
     formatSolarHijri(row.date),
-    managedChargeLabel(row,language) + (row.voided_at ? ` · ${t('Cancelled','لغوشده')}` : ''),
+    [managedChargeLabel(row,language),row.receipt_number && `${t('Receipt','رسید')} #${row.receipt_number}`,
+      row.voided_at && t('Cancelled','لغوشده')].filter(Boolean).join(' · '),
     row.type === 'charge' ? money(cents(row.amount)) : '—',
     row.type === 'payment' ? money((row.direction === 'in' ? 1 : -1) * cents(row.amount)) : '—',
   ]
@@ -80,44 +85,50 @@ export default function TraderAccount({ trader, language, account, initialCurren
     return {
       booking_id: booking?.id || '',
       amount: booking ? (booking.remaining/100).toFixed(2) : '',
-      description: booking ? `${t('Payment for booking','پرداخت بار نامه')} #${booking.number}`
-        : `${t('Payment from','پرداخت از')} ${trader.full_name}`,
     }
   }
 
-  function start(next, booking) {
+  function start(next, row) {
     setMode(next)
     setMoreActions(false)
     setError('')
     request.current = null
     setForm({
-      date: kabulToday(), scope: booking ? booking.branch_id || 'admin' : account || trader.branch_id || 'admin',
-      ...(next==='payment' ? paymentFields(booking) : {amount:'',booking_id:'',description:''}),
+      date:kabulToday(),scope:account || trader.branch_id || 'admin',
+      ...(next==='payment' ? paymentFields(row)
+        : next==='extra-payment' ? {extra_charge_id:row.id,amount:(row.remaining/100).toFixed(2)}
+        : {amount:'',description:'',received_now:''}),
     })
   }
 
   async function save(event) {
     event.preventDefault()
     if (busy) return
-    if (form.booking_id && (!selectedBooking || cents(form.amount)>selectedBooking.remaining)) {
+    if (mode==='payment' && (!selectedBooking || cents(form.amount)>selectedBooking.remaining)) {
       setError(t('Choose an unpaid booking and enter an amount within its balance.','بار نامهٔ پرداخت‌نشده و مبلغی در حد باقی‌مانده را انتخاب کنید.'))
+      return
+    }
+    if (mode==='extra-payment' && (!selectedExtra || cents(form.amount)>selectedExtra.remaining)) {
+      setError(explain(new Error('TRADER_EXTRA_EXCEEDS_BALANCE'),language))
       return
     }
     setBusy(true)
     setError('')
-    const payload = {
-      branch_id: form.scope === 'admin' ? null : form.scope, currency, trader_id: trader.id,
-      booking_id: form.booking_id || null, amount: form.amount, date: form.date, description: form.description.trim(),
-    }
-    if (mode === 'payment') payload.direction = 'in'
+    const [operation,payload] = mode==='payment' ? ['receive_trader_booking_payment',{
+      p_trader:trader.id,p_booking:form.booking_id,p_currency:currency,p_amount:form.amount,p_date:form.date,
+    }] : mode==='extra-payment' ? ['receive_trader_extra_payment',{
+      p_charge:form.extra_charge_id,p_amount:form.amount,p_date:form.date,
+    }] : ['record_trader_extra_charge',{
+      p_data:{branch_id:form.scope==='admin' ? null : form.scope,currency,trader_id:trader.id,
+        amount:form.amount,date:form.date,description:form.description.trim()},
+      p_received_now:form.received_now || 0,
+    }]
     const key = JSON.stringify({ mode, payload })
     if (request.current?.key !== key) request.current = { key, id: crypto.randomUUID() }
     try {
-      await rpc(mode === 'charge' ? 'add_trader_charge' : 'cashbook_simple_post', {
-        p_request: request.current.id, p_data: payload,
-      })
+      await rpc(operation,{p_request:request.current.id,...payload})
       setMode('')
-      if (mode==='payment') window.dispatchEvent(new Event('pedram:cashbook-changed'))
+      if (mode!=='charge' || cents(form.received_now)>0) window.dispatchEvent(new Event('pedram:cashbook-changed'))
       await load()
     } catch (error) { setError(explain(error, language)) }
     finally { setBusy(false) }
@@ -141,6 +152,9 @@ export default function TraderAccount({ trader, language, account, initialCurren
       sections: [
         { rows: [[balanceLabel,balanceAmount],...summary] },
         { title: t('Bookings','بوکینگ‌ها'), headers: bookingHeaders, rows: bookings.map(bookingCells) },
+        ...(extras.length ? [{title:t('Extra charges','بدهی‌های اضافی'),
+          headers:[t('Description','شرح'),t('Charge','بدهی'),t('Received','دریافتی'),t('Remaining','باقی‌مانده')],
+          rows:extras.map(row=>[row.description,money(row.charged),money(row.paid),money(row.remaining)])}] : []),
         { title: t('Account history','تاریخچه حساب'), headers: historyHeaders, rows: history.map(historyCells) },
       ],
     })) setError(t('Allow pop-ups to print this statement.','برای چاپ صورت حساب، پنجرهٔ جدید را اجازه دهید.'))
@@ -149,7 +163,7 @@ export default function TraderAccount({ trader, language, account, initialCurren
   return <section className="trader-account">
     <div className="trader-account-toolbar" data-active={!trader.archived_at}>
       {!trader.archived_at && <button type="button" className="registry-primary trader-receive"
-        disabled={!data || busy || !!mode} onClick={() => start('payment')}><ArrowDownLeft size={17} aria-hidden="true"/>{t('Receive payment','دریافت پول')}</button>}
+        disabled={!payableBookings.length || busy || !!mode} onClick={() => start('payment')}><ArrowDownLeft size={17} aria-hidden="true"/>{t('Receive booking payment','دریافت پول بار نامه')}</button>}
       <label><span>{t('Currency','واحد پول')}</span><select disabled={busy || !!mode} value={currency} onChange={event => setCurrency(event.target.value)}>
         {currencies.map(value => <option key={value}>{value}</option>)}
       </select></label>
@@ -173,32 +187,43 @@ export default function TraderAccount({ trader, language, account, initialCurren
         </details>
       </section>
       {mode && <form ref={formElement} className="registry-form trader-account-form" onSubmit={save} aria-labelledby="trader-payment-title">
-        <h3 id="trader-payment-title">{mode==='payment' ? t('Receive payment','دریافت پول') : t('Add extra charge','ثبت بدهی اضافی')}
+        <h3 id="trader-payment-title">{mode==='payment' ? t('Receive booking payment','دریافت پول بار نامه') : mode==='extra-payment'
+          ? t('Receive extra charge payment','دریافت بدهی اضافی') : t('Add extra charge','ثبت بدهی اضافی')}
           {selectedBooking && <bdi dir="ltr"> · #{selectedBooking.number}</bdi>}
         </h3>
         <fieldset className="booking-fields wide" disabled={busy}>
-          <label><span>{t('Account','حساب')} *</span><select required value={form.scope} onChange={event => setForm({
-            ...form, scope:event.target.value, ...(form.booking_id ? paymentFields() : {}),
-          })}>
+          {mode==='charge' && <label><span>{t('Account','حساب')} *</span><select required value={form.scope}
+            onChange={event=>setForm({...form,scope:event.target.value})}>
             {adminAvailable && <option value="admin">{t('Admin account','حساب مرکزی')}</option>}
             {accountOptions.map(branch => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
-          </select></label>
-          {mode === 'payment' && <label><span>{t('Booking (optional)','بوکینگ (اختیاری)')}</span><select value={form.booking_id} onChange={event => {
+          </select></label>}
+          {mode==='payment' && <label className="wide"><span>{t('Booking','بار نامه')} *</span><select required value={form.booking_id} onChange={event => {
             const booking = payableBookings.find(row => row.id === event.target.value)
             setForm({ ...form, ...paymentFields(booking) })
           }}>
-            <option value="">{t('General account entry','معامله عمومی حساب')}</option>
-            {payableBookings.filter(row => (row.branch_id || 'admin') === form.scope)
-              .map(row => <option value={row.id} key={row.id}>#{row.number} · {row.origin} → {row.destination}</option>)}
+            <option value="">{t('Choose an unpaid booking','بار نامهٔ پرداخت‌نشده را انتخاب کنید')}</option>
+            {payableBookings.map(row=><option value={row.id} key={row.id}>#{row.number} · {row.origin} → {row.destination} · {money(row.remaining)}</option>)}
           </select></label>}
-          <label><span>{t('Date','تاریخ')} *</span><SolarHijriDateInput required max={mode === 'payment' ? kabulToday() : undefined} language={language} value={form.date} onChange={date => setForm({ ...form, date })} ariaLabel={t('Date','تاریخ')}/></label>
-          <label><span>{t('Description','شرح')} *</span><input required value={form.description} onChange={event => setForm({ ...form, description: event.target.value })}/></label>
-          <label><span>{t('Amount','مبلغ')} ({currency}) *</span><input required inputMode="decimal" type="number" min="0.01"
-            max={selectedBooking ? (selectedBooking.remaining/100).toFixed(2) : '999999999999.99'} step="0.01" value={form.amount}
+          {selectedExtra && <p className="wide booking-help">{selectedExtra.description} · {t('Remaining','باقی‌مانده')} <bdi>{money(selectedExtra.remaining)}</bdi></p>}
+          <label><span>{t('Date','تاریخ')} *</span><SolarHijriDateInput required min={selectedExtra?.charge_date}
+            max={mode!=='charge' || cents(form.received_now)>0 ? kabulToday() : undefined} language={language} value={form.date}
+            onChange={date=>setForm({...form,date})} ariaLabel={t('Date','تاریخ')}/></label>
+          <label><span>{mode==='charge' ? t('Charge amount','مبلغ بدهی') : t('Amount received','مبلغ دریافتی')} ({currency}) *</span>
+            <input required inputMode="decimal" type="number" min="0.01"
+            max={selectedBooking || selectedExtra ? ((selectedBooking || selectedExtra).remaining/100).toFixed(2) : '999999999999.99'} step="0.01" value={form.amount}
             onChange={event => setForm({ ...form, amount: event.target.value })}/></label>
+          {mode==='charge' && <>
+            <label><span>{t('Received now (optional)','دریافت فعلی (اختیاری)')} ({currency})</span>
+              <input type="number" inputMode="decimal" min="0" max={form.amount || undefined} step="0.01" value={form.received_now}
+                onChange={event=>setForm({...form,received_now:event.target.value})}/></label>
+            <label className="wide"><span>{t('Description','شرح')} *</span>
+              <input required value={form.description} onChange={event=>setForm({...form,description:event.target.value})}/></label>
+          </>}
         </fieldset>
         <div className="registry-form-actions"><button type="button" disabled={busy} onClick={() => setMode('')}>{t('Cancel','انصراف')}</button>
-          <button className="registry-primary" disabled={busy}>{mode==='payment' ? t('Save payment','ثبت دریافت پول') : t('Save extra charge','ثبت بدهی اضافی')}</button></div>
+          <button className="registry-primary" disabled={busy || (mode==='payment' && !selectedBooking)}>
+            {mode==='charge' ? t('Save extra charge','ثبت بدهی اضافی') : t('Save payment','ثبت دریافت پول')}
+          </button></div>
       </form>}
       <section className="trader-account-block trader-bookings-block">
       <h3>{t('Bookings','بار نامه‌ها')}</h3>
@@ -223,6 +248,11 @@ export default function TraderAccount({ trader, language, account, initialCurren
         {!bookings.length && <tr><td colSpan={3}>{t('No bookings for this currency.','برای این واحد پول بوکینگ نیست.')}</td></tr>}
       </CompactTable>
       </section>
+      {!!extras.length && <section className="trader-account-block trader-extras-block">
+        <h3>{t('Extra charges','بدهی‌های اضافی')}</h3>
+        <TraderExtraCharges rows={extras} language={language} money={money} disabled={busy || !!mode}
+          onReceive={trader.archived_at ? undefined : row=>start('extra-payment',row)} canReceive={canReceiveExtra}/>
+      </section>}
       <section className="trader-account-block trader-history-block">
       <h3>{t('Account history','تاریخچه حساب')}</h3>
       <CompactTable label={t('Account history','تاریخچه حساب')} columns={[
@@ -234,7 +264,7 @@ export default function TraderAccount({ trader, language, account, initialCurren
           const [date, description, charge, paid] = historyCells(row)
           return <tr key={`${row.type}-${row.id}`} className={row.voided_at ? 'trader-voided' : ''}>
             <th scope="row"><bdi>{date}</bdi><small>{description}</small>
-              {row.type === 'charge' && !row.booking_id && !row.voided_at && !trader.archived_at &&
+              {row.type === 'charge' && !row.booking_id && !row.voided_at && !trader.archived_at && !extras.find(item=>item.id===row.id)?.paid &&
                 <IconButton icon={Trash2} label={t('Cancel mistaken charge','لغو بدهی اشتباه')} disabled={busy} onClick={() => { setError(''); setVoiding(row) }}/>}
             </th>
             <td><bdi>{charge}</bdi></td><td><bdi>{paid}</bdi></td>

@@ -55,6 +55,12 @@
   font-weight: 750;
 }
 .role-view-switch button[aria-pressed='true'] { color: #fff; background: var(--portal-accent); }
+.trader-portal .role-view-switch { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.trader-portal .role-view-switch button { white-space: normal; line-height: 1.25; }
+.trader-portal .role-view-switch button svg { flex: none; }
+@media (max-width: 420px) {
+  .trader-portal .role-view-switch button svg { display: none; }
+}
 .role-view-switch bdi { padding: 1px 5px; border-radius: 5px; background: #fff; color: var(--portal-accent); font-size: 11px; }
 
 .role-workspace.driver-portal .driver-licence-warning { margin: 0; gap: 5px; padding: 6px 8px; font-size: 12px; }

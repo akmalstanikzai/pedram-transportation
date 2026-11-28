@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { ArrowRight, ClipboardList, ContactRound, Printer, ReceiptText, RefreshCw, WalletCards } from 'lucide-react'
 import { rpc, explain } from '../lib/operations'
 import { currencies, cents } from '../lib/cashbook'
-import { bookingBalances, traderBalance } from '../lib/traderAccounts'
+import { bookingBalances, extraChargeBalances, traderBalance } from '../lib/traderAccounts'
 import { bookingTypeLabels } from '../lib/bookingFinance'
 import { managedBookingStatement, managedChargeLabel } from '../lib/managedBookings'
 import { formatSolarHijri } from '../lib/solarHijri'
@@ -10,6 +10,7 @@ import { printRecord } from '../lib/recordExports'
 import { managedStatementSections, traderPortalStatement } from '../lib/financialReports'
 import CompactTable from '../components/CompactTable'
 import ManagedBookingStatement from '../components/ManagedBookingStatement'
+import TraderExtraCharges from '../components/TraderExtraCharges'
 import { IconButton, Modal } from '../components/RecordTools'
 
 export default function TraderPortalPage({language}){
@@ -27,6 +28,8 @@ export default function TraderPortalPage({language}){
  const bookings = data ? bookingBalances(data, currency)
    .filter(row => !row.currency || row.currency === currency || row.charged || row.paid)
    .sort((a,b) => b.date.localeCompare(a.date) || b.number-a.number) : []
+ const extras = data ? extraChargeBalances(data,currency).sort((a,b)=>b.date.localeCompare(a.date)) : []
+ const bookingNumbers = new Map(data?.bookings.map(row=>[row.id,row.number]) ?? [])
  const statuses={confirmed:t('Confirmed','تأییدشده'),in_transit:t('On road','در راه'),completed:t('Completed','تکمیل‌شده'),cancelled:t('Cancelled','لغوشده')}
  const statementBooking=data?.bookings.find(row=>row.id===selectedBooking)
  const statement=statementBooking ? managedBookingStatement(data,selectedBooking) : null
@@ -59,6 +62,7 @@ export default function TraderPortalPage({language}){
      <nav className="role-view-switch" aria-label={t('My account','حساب من')}>
        <button type="button" aria-pressed={view==='activity'} onClick={()=>setView('activity')}><ReceiptText size={17} aria-hidden="true" />{t('Account activity','معاملات حساب')}</button>
        <button type="button" aria-pressed={view==='bookings'} onClick={()=>setView('bookings')}><ClipboardList size={17} aria-hidden="true" />{t('My bookings','بار نامه‌های من')}</button>
+       <button type="button" aria-pressed={view==='extras'} onClick={()=>setView('extras')}>{t('Extra charges','بدهی‌های اضافی')}</button>
      </nav>
      {view==='activity' ? <section className="trader-portal-section" aria-label={t('Account activity','معاملات حساب')}>
        <CompactTable label={t('Account activity','معاملات حساب')} columns={[
@@ -66,7 +70,12 @@ export default function TraderPortalPage({language}){
        ]}>
          {history.map(row=><tr key={`${row.type}-${row.id}`}>
            <th scope="row"><bdi dir="ltr">{formatSolarHijri(row.date)}</bdi></th>
-           <td>{row.managed_charge_key ? managedChargeLabel(row,language) : row.description}{row.voided_at&&<small>{t('Cancelled','لغوشده')}</small>}</td>
+           <td>{row.managed_charge_key ? managedChargeLabel(row,language) : row.description}
+             {row.voided_at && <small>{t('Cancelled','لغوشده')}</small>}
+             {row.extra_charge_id && <small>{t('Extra charge payment','پرداخت بدهی اضافی')}</small>}
+             {bookingNumbers.has(row.booking_id) && <small>{t('Booking','بار نامه')} <bdi>#{bookingNumbers.get(row.booking_id)}</bdi></small>}
+             {row.receipt_number && <small>{t('Receipt','رسید')} <bdi>#{row.receipt_number}</bdi></small>}
+           </td>
            <td data-transaction={row.type}>
              <strong><bdi dir="ltr">{money((row.type==='refund'?-1:1)*cents(row.amount))}</bdi></strong>
              <small>{row.type==='charge'?t('Charge','بدهی'):row.type==='refund'?t('Refund','بازپرداخت'):t('Payment','پرداخت')}</small>
@@ -74,6 +83,8 @@ export default function TraderPortalPage({language}){
          </tr>)}
          {!history.length&&<tr><td colSpan={3}>{t('No account activity yet.','هنوز معامله‌ای ثبت نشده است.')}</td></tr>}
        </CompactTable>
+     </section> : view==='extras' ? <section className="trader-portal-section" aria-label={t('Extra charges','بدهی‌های اضافی')}>
+       <TraderExtraCharges rows={extras} language={language} money={money}/>
      </section> : <section className="trader-portal-section" data-bookings aria-label={t('My bookings','بار نامه‌های من')}>
        <CompactTable label={t('My bookings','بار نامه‌های من')} columns={[
          {label:t('Booking / date','بار نامه / تاریخ'),width:'24%'}, {label:t('Route / goods','مسیر / بار')},

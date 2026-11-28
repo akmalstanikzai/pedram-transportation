@@ -260,6 +260,7 @@ export default function CashbookPage({ language, profile, onBack }) {
         LOAN_REPAYMENT_EXCEEDS_BALANCE: t('The corrected payment exceeds the outstanding loan.','مبلغ اصلاح‌شده از قرض باقی‌مانده بیشتر است.'),
         DRIVER_COMMISSION_EXCEEDS_BALANCE: t('The correction exceeds the unpaid driver commission.','مبلغ اصلاح‌شده از کمیسیون باقی‌ماندهٔ راننده بیشتر است.'),
         MANAGED_PAYMENT_EXCEEDS_BALANCE: t('The correction exceeds the booking balance in this currency.','مبلغ اصلاح‌شده از بدهی بار نامه در این واحد پول بیشتر است.'),
+        TRADER_EXTRA_EXCEEDS_BALANCE: t('The corrected payment exceeds the extra charge balance.','مبلغ اصلاح‌شده از باقی‌ماندهٔ بدهی اضافی بیشتر است.'),
         INVALID_AMOUNT: t('Enter a positive amount with up to two decimal places.','یک مبلغ مثبت با حداکثر دو رقم اعشار وارد کنید.'),
         CUSTOMS_EXCEEDS_BALANCE: t('The corrected amount exceeds the remaining fee.','مبلغ اصلاح‌شده از حق‌الزحمه باقی‌مانده بیشتر است.'),
         STALE_RECORD: t('The receipt changed. Close this dialog and refresh.','رسید تغییر کرده است. این پنجره را بسته و صفحه را تازه کنید.'),

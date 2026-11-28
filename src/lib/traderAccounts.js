@@ -20,3 +20,17 @@ export function bookingBalances({ bookings, charges, payments }, currency) {
     return { ...booking, charged, paid, remaining: Math.max(0, charged - paid) }
   })
 }
+
+export function extraChargeBalances({charges,payments}, currency) {
+  const received = new Map()
+  for (const payment of payments) {
+    if (!payment.extra_charge_id || payment.currency!==currency) continue
+    const net = cents(payment.amount) * (payment.direction==='in' ? 1 : -1)
+    received.set(payment.extra_charge_id,(received.get(payment.extra_charge_id)??0)+net)
+  }
+  return charges.filter(charge=>!charge.booking_id && !charge.voided_at && charge.currency===currency).map(charge=>{
+    const charged = cents(charge.amount)
+    const paid = received.get(charge.id)??0
+    return {...charge,charged,paid,remaining:Math.max(0,charged-paid)}
+  })
+}
