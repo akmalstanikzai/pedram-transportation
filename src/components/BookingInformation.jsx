@@ -1,7 +1,7 @@
 import { ArrowLeftRight, ClipboardList, MapPin, PackageCheck, Printer, ReceiptText, Send, UserRound, Wallet } from 'lucide-react'
 import { InformationGroup } from './FleetInformation'
 import { formatSolarHijri, kabulISODate } from '../lib/solarHijri'
-import { bookingDue } from '../lib/bookingFinance'
+import { bookingDue, bookingTypeLabels } from '../lib/bookingFinance'
 import ManagedBookingStatement from './ManagedBookingStatement'
 
 const hasValue = value => value !== null && value !== undefined && String(value).trim() !== ''
@@ -18,6 +18,7 @@ export default function BookingInformation({ row, language, president = false, v
     : hasValue(row.weight_tons) ? `${row.weight_tons} ${t('tons','تن')}` : hasValue(row.volume_m3) ? `${row.volume_m3} ${t('m³','متر مکعب')}` : row.quantity
   const expenses = row.other_expenses || []
   const managed = row.service_type === 'managed'
+  const domestic = row.service_type === 'domestic'
   return <div className="record-modal-body fleet-information-view booking-information-view">
     <div className="booking-information-actions">
       <button type="button" className="registry-secondary" onClick={onPrint}><Printer size={17} aria-hidden="true" />{t('Print confirmation','چاپ تأییدیه')}</button>
@@ -27,11 +28,11 @@ export default function BookingInformation({ row, language, president = false, v
       <InformationGroup tone="blue" icon={ClipboardList} title={t('Booking information','معلومات بار نامه')} fields={[
         field('date','Booking date','تاریخ ثبت',formatSolarHijri(row.booking_date),numeric),
         field('status','Status','وضعیت',status && <span className={`status-pill ${row.status}`}>{status}</span>),
-        ...(row.managed_transport ? [] : [
+        ...(managed && row.managed_transport ? [] : [
           field('departure','Departure date','تاریخ حرکت',formatSolarHijri(row.departure_date || row.booking_date),numeric),
           field('arrival','Arrival date','تاریخ رسیدن',formatSolarHijri(row.arrival_date || row.departure_date || row.booking_date),numeric),
         ]),
-        field('service','Service','خدمات',managed ? t('Company-managed transport','انتقال توسط شرکت (خارجی)') : t('Vehicle arrangement','معرفی واسطه')),
+        field('service','Service','خدمات',t(...(bookingTypeLabels[row.service_type] ?? bookingTypeLabels.arrangement))),
         field('branch','Office','دفتر',branch?.name || (!row.branch_id ? t('Head office','دفتر مرکزی') : '—')),
       ]}/>
       <InformationGroup tone="teal" icon={MapPin} title={t('Route and cargo','مسیر و بار')} fields={[
@@ -59,24 +60,24 @@ export default function BookingInformation({ row, language, president = false, v
         field('phone','Mobile','موبایل',row.trader_phone || row.traders?.phone,numeric),
         field('address','Address','آدرس',row.trader_address,{ wide:true }),
       ]}/>
-      {(managed || [row.sender_name,row.sender_phone,row.sender_address].some(hasValue)) && <InformationGroup tone="rose" icon={Send} title={t('Sender','فرستنده')} fields={[
+      {!domestic && (managed || [row.sender_name,row.sender_phone,row.sender_address].some(hasValue)) && <InformationGroup tone="rose" icon={Send} title={t('Sender','فرستنده')} fields={[
         field('name','Name','نام',row.sender_name),
         field('phone','Mobile','موبایل',row.sender_phone,numeric),
         field('address','Address','آدرس',row.sender_address,{ wide:true }),
       ]}/>}
-      {(managed || [row.receiver_name,row.receiver_phone,row.receiver_address].some(hasValue)) && <InformationGroup tone="cyan" icon={PackageCheck} title={t('Receiver','گیرنده')} fields={[
+      {(managed || domestic || [row.receiver_name,row.receiver_phone,row.receiver_address].some(hasValue)) && <InformationGroup tone="cyan" icon={PackageCheck} title={t('Receiver','گیرنده')} fields={[
         field('name','Name','نام',row.receiver_name),
         field('phone','Mobile','موبایل',row.receiver_phone,numeric),
         field('address','Address','آدرس',row.receiver_address,{ wide:true }),
       ]}/>}
     </div>
     {row.managed_transport ? <>
-      <InformationGroup tone="blue" title={t('Foreign vehicle details','مشخصات موتر خارجی')} fields={[
+      {managed && <InformationGroup tone="blue" title={t('Foreign vehicle details','مشخصات موتر خارجی')} fields={[
         field('plate','Plate number','نمبر پلیت',row.managed_transport.foreign_plate),
         field('driver','Driver name','نام راننده',row.managed_transport.foreign_driver),
         field('mobile','Mobile','موبایل',row.managed_transport.foreign_mobile,numeric),
-      ]}/>
-      <ManagedBookingStatement data={row.managed_transport} language={language} onPayExpense={onPayExpense}/>
+      ]}/>}
+      <ManagedBookingStatement data={{...row.managed_transport,domestic}} language={language} onPayExpense={managed ? onPayExpense : undefined}/>
     </> : <div className="booking-information-overview">
       <InformationGroup tone="amber" icon={ReceiptText} title={t('Charges','بدهی‌ها')} fields={[
         field('commission','Commission','کمیسیون',money(row.commission_amount),numeric),

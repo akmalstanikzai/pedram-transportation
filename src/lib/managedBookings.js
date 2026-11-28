@@ -7,6 +7,7 @@ export const managedChargeLabels = {
   commission: ['Commission', 'کمیشن'],
   terminal: ['Terminal', 'پایانه'],
   labour: ['Labour', 'کاریگر'],
+  domestic_freight: ['Vehicle freight', 'کرایه موتر'],
 }
 
 export function managedChargeLabel(charge, language) {
@@ -32,5 +33,6 @@ export function managedBookingTotals(charges, payments = []) {
 export function managedBookingStatement(data, bookingId) {
   const charges = data.charges.filter(row=>row.booking_id===bookingId && !row.voided_at)
   const payments = data.payments.filter(row=>row.booking_id===bookingId)
-  return { charges, payments, balances: managedBookingTotals(charges,payments) }
+  const domestic = data.bookings?.some(row=>row.id===bookingId && row.service_type==='domestic')
+  return { charges, payments, balances: managedBookingTotals(charges,payments), domestic }
 }

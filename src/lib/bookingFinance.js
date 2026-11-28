@@ -10,3 +10,8 @@ export function bookingTotal(form) {
 export function bookingDue(charge, paid) {
   return Math.max(0, cents(charge) - cents(paid))
 }
+export const bookingTypeLabels = {
+  arrangement: ['Vehicle arrangement','معرفی واسطه'],
+  managed: ['Company-managed transport','انتقال توسط شرکت (خارجی)'],
+  domestic: ['Domestic company transport','انتقال توسط شرکت (داخلی)'],
+}

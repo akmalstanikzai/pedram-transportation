@@ -4,6 +4,7 @@ import { allRows, cents, currencies, kabulToday } from '../lib/cashbook'
 import { supabase } from '../lib/supabase'
 import { rpc, explain } from '../lib/operations'
 import { bookingBalances, traderBalance } from '../lib/traderAccounts'
+import { managedChargeLabel } from '../lib/managedBookings'
 import { printRecord } from '../lib/recordExports'
 import { IconButton, Modal } from './RecordTools'
 import CompactTable from './CompactTable'
@@ -55,7 +56,7 @@ export default function TraderAccount({ trader, language, account, initialCurren
   ]
   const historyCells = row => [
     formatSolarHijri(row.date),
-    row.description + (row.voided_at ? ` · ${t('Cancelled','لغوشده')}` : ''),
+    managedChargeLabel(row,language) + (row.voided_at ? ` · ${t('Cancelled','لغوشده')}` : ''),
     row.type === 'charge' ? money(cents(row.amount)) : '—',
     row.type === 'payment' ? money((row.direction === 'in' ? 1 : -1) * cents(row.amount)) : '—',
   ]

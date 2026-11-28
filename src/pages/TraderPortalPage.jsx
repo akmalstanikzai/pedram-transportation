@@ -3,6 +3,7 @@ import { ArrowRight, ClipboardList, ContactRound, Printer, ReceiptText, RefreshC
 import { rpc, explain } from '../lib/operations'
 import { currencies, cents } from '../lib/cashbook'
 import { bookingBalances, traderBalance } from '../lib/traderAccounts'
+import { bookingTypeLabels } from '../lib/bookingFinance'
 import { managedBookingStatement, managedChargeLabel } from '../lib/managedBookings'
 import { formatSolarHijri } from '../lib/solarHijri'
 import { printRecord } from '../lib/recordExports'
@@ -79,7 +80,9 @@ export default function TraderPortalPage({language}){
          {label:t('Charges / paid','بدهی / پرداخت'),width:'27%'},
        ]}>
          {bookings.map(row=><tr key={row.id}>
-           <th scope="row"><bdi dir="ltr">#{row.number}</bdi><small><bdi dir="ltr">{formatSolarHijri(row.date)}</bdi></small><small>{statuses[row.status] || row.status}</small></th>
+           <th scope="row"><bdi dir="ltr">#{row.number}</bdi><small><bdi dir="ltr">{formatSolarHijri(row.date)}</bdi></small><small>{statuses[row.status] || row.status}</small>
+             {bookingTypeLabels[row.service_type] && <small>{t(...bookingTypeLabels[row.service_type])}</small>}
+           </th>
            <td><strong className="trader-portal-route"><bdi>{row.origin}</bdi><ArrowRight size={12} aria-hidden="true" /><bdi>{row.destination}</bdi></strong><small>{row.goods}{row.quantity&&` · ${row.quantity}`}</small>
              {row.managed_transport&&<button type="button" className="registry-secondary trader-booking-statement-button"
                onClick={()=>{setPrintError('');setSelectedBooking(row.id)}}>{t('View statement','مشاهده صورت حساب')}</button>}

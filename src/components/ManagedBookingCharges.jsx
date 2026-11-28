@@ -23,7 +23,7 @@ export default function ManagedBookingCharges({ charges, setCharges, language })
         <div className="managed-charge-row">
           <span>{label}</span>
           <input aria-label={`${label} · ${t('Amount','مبلغ')}`} type="number" inputMode="decimal" dir="ltr"
-            required={other||row.has_receipt} disabled={locked} min="0.01" max="999999999999.99" step="0.01" value={row.amount}
+            required={other||row.has_receipt||row.key==='domestic_freight'} disabled={locked} min="0.01" max="999999999999.99" step="0.01" value={row.amount}
             onChange={event=>update(row.key,{amount:event.target.value})}/>
           <select aria-label={`${label} · ${t('Currency','واحد پول')}`} dir="ltr" disabled={locked} value={row.currency}
             onChange={event=>update(row.key,{currency:event.target.value})}>

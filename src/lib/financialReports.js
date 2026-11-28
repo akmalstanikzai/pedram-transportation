@@ -7,7 +7,7 @@ import { managedChargeLabel } from './managedBookings.js'
 const translate = language => (en, fa) => language === 'fa' ? fa : en
 export const reportMoney = (amount, currency) => `${(amount / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`
 
-export function managedStatementSections({ charges, balances, payments }, language) {
+export function managedStatementSections({ charges, balances, payments, domestic }, language) {
   const t = (en,fa) => language === 'fa' ? fa : en
   const amount = (value,currency) => reportMoney(cents(value),currency)
   return [
@@ -17,10 +17,11 @@ export function managedStatementSections({ charges, balances, payments }, langua
         row.currency,amount(row.charged,row.currency),amount(row.paid,row.currency),reportMoney(bookingDue(row.charged,row.paid),row.currency),
       ]),
     },
-    { key:'charges', title:t('Booking charges','مصارف و کمیشن'),
-      headers:[t('Charge','نوع مصرف'),t('Amount','مبلغ'),t('Expense paid on','تاریخ تادیهٔ مصرف')],
-      widths:[43,30,27], numeric:[1], rows:charges.map(row=>[
-        managedChargeLabel(row,language),amount(row.amount,row.currency),row.paid_on ? formatSolarHijri(row.paid_on) : '—',
+    { key:'charges', title:t('Booking charges',domestic ? 'مصارف بار نامه' : 'مصارف و کمیشن'),
+      headers:[t('Charge','نوع مصرف'),t('Amount','مبلغ'),...(domestic ? [] : [t('Expense paid on','تاریخ تادیهٔ مصرف')])],
+      widths:domestic ? [65,35] : [43,30,27], numeric:[1], rows:charges.map(row=>[
+        managedChargeLabel(row,language),amount(row.amount,row.currency),
+        ...(domestic ? [] : [row.paid_on ? formatSolarHijri(row.paid_on) : '—']),
       ]),
     },
     ...(payments ? [{

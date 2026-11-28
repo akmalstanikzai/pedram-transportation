@@ -3,6 +3,7 @@ export const bookingColumns='id,booking_number,trader_id,vehicle_id,driver_id,se
 export async function rpc(name,args){const {data,error}=await supabase.rpc(name,args);if(error)throw error;return data}
 const messages={
  BORDER_REQUIRED:['Enter the border handover location.','محل تحویل در مرز را وارد کنید.'],
+ DOMESTIC_FREIGHT_REQUIRED:['Enter vehicle freight for this domestic booking.','کرایه موتر را برای این بار نامه داخلی وارد کنید.'],
  INVALID_MANAGED_CHARGES:['Check the booking expense details, amounts and currencies.','تفصیلات، مبالغ و واحد پول مصارف را بررسی کنید.'],
  MANAGED_EXPENSE_LOCKED:['An expense with a receipt is locked. Review the payment history in Cashbook.','مصرف دارای رسید قفل است. سابقهٔ تادیه را در روزنامچه بررسی کنید.'],
  MANAGED_EXPENSE_UNAVAILABLE:['This expense is unavailable. Refresh the booking details.','این مصرف در دسترس نیست. جزئیات بار نامه را تازه کنید.'],

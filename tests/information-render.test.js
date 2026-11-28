@@ -41,6 +41,14 @@ test('Fleet and booking detail views keep related fields grouped and preserve da
       const fallbackHtml = render(BookingInformation,{row:{...booking,trader_first_name:undefined,trader_last_name:undefined,traders:{full_name:'Legacy trader',phone:'0700000099'},other_expenses:[]},language,onPrint(){}})
       assert.match(fallbackHtml,/Legacy trader/)
       assert.doesNotMatch(fallbackHtml,/undefined|NaN/)
+      const domestic = render(BookingInformation,{row:{...booking,service_type:'domestic',managed_transport:{
+        charges:[{id:'haul',key:'domestic_freight',amount:1500,currency:'AFN'}],
+        balances:[{currency:'AFN',charged:1500,paid:600}],
+      }},language,president:true,onPayExpense(){}})
+      assert.match(domestic,/Domestic company transport|انتقال توسط شرکت \(داخلی\)/)
+      assert.match(domestic,/Vehicle freight|کرایه موتر/)
+      assert.match(domestic,/900\.00 AFN/)
+      assert.doesNotMatch(domestic,/Sender long address|Foreign vehicle details|مشخصات موتر خارجی|Mark as paid|ثبت تادیه|کاریگر/)
     }
   } finally { await server.close() }
 })

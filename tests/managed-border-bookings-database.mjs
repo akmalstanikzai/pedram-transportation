@@ -242,6 +242,53 @@ try {
   await signIn(otherManager)
   assert.ok(!(await list()).payments.some(row=>row.payee_name==='احمد'))
   assert.ok(!(await list()).payments.some(row=>row.custom_category==='پارکینگ'))
+  const {managed_border: borderDetails,...commonBooking} = payload
+  const domesticPayload = {...commonBooking,service_type:'domestic',origin:'Kabul',destination:'Mazar',
+    sender_name:'',sender_phone:'',sender_address:'',
+    departure_date: new Date(Date.parse(today)+86400000).toISOString().slice(0,10),
+    arrival_date: new Date(Date.parse(today)+2*86400000).toISOString().slice(0,10),
+    managed_charges:[{key:'domestic_freight',amount:'1500',currency:'AFN'},
+      {key:'other:'+uid(),amount:'20',currency:'USD',description:'Road toll'}],
+  }
+  await signIn(manager)
+  await assert.rejects(save({...domesticPayload,receiver_phone:''}),/REQUIRED_FIELDS/)
+  await assert.rejects(save({...domesticPayload,managed_border:borderDetails}),/BOOKING_TYPE_LOCKED/)
+  await assert.rejects(save({...domesticPayload,managed_charges:[]}),/DOMESTIC_FREIGHT_REQUIRED/)
+  await assert.rejects(save({...domesticPayload,managed_charges:[...domesticPayload.managed_charges,charges.find(item=>item.key==='labour')]}),/INVALID_MANAGED_CHARGES/)
+  const domesticRequest = uid()
+  const domestic = await save(domesticPayload,domesticRequest)
+  assert.equal(await save(domesticPayload,domesticRequest),domestic)
+  const domesticDetails = await finance(domestic)
+  const freightCharge = domesticDetails.charges.find(row=>row.key==='domestic_freight')
+  assert.equal(freightCharge.description,'کرایه موتر')
+  assert.equal(domesticDetails.border_location,null)
+  await assert.rejects(payExpense(freightCharge,branch),/MANAGED_EXPENSE_UNAVAILABLE/)
+  await signIn(otherManager)
+  assert.equal(await finance(domestic),undefined)
+  await signIn(president)
+  const domesticReceipt = {branch_id:branch,currency:'AFN',direction:'in',amount:'600',date:today,
+    description:'Domestic installment',trader_id:trader,booking_id:domestic}
+  const domesticPayment = uid()
+  await call('cashbook_simple_post',[domesticPayment,domesticReceipt])
+  assert.equal(await call('cashbook_simple_post',[domesticPayment,domesticReceipt]),domesticPayment)
+  await assert.rejects(call('cashbook_simple_post',[uid(),{...domesticReceipt,amount:'901'}]),/MANAGED_PAYMENT_EXCEEDS_BALANCE/)
+  assert.deepEqual((await finance(domestic)).balances,[{currency:'AFN',charged:1500,paid:600},{currency:'USD',charged:20,paid:0}])
+  const domesticAccount = await call('trader_account_statement',[trader])
+  assert.equal(domesticAccount.bookings.find(row=>row.id===domestic).managed_transport,true)
+  assert.equal(domesticAccount.payments.filter(row=>row.booking_id===domestic).length,1)
+  const domesticStamp = (await db.query('select updated_at::text from public.bookings where id=$1',[domestic])).rows[0].updated_at
+  await assert.rejects(save(payload,uid(),domestic,domesticStamp),/BOOKING_TYPE_LOCKED/)
+  await signIn(traderUser)
+  const domesticStatement = await call('trader_portal_statement')
+  assert.equal(domesticStatement.bookings.find(row=>row.id===domestic).service_type,'domestic')
+  assert.equal(domesticStatement.payments.find(row=>row.booking_id===domestic).amount,600)
+  assert.equal(domesticStatement.charges.filter(row=>row.booking_id===domestic).length,2)
+  await signIn(driverUser)
+  const domesticJob = (await call('get_driver_portal')).bookings.find(row=>row.id===domestic)
+  assert.equal(domesticJob.origin,'Kabul')
+  assert.equal(domesticJob.destination,'Mazar')
+  assert.equal(domesticJob.arrival_date,domesticPayload.arrival_date)
+  assert.equal(domesticJob.driver_commission,null)
   console.log('Company overview and expenses passed: one receipt per request, branch isolation, partial payment, corrections and reversal.')
   console.log('Managed bookings passed: structured charges, one fleet pair, mixed currencies, installments, expense receipts, reversals and role isolation.')
 } catch(error) {
