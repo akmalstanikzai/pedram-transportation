@@ -227,7 +227,6 @@
 .managed-charge-line button, .managed-add-expense { justify-self: start; min-height: 40px; }
 .managed-form-totals { display: flex; align-items: center; flex-wrap: wrap; gap: 5px 8px; padding: 6px; background: #eadef7; border-radius: 6px; font-size: 12px; }
 .managed-form-totals bdi { padding: 3px 5px; background: #fff; border-radius: 4px; }
-.booking-form .booking-handoff-toggle { margin: 0; background: #f3ecfa; border-color: #d7c7e6; }
 .booking-form .registry-check input[type='checkbox'] { width: 17px; min-height: 0; height: 17px; flex-shrink: 0; }
 .booking-form .solar-date-picker { width: 100%; }
 .booking-form .solar-date-trigger { min-width: 0; justify-content: start; padding-inline: 6px; }

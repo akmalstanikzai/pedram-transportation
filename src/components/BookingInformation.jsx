@@ -1,7 +1,7 @@
 import { ArrowLeftRight, ClipboardList, MapPin, PackageCheck, Printer, ReceiptText, Send, UserRound, Wallet } from 'lucide-react'
 import { InformationGroup } from './FleetInformation'
 import { formatSolarHijri, kabulISODate } from '../lib/solarHijri'
-import { bookingDue, bookingTypeLabels } from '../lib/bookingFinance'
+import { bookingDue, bookingTypeLabels, hasSeparateTripDates } from '../lib/bookingFinance'
 import ManagedBookingStatement from './ManagedBookingStatement'
 
 const hasValue = value => value !== null && value !== undefined && String(value).trim() !== ''
@@ -28,7 +28,7 @@ export default function BookingInformation({ row, language, president = false, v
       <InformationGroup tone="blue" icon={ClipboardList} title={t('Booking information','معلومات بار نامه')} fields={[
         field('date','Booking date','تاریخ ثبت',formatSolarHijri(row.booking_date),numeric),
         field('status','Status','وضعیت',status && <span className={`status-pill ${row.status}`}>{status}</span>),
-        ...(managed && row.managed_transport ? [] : [
+        ...((managed && row.managed_transport) || (row.service_type==='arrangement' && !hasSeparateTripDates(row)) ? [] : [
           field('departure','Departure date','تاریخ حرکت',formatSolarHijri(row.departure_date || row.booking_date),numeric),
           field('arrival','Arrival date','تاریخ رسیدن',formatSolarHijri(row.arrival_date || row.departure_date || row.booking_date),numeric),
         ]),

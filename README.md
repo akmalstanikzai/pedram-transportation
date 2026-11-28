@@ -27,7 +27,7 @@ Open **Fleet Availability** from the dashboard before creating a booking. Select
 
 ## Bookings
 
-1. Open **Bookings → New booking**. Choose the booking date, departure date, arrival date and booking type. Leave departure and arrival on the same date for a single-day trip.
+1. Open **Bookings → New booking**. Choose the booking date and type. Vehicle arrangement uses the booking date for the trip. Domestic company transport also lets you set departure and arrival dates for multi-day trips.
 2. Select a trader or enter their details to register a new trader when saving. The booking keeps a snapshot of the trader details. Editing the snapshot leaves the existing trader profile intact.
 3. Enter the route and goods. Choose a goods unit (tons, pieces, or cubic metres) and enter the quantity.
 4. Select a registered vehicle and driver separately. The save checks resource availability, scheduling conflicts, capacity, and applicable permit or licence expiry.
@@ -46,7 +46,7 @@ The President records a company-managed booking's full payment or installment in
 
 Bookings follow **Confirmed → On road → Completed** and can be cancelled. Confirmed bookings can be edited. The departure and arrival dates reserve the assigned vehicle and driver across that period, including both dates.
 
-For a shipment that changes trucks, enable **Transfer the cargo to a second truck** in **Route**. Enter the transfer location and planned date, then select different trucks and drivers in **First leg** and **Second leg**. The first assignment is reserved through the transfer date and the second from transfer through arrival. Both are shown separately in Fleet Availability. Each driver sees only their assigned leg. When the cargo reaches the transfer point, the first driver can report arrival. The office selects **Confirm handoff** once the cargo has moved to the second truck. This records the transfer, completes the first leg, releases its resources, and starts the second leg. The office completes the booking after final delivery. Both legs share one booking number. On a vehicle arrangement, the first driver pays the commission.
+New vehicle-arrangement bookings use one vehicle and one driver. Existing bookings with a planned truck handoff still show both legs in Fleet Availability. Each driver sees their assigned leg. The first driver can report arrival at the transfer point, and the office selects **Confirm handoff** when the cargo has moved to the second truck. Both legs share one booking number, and the first driver pays the vehicle-arrangement commission.
 
 Open a booking and choose **Print confirmation** for the route, trip dates, handoff details when applicable, cargo, contacts, fleet details, and charges. The President's copy also shows the payment balance. Apply the role retirement and trip legs migrations before deploying the updated frontend.
 

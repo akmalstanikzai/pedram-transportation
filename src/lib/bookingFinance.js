@@ -10,6 +10,12 @@ export function bookingTotal(form) {
 export function bookingDue(charge, paid) {
   return Math.max(0, cents(charge) - cents(paid))
 }
+
+export function hasSeparateTripDates(booking) {
+  const departure = booking.departure_date || booking.booking_date
+  return departure !== booking.booking_date || (booking.arrival_date || departure) !== departure
+}
+
 export const bookingTypeLabels = {
   arrangement: ['Vehicle arrangement','معرفی واسطه'],
   managed: ['Company-managed transport','انتقال توسط شرکت (خارجی)'],

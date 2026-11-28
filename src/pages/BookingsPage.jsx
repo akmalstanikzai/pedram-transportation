@@ -5,7 +5,7 @@ import { allRows, currencies, kabulToday } from '../lib/cashbook'
 import { attentionForBooking, bookingAttention, driverReportForCurrentLeg } from '../lib/bookingAttention'
 import { recordQuery, withRecordReturn } from '../lib/recordRoutes'
 import { printRecord } from '../lib/recordExports'
-import { bookingDue, bookingTotal, bookingTypeLabels } from '../lib/bookingFinance'
+import { bookingDue, bookingTotal, bookingTypeLabels, hasSeparateTripDates } from '../lib/bookingFinance'
 import { bookingColumns, rpc, explain } from '../lib/operations'
 import { fleetDirectoryRows } from '../lib/fleetDirectory'
 import { ConfirmArchive, IconButton, Modal, RecordTools } from '../components/RecordTools'
@@ -39,7 +39,6 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
   const [drivers, setDrivers] = useState([])
   const [form, setForm] = useState(blank)
   const [open, setOpen] = useState(false)
-  const [withHandoff, setWithHandoff] = useState(false)
   const [handoffRow, setHandoffRow] = useState(null)
   const [busy, setBusy] = useState(false)
   const [ready, setReady] = useState(false)
@@ -50,6 +49,7 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
   const overviewStatus = destination.get('status')
   const targetBooking = destination.get('booking')
   const [branches,setBranches]=useState([]),[editing,setEditing]=useState(null),[archived,setArchived]=useState(false),[deletion,setDeletion]=useState(null),[detail,setDetail]=useState(null),[cancelRow,setCancelRow]=useState(null),[paymentRow,setPaymentRow]=useState(null),[paymentForm,setPaymentForm]=useState({amount:'',date:kabulToday()}),[paymentError,setPaymentError]=useState('')
+  const withHandoff = !!editing?.handoff_date
   const request=useRef(null)
   const paymentRequest=useRef(null)
   const expenseRequest=useRef(null)
@@ -90,7 +90,7 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
     })),
   }})
   function edit(row){
-    setEditing(row);setWithHandoff(!!row.handoff_date);request.current=null
+    setEditing(row);request.current=null
     setForm({...Object.fromEntries(Object.keys(blank).map(key=>[key,row[key]??blank[key]])),quantity_unit:row.quantity_unit||(row.volume_m3?'m3':'tons'),quantity_amount:row.quantity_amount||row.weight_tons||row.volume_m3||'',received_now:''})
     setBorder(Object.fromEntries(Object.keys(blankBorder).map(key=>[key,row.managed_transport?.[key]??''])))
     const charges=row.managed_transport?.charges??[]
@@ -109,7 +109,7 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
     const sections = [
       { title: t('Booking details','مشخصات بوکینگ'), rows: [
         [t('Booking date','تاریخ بوکینگ'),formatSolarHijri(row.booking_date)],
-        ...(managed && row.managed_transport ? [] : [
+        ...((managed && row.managed_transport) || (row.service_type==='arrangement' && !hasSeparateTripDates(row)) ? [] : [
           [t('Departure date','تاریخ حرکت'),formatSolarHijri(row.departure_date || row.booking_date)],
           [t('Arrival date','تاریخ رسیدن'),formatSolarHijri(row.arrival_date || row.departure_date || row.booking_date)],
         ]),
@@ -236,8 +236,10 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
   const structuredManaged = borderManaged || domestic
   const arrangement = form.service_type==='arrangement'
   const driverPaysCommission = editing ? !!editing.commission_driver_id : form.service_type === 'arrangement'
-  const departureDate = borderManaged ? form.booking_date : form.departure_date || form.booking_date
-  const arrivalDate = borderManaged ? form.booking_date : form.arrival_date || departureDate
+  const preserveSchedule = arrangement && editing && (withHandoff || hasSeparateTripDates(editing))
+  const useBookingDate = borderManaged || (arrangement && !preserveSchedule)
+  const departureDate = useBookingDate ? form.booking_date : form.departure_date || form.booking_date
+  const arrivalDate = useBookingDate ? form.booking_date : form.arrival_date || departureDate
   const handoffDate = form.handoff_date || departureDate
   const canBookForBranch = !branchManager || branches.some(branch => branch.id === profile.branch_id && !branch.archived_at)
   const belongsToBookingBranch = row => row.branch_id == null || row.branch_id === form.branch_id
@@ -323,7 +325,7 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
   return <div className="registry-page bookings-registry">
     <header className="booking-top">
       <div className="booking-title-row">{onBack && <button type="button" className="module-back booking-back" onClick={onBack}><Icon name="back" size={16}/>{t('Back','بازگشت')}</button>}<h1>{t('Bookings','بار نامه')}</h1></div>
-      <button type="button" className="registry-primary booking-add" disabled={!ready||!canBookForBranch} onClick={() => { setEditing(null);setWithHandoff(false);request.current=null;setBorder(blankBorder);setManagedCharges(managedDefaults('managed'));setForm({ ...blank, branch_id:branchManager?profile.branch_id:'',booking_date: today() }); setMessage(''); setOpen(true) }}><Plus size={18} aria-hidden="true" />{t('New booking','بار نامه جدید')}</button>
+      <button type="button" className="registry-primary booking-add" disabled={!ready||!canBookForBranch} onClick={() => { setEditing(null);request.current=null;setBorder(blankBorder);setManagedCharges(managedDefaults('managed'));setForm({ ...blank, branch_id:branchManager?profile.branch_id:'',booking_date: today() }); setMessage(''); setOpen(true) }}><Plus size={18} aria-hidden="true" />{t('New booking','بار نامه جدید')}</button>
     </header>
     <div className="booking-filters">
       <div className="booking-top-controls">
@@ -376,7 +378,7 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
           <div>
             <dt><CalendarDays size={14} aria-hidden="true" />{t('Date / service','تاریخ / خدمات')}</dt>
             <dd><time dateTime={r.booking_date}><bdi dir="ltr">{formatSolarHijri(r.booking_date)}</bdi></time></dd>
-            {r.departure_date && (r.departure_date !== r.booking_date || r.arrival_date !== r.departure_date) &&
+            {r.departure_date && hasSeparateTripDates(r) &&
               <dd>{t('Trip','سفر')} · <bdi dir="ltr">{formatSolarHijri(r.departure_date)} – {formatSolarHijri(r.arrival_date || r.departure_date)}</bdi></dd>}
             <dd>{t(...bookingTypeLabels[r.service_type])}</dd>
             {president && (r.managed_transport
@@ -425,20 +427,19 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
     {open && <Modal title={editing?t('Edit booking','ویرایش بوکینگ'):t('New booking','بوکینگ جدید')}
       busy={busy} onClose={() => setOpen(false)} className="registration-form-card booking-form-card">
       <form className="registration-form booking-form" onSubmit={submit}><fieldset disabled={busy} className="registration-fieldset">
-        <RegistrationSection kind="booking" tone="blue" title={arrangement ? t('Trip dates','تاریخ‌های سفر') : t('Booking','بار نامه')} icon={CalendarDays}>{field('booking_date','Booking date','تاریخ ثبت',{type:'date'})}
+        <RegistrationSection kind="booking" tone="blue" title={t('Booking','بار نامه')} icon={CalendarDays}>{field('booking_date','Booking date','تاریخ ثبت',{type:'date',maxDate:preserveSchedule ? departureDate : undefined})}
         {!branchManager&&<label><span>{t('Branch','شعبه')}</span><select disabled={!!editing} value={form.branch_id||''} onChange={event=>setForm(current=>({
           ...current,branch_id:event.target.value,vehicle_id:'',driver_id:'',onward_vehicle_id:'',onward_driver_id:'',
           ...(current.trader_id?{trader_id:'',trader_first_name:'',trader_last_name:'',trader_phone:'',trader_address:''}:{}),
         }))}><option value="">{t('Head office','دفتر مرکزی')}</option>{branches.filter(b=>!b.archived_at||b.id===form.branch_id).map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>}
         <label><span>{t('Booking type','نوع بوکینگ')}</span><select disabled={!!editing?.commission_amount||!!editing?.managed_transport} value={form.service_type} onChange={e => {
           const type=e.target.value
-          if(type!=='arrangement')setWithHandoff(false)
           setManagedCharges(managedDefaults(type))
           setForm({...form,service_type:type,received_now:''})
         }}>
           {Object.entries(bookingTypeLabels).map(([type,label])=><option key={type} value={type}>{t(...label)}</option>)}
         </select></label>
-        {(arrangement||domestic)&&<div className="wide booking-trip-dates">
+        {domestic&&<div className="wide booking-trip-dates">
           {field('departure_date','Departure date','تاریخ حرکت',{type:'date',value:departureDate,minDate:form.booking_date})}
           {field('arrival_date','Arrival date','تاریخ رسیدن',{type:'date',value:arrivalDate,minDate:departureDate})}
         </div>}
@@ -466,8 +467,7 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
         </RegistrationSection>
         <RegistrationSection kind="route" tone="blue" title={t('Route','مسیر')} icon={MapPin}>{field('origin','Origin location','محل مبدأ')}{field('destination','Destination location','محل مقصد')}
         {borderManaged && borderField('border_location','Border handover location','محل تحویل در مرز',{required:true,maxLength:200,wide:true})}
-        {arrangement&&<label className="wide registry-check booking-handoff-toggle"><input type="checkbox" checked={withHandoff} onChange={e=>setWithHandoff(e.target.checked)} /><span>{t('Transfer the cargo to a second truck','انتقال بار به واسطهٔ دوم')}</span></label>}
-        {arrangement&&withHandoff && <>
+        {withHandoff && <>
           {field('handoff_location','Transfer location','محل انتقال',{maxLength:200})}
           {field('handoff_date','Transfer date','تاریخ انتقال',{type:'date',value:handoffDate,minDate:departureDate,maxDate:arrivalDate})}
         </>}
