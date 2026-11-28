@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowDownLeft, Plus, Trash2 } from 'lucide-react'
+import { ArrowDownLeft, Ellipsis, Plus, Printer, Trash2 } from 'lucide-react'
 import { allRows, cents, currencies, kabulToday } from '../lib/cashbook'
 import { supabase } from '../lib/supabase'
 import { rpc, explain } from '../lib/operations'
@@ -18,10 +18,12 @@ export default function TraderAccount({ trader, language, account, initialCurren
   const [currency, setCurrency] = useState(()=>currencies.includes(initialCurrency) ? initialCurrency : 'AFN')
   const [mode, setMode] = useState('')
   const [form, setForm] = useState({})
+  const [moreActions, setMoreActions] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [voiding, setVoiding] = useState(null)
   const request = useRef(null)
+  const formElement = useRef(null)
   const load = useCallback(async () => {
     const args = { p_trader: trader.id }
     setData(await (account ? rpc('company_trader_statement', {...args,p_branch:account==='admin' ? null : account})
@@ -31,22 +33,35 @@ export default function TraderAccount({ trader, language, account, initialCurren
     void Promise.resolve().then(() => Promise.all([load(), allRows(supabase, 'branches').then(setBranches)]))
       .catch(error => setError(explain(error, language)))
   }, [load, language])
+  useEffect(() => {
+    if (mode) formElement.current?.scrollIntoView({block:'nearest'})
+  }, [mode])
 
   const money = amount => `${(amount / 100).toLocaleString('en-US', {
     minimumFractionDigits: 2, maximumFractionDigits: 2,
   })} ${currency}`
   const totals = data && traderBalance(data.charges, data.payments, currency)
   const bookings = data ? bookingBalances(data, currency).filter(row =>
-    !row.currency || row.currency === currency || row.charged || row.paid) : []
+    row.charged || row.paid || (!row.managed_transport && (!row.currency || row.currency===currency))) : []
+  const accountOptions = branches.filter(branch => !branch.archived_at && (!trader.branch_id || branch.id === trader.branch_id)
+    && (!account || branch.id===account))
+  const adminAvailable = !trader.branch_id && (!account || account==='admin')
+  const canReceiveFor = row => row.remaining > 0 && !row.driver_commission && !row.archived && !row.deleted
+    && (row.managed_transport || !row.currency || row.currency===currency)
+    && ((row.branch_id || 'admin')==='admin' ? adminAvailable : accountOptions.some(branch=>branch.id===row.branch_id))
+  const payableBookings = bookings.filter(canReceiveFor)
+  const selectedBooking = payableBookings.find(row=>row.id===form.booking_id)
   const history = data ? [
     ...data.charges.filter(row => row.currency === currency).map(row => ({ ...row, date: row.charge_date, type: 'charge' })),
     ...data.payments.filter(row => row.currency === currency).map(row => ({ ...row, type: 'payment' })),
   ].sort((a, b) => b.date.localeCompare(a.date)) : []
+  const balanceTone = totals?.owed ? 'due' : totals?.credit ? 'credit' : 'settled'
+  const balanceLabel = balanceTone==='due' ? t('Trader owes','باقی‌مانده تاجر')
+    : balanceTone==='credit' ? t('Trader overpayment','اضافه‌پرداخت تاجر') : t('Settled','تصفیه شد')
+  const balanceAmount = totals ? money(totals.owed || totals.credit) : ''
   const summary = totals ? [
     [t('Total charges', 'مجموع بدهی'), money(totals.charged)],
-    [t('Paid (net)', 'پرداخت خالص'), money(totals.received)],
-    [t('Trader owes', 'باقی‌مانده تاجر'), money(totals.owed)],
-    [t('Trader credit', 'طلب تاجر'), money(totals.credit)],
+    [t('Net received', 'دریافتی خالص'), money(totals.received)],
   ] : []
   const bookingHeaders = [t('Date','تاریخ'),t('Booking','بوکینگ'),t('Route','مسیر'),t('Charge','بدهی'),t('Paid','پرداخت'),t('Remaining','باقی‌مانده')]
   const historyHeaders = [t('Date','تاریخ'),t('Description','شرح'),t('Charge','بدهی'),t('Paid','پرداخت')]
@@ -61,19 +76,33 @@ export default function TraderAccount({ trader, language, account, initialCurren
     row.type === 'payment' ? money((row.direction === 'in' ? 1 : -1) * cents(row.amount)) : '—',
   ]
 
-  function start(next) {
+  function paymentFields(booking) {
+    return {
+      booking_id: booking?.id || '',
+      amount: booking ? (booking.remaining/100).toFixed(2) : '',
+      description: booking ? `${t('Payment for booking','پرداخت بار نامه')} #${booking.number}`
+        : `${t('Payment from','پرداخت از')} ${trader.full_name}`,
+    }
+  }
+
+  function start(next, booking) {
     setMode(next)
+    setMoreActions(false)
     setError('')
     request.current = null
     setForm({
-      date: kabulToday(), amount: '', booking_id: '', scope: account || trader.branch_id || 'admin',
-      description: next === 'payment' ? `${t('Payment from','پرداخت از')} ${trader.full_name}` : '',
+      date: kabulToday(), scope: booking ? booking.branch_id || 'admin' : account || trader.branch_id || 'admin',
+      ...(next==='payment' ? paymentFields(booking) : {amount:'',booking_id:'',description:''}),
     })
   }
 
   async function save(event) {
     event.preventDefault()
     if (busy) return
+    if (form.booking_id && (!selectedBooking || cents(form.amount)>selectedBooking.remaining)) {
+      setError(t('Choose an unpaid booking and enter an amount within its balance.','بار نامهٔ پرداخت‌نشده و مبلغی در حد باقی‌مانده را انتخاب کنید.'))
+      return
+    }
     setBusy(true)
     setError('')
     const payload = {
@@ -88,6 +117,7 @@ export default function TraderAccount({ trader, language, account, initialCurren
         p_request: request.current.id, p_data: payload,
       })
       setMode('')
+      if (mode==='payment') window.dispatchEvent(new Event('pedram:cashbook-changed'))
       await load()
     } catch (error) { setError(explain(error, language)) }
     finally { setBusy(false) }
@@ -109,7 +139,7 @@ export default function TraderAccount({ trader, language, account, initialCurren
       title: `${t('Trader statement','صورت حساب تاجر')} · ${trader.full_name}`,
       subtitle: `Pedram Transportation · ${currency} · ${formatSolarHijri(kabulToday())}`,
       sections: [
-        { rows: summary },
+        { rows: [[balanceLabel,balanceAmount],...summary] },
         { title: t('Bookings','بوکینگ‌ها'), headers: bookingHeaders, rows: bookings.map(bookingCells) },
         { title: t('Account history','تاریخچه حساب'), headers: historyHeaders, rows: history.map(historyCells) },
       ],
@@ -117,44 +147,58 @@ export default function TraderAccount({ trader, language, account, initialCurren
   }
 
   return <section className="trader-account">
-    <div className="trader-account-toolbar">
+    <div className="trader-account-toolbar" data-active={!trader.archived_at}>
+      {!trader.archived_at && <button type="button" className="registry-primary trader-receive"
+        disabled={!data || busy || !!mode} onClick={() => start('payment')}><ArrowDownLeft size={17} aria-hidden="true"/>{t('Receive payment','دریافت پول')}</button>}
       <label><span>{t('Currency','واحد پول')}</span><select disabled={busy || !!mode} value={currency} onChange={event => setCurrency(event.target.value)}>
         {currencies.map(value => <option key={value}>{value}</option>)}
       </select></label>
-      {data && <button type="button" className="registry-secondary" onClick={printStatement}>{t('Print statement','چاپ صورت حساب')}</button>}
-      {!trader.archived_at && <>
-        <button type="button" className="registry-secondary" disabled={!data || busy || !!mode} onClick={() => start('charge')}><Plus size={17}/>{t('Add charge','ثبت بدهی')}</button>
-        <button type="button" className="registry-primary" disabled={!data || busy || !!mode} onClick={() => start('payment')}><ArrowDownLeft size={18}/>{t('Receive payment','دریافت پول')}</button>
-      </>}
+      {data && <button type="button" className="registry-secondary" onClick={printStatement}><Printer size={15} aria-hidden="true"/>{t('Print statement','چاپ صورت حساب')}</button>}
+      {!trader.archived_at && <button type="button" className="registry-secondary" aria-expanded={moreActions}
+        aria-controls={moreActions ? 'trader-more-actions' : undefined} disabled={!data || busy || !!mode} onClick={()=>setMoreActions(value=>!value)}>
+        <Ellipsis size={16} aria-hidden="true"/>{t('More actions','عملیات بیشتر')}
+      </button>}
+      {moreActions && !trader.archived_at && <div id="trader-more-actions" className="trader-more-actions">
+        <button type="button" className="registry-secondary" onClick={() => start('charge')}><Plus size={17} aria-hidden="true"/>{t('Add extra charge','ثبت بدهی اضافی')}</button>
+      </div>}
     </div>
     {error && <p className="registry-notice error" role="alert">{error}</p>}
     {!data && !error && <p role="status">{t('Loading account…','حساب در حال بارگیری است…')}</p>}
     {data && <>
-      <section className="trader-account-block trader-balance-block">
-        <h3>{t('Balance summary','خلاصه حساب')}</h3>
-        <dl className="trader-account-totals">{summary.map(([label, value]) => <div key={label}><dt>{label}</dt><dd><bdi>{value}</bdi></dd></div>)}</dl>
+      <section className="trader-account-block trader-balance-block" data-tone={balanceTone}>
+        <h3 className="trader-balance-status"><span>{balanceLabel}</span><bdi dir="ltr">{balanceAmount}</bdi></h3>
+        <details className="trader-balance-details">
+          <summary>{t('Balance details','تفصیلات حساب')}</summary>
+          <dl className="trader-account-totals">{summary.map(([label, value]) => <div key={label}><dt>{label}</dt><dd><bdi dir="ltr">{value}</bdi></dd></div>)}</dl>
+        </details>
       </section>
-      {mode && <form className="registry-form trader-account-form" onSubmit={save}>
+      {mode && <form ref={formElement} className="registry-form trader-account-form" onSubmit={save} aria-labelledby="trader-payment-title">
+        <h3 id="trader-payment-title">{mode==='payment' ? t('Receive payment','دریافت پول') : t('Add extra charge','ثبت بدهی اضافی')}
+          {selectedBooking && <bdi dir="ltr"> · #{selectedBooking.number}</bdi>}
+        </h3>
         <fieldset className="booking-fields wide" disabled={busy}>
-          <label><span>{t('Account','حساب')} *</span><select required value={form.scope} onChange={event => setForm({ ...form, scope: event.target.value, booking_id: '' })}>
-            {!trader.branch_id && (!account || account==='admin') && <option value="admin">{t('Admin account','حساب مرکزی')}</option>}
-            {branches.filter(branch => !branch.archived_at && (!trader.branch_id || branch.id === trader.branch_id) && (!account || branch.id===account)).map(branch => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
+          <label><span>{t('Account','حساب')} *</span><select required value={form.scope} onChange={event => setForm({
+            ...form, scope:event.target.value, ...(form.booking_id ? paymentFields() : {}),
+          })}>
+            {adminAvailable && <option value="admin">{t('Admin account','حساب مرکزی')}</option>}
+            {accountOptions.map(branch => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
           </select></label>
           {mode === 'payment' && <label><span>{t('Booking (optional)','بوکینگ (اختیاری)')}</span><select value={form.booking_id} onChange={event => {
-            const booking = bookings.find(row => row.id === event.target.value)
-            setForm({ ...form, booking_id: event.target.value, description: booking ? `${t('Payment for booking','پرداخت بوکینگ')} #${booking.number}` : `${t('Payment from','پرداخت از')} ${trader.full_name}` })
+            const booking = payableBookings.find(row => row.id === event.target.value)
+            setForm({ ...form, ...paymentFields(booking) })
           }}>
             <option value="">{t('General account entry','معامله عمومی حساب')}</option>
-            {bookings.filter(row => !row.driver_commission && !row.archived && !row.deleted
-              && (row.managed_transport ? row.remaining>0 : !row.currency || row.currency === currency)
-              && (row.branch_id || 'admin') === form.scope)
+            {payableBookings.filter(row => (row.branch_id || 'admin') === form.scope)
               .map(row => <option value={row.id} key={row.id}>#{row.number} · {row.origin} → {row.destination}</option>)}
           </select></label>}
           <label><span>{t('Date','تاریخ')} *</span><SolarHijriDateInput required max={mode === 'payment' ? kabulToday() : undefined} language={language} value={form.date} onChange={date => setForm({ ...form, date })} ariaLabel={t('Date','تاریخ')}/></label>
           <label><span>{t('Description','شرح')} *</span><input required value={form.description} onChange={event => setForm({ ...form, description: event.target.value })}/></label>
-          <label><span>{t('Amount','مبلغ')} ({currency}) *</span><input required type="number" min="0.01" max="999999999999.99" step="0.01" value={form.amount} onChange={event => setForm({ ...form, amount: event.target.value })}/></label>
+          <label><span>{t('Amount','مبلغ')} ({currency}) *</span><input required inputMode="decimal" type="number" min="0.01"
+            max={selectedBooking ? (selectedBooking.remaining/100).toFixed(2) : '999999999999.99'} step="0.01" value={form.amount}
+            onChange={event => setForm({ ...form, amount: event.target.value })}/></label>
         </fieldset>
-        <div className="registry-form-actions"><button type="button" disabled={busy} onClick={() => setMode('')}>{t('Cancel','انصراف')}</button><button className="registry-primary" disabled={busy}>{t('Save','ثبت')}</button></div>
+        <div className="registry-form-actions"><button type="button" disabled={busy} onClick={() => setMode('')}>{t('Cancel','انصراف')}</button>
+          <button className="registry-primary" disabled={busy}>{mode==='payment' ? t('Save payment','ثبت دریافت پول') : t('Save extra charge','ثبت بدهی اضافی')}</button></div>
       </form>}
       <section className="trader-account-block trader-bookings-block">
       <h3>{t('Bookings','بار نامه‌ها')}</h3>
@@ -167,8 +211,13 @@ export default function TraderAccount({ trader, language, account, initialCurren
           const [date, number, route, charge, paid, remaining] = bookingCells(row)
           return <tr key={row.id}>
             <th scope="row"><strong><bdi>{number}</bdi></strong> · <bdi>{date}</bdi><small>{route}</small></th>
-            <td><bdi>{charge}</bdi><small><bdi>{paid}</bdi></small></td>
-            <td><strong><bdi>{remaining}</bdi></strong></td>
+            <td><bdi dir="ltr">{charge}</bdi><small>{t('Received','دریافتی')} · <bdi dir="ltr">{paid}</bdi></small></td>
+            <td><strong><bdi dir="ltr">{remaining}</bdi></strong>
+              {!trader.archived_at && canReceiveFor(row) && <button type="button" className="registry-secondary trader-booking-receive"
+                disabled={busy || !!mode} onClick={()=>start('payment',row)}>
+                <ArrowDownLeft size={14} aria-hidden="true"/>{t('Receive payment','دریافت پول')}
+              </button>}
+            </td>
           </tr>
         })}
         {!bookings.length && <tr><td colSpan={3}>{t('No bookings for this currency.','برای این واحد پول بوکینگ نیست.')}</td></tr>}
