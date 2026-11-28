@@ -31,7 +31,7 @@ export default function BookingInformation({ row, language, president = false, v
           field('departure','Departure date','تاریخ حرکت',formatSolarHijri(row.departure_date || row.booking_date),numeric),
           field('arrival','Arrival date','تاریخ رسیدن',formatSolarHijri(row.arrival_date || row.departure_date || row.booking_date),numeric),
         ]),
-        field('service','Service','خدمات',managed ? t('Company-managed transport','انتقال توسط شرکت') : t('Vehicle arrangement','معرفی واسطه')),
+        field('service','Service','خدمات',managed ? t('Company-managed transport','انتقال توسط شرکت (خارجی)') : t('Vehicle arrangement','معرفی واسطه')),
         field('branch','Office','دفتر',branch?.name || (!row.branch_id ? t('Head office','دفتر مرکزی') : '—')),
       ]}/>
       <InformationGroup tone="teal" icon={MapPin} title={t('Route and cargo','مسیر و بار')} fields={[

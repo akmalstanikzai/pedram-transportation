@@ -111,7 +111,7 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
           [t('Arrival date','تاریخ رسیدن'),formatSolarHijri(row.arrival_date || row.departure_date || row.booking_date)],
         ]),
         [t('Status','وضعیت'),statuses[row.status]],
-        [t('Service','خدمات'),managed?t('Company-managed transport','انتقال توسط شرکت'):t('Vehicle arrangement','معرفی واسطه')],
+        [t('Service','خدمات'),managed?t('Company-managed transport','انتقال توسط شرکت (خارجی)'):t('Vehicle arrangement','معرفی واسطه')],
         [t('Office','دفتر'),branch ? contacts(branch.name,branch.phone,branch.address) : row.branch_id ? '—' : t('Head office','دفتر مرکزی')],
         [t('Origin','مبدأ'),row.origin],
         [t('Destination','مقصد'),row.destination],
@@ -369,7 +369,7 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
             <dd><time dateTime={r.booking_date}><bdi dir="ltr">{formatSolarHijri(r.booking_date)}</bdi></time></dd>
             {r.departure_date && (r.departure_date !== r.booking_date || r.arrival_date !== r.departure_date) &&
               <dd>{t('Trip','سفر')} · <bdi dir="ltr">{formatSolarHijri(r.departure_date)} – {formatSolarHijri(r.arrival_date || r.departure_date)}</bdi></dd>}
-            <dd>{r.service_type === 'managed' ? t('Company-managed transport','انتقال توسط شرکت') : t('Vehicle arrangement','معرفی واسطه')}</dd>
+            <dd>{r.service_type === 'managed' ? t('Company-managed transport','انتقال توسط شرکت (خارجی)') : t('Vehicle arrangement','معرفی واسطه')}</dd>
             {president && (r.managed_transport
               ? (r.managed_transport.balances??[]).map(balance=><dd key={balance.currency} className="booking-card-balance">{t('Trader owes','بدهی تاجر')} · <bdi dir="ltr">{money(bookingDue(balance.charged,balance.paid)/100,balance.currency)}</bdi></dd>)
               : <dd className="booking-card-balance">{r.commission_driver_id ? t('Driver owes','بدهی راننده') : t('Trader owes','بدهی تاجر')} · <bdi dir="ltr">{money(bookingDue(r.charged,r.paid)/100,r.commission_currency)}</bdi></dd>)}
@@ -424,7 +424,7 @@ export default function BookingsPage({ language, profile, onBack, attention, onC
         <label><span>{t('Booking type','نوع بوکینگ')}</span><select disabled={!!editing?.commission_amount||!!editing?.managed_transport} value={form.service_type} onChange={e => {
           if(e.target.value==='managed')setWithHandoff(false)
           setForm({...form,service_type:e.target.value,received_now:''})
-        }}><option value="arrangement">{t('Vehicle arrangement','معرفی واسطه')}</option><option value="managed">{t('Company-managed transport','انتقال توسط شرکت')}</option></select></label>
+        }}><option value="arrangement">{t('Vehicle arrangement','معرفی واسطه')}</option><option value="managed">{t('Company-managed transport','انتقال توسط شرکت (خارجی)')}</option></select></label>
         {arrangement&&<div className="wide booking-trip-dates">
           {field('departure_date','Departure date','تاریخ حرکت',{type:'date',value:departureDate,minDate:form.booking_date})}
           {field('arrival_date','Arrival date','تاریخ رسیدن',{type:'date',value:arrivalDate,minDate:departureDate})}
